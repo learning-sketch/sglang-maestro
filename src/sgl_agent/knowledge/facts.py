@@ -76,6 +76,229 @@ strategies overlap EP dispatch/combine, which are no-ops unless ``ep_size > 1``.
 DEFAULT_DECODE_GRAPH_BACKEND = "full"
 DEFAULT_PREFILL_GRAPH_BACKEND_CUDA = "breakable"
 
+DEVICE_TO_DISTRIBUTED_BACKEND = {
+    "cuda": "nccl",
+    "xpu": "xccl",
+    "hpu": "hccl",
+    "cpu": "gloo",
+    "npu": "hccl",
+    "musa": "mccl",
+}
+"""``DeviceMixin.get_torch_distributed_backend_str`` default: looked up by ``device_type``, any
+other type gets ``gloo`` (NPU switches to ``zbal`` when ``SGLANG_ZBAL_LOCAL_MEM_SIZE > 0``)."""
+
+IN_TREE_DEVICE_TYPES = {
+    "cuda": "cuda",
+    "rocm": "cuda",
+    "npu": "npu",
+    "xpu": "xpu",
+    "musa": "musa",
+    "cpu": "cpu",
+    "mps": "mps",
+}
+"""``device_type`` of each in-tree platform (ROCm keeps ``torch.device("cuda")``)."""
+
+IN_TREE_DISPATCH_KEYS = {
+    "cuda": "cuda",
+    "rocm": "hip",
+    "npu": "npu",
+    "xpu": "xpu",
+    "musa": "musa",
+    "cpu": "cpu",
+}
+"""Fused-op ``forward_<key>`` each in-tree platform selects; CPU only with AMX, MPS has none."""
+
+IN_TREE_COMPILE_BACKENDS = {"mps": "eager", "npu": "torchair"}
+"""``get_compiler_backend()`` on in-tree platforms that do not use ``inductor``."""
+
+DEFAULT_OOT_DISPATCH_KEY = "native"
+DEFAULT_OOT_COMPILE_BACKEND = "inductor"
+
+MOE_NATIVE_ACTIVATIONS = ("silu", "gelu", "situ")
+"""Activations ``moe_forward_native`` implements; anything else raises."""
+
+DEEPSEEK_V3_MTP_DEFAULT_PARAMS = (3, 1, 4)
+"""``(num_steps, eagle_topk, num_draft_tokens)`` SGLang picks for DeepSeek-V3 MTP when unset."""
+
+PLATFORM_PLUGIN_GROUP = "sglang.srt.platforms"
+GENERAL_PLUGIN_GROUP = "sglang.srt.plugins"
+
+APPLY_ROTARY_POS_EMB_MODEL_FILES = frozenset({"gemma3_causal", "glm_image_vl"})
+"""Model files that call the compiled ``apply_rotary_pos_emb`` directly (besides
+``FourierRotaryEmbedding`` and the ``normal`` vision RoPE)."""
+
+LAUNCH_SERVER_MODULE = "sglang.launch_server"
+BENCH_SERVING_MODULE = "sglang.benchmark.serving"
+ROUTER_MODULE = "sglang_router.launch_router"
+RUN_EVAL_MODULE = "sglang.test.run_eval"
+MODEL_TRUNCATOR_MODULE = "sglang.srt.debug_utils.model_truncator"
+DUMP_COMPARATOR_MODULE = "sglang.srt.debug_utils.dump_comparator"
+
+TOOL_FLAGS: dict[str, frozenset[str]] = {
+    BENCH_SERVING_MODULE: frozenset(
+        {
+            "--backend",
+            "--base-url",
+            "--host",
+            "--port",
+            "--ready-check-timeout-sec",
+            "--dataset-name",
+            "--dataset-path",
+            "--dataset-offset",
+            "--model",
+            "--served-model-name",
+            "--tokenizer",
+            "--num-prompts",
+            "--sharegpt-output-len",
+            "--sharegpt-context-len",
+            "--random-input-len",
+            "--random-output-len",
+            "--random-range-ratio",
+            "--request-rate",
+            "--use-trace-timestamps",
+            "--max-concurrency",
+            "--output-file",
+            "--output-details",
+            "--disable-tqdm",
+            "--disable-stream",
+            "--seed",
+            "--disable-ignore-eos",
+            "--temperature",
+            "--top-p",
+            "--extra-request-body",
+            "--apply-chat-template",
+            "--profile",
+            "--profile-activities",
+            "--profile-num-steps",
+            "--profile-output-dir",
+            "--pd-separated",
+            "--profile-prefill-url",
+            "--profile-decode-url",
+            "--flush-cache",
+            "--warmup-requests",
+            "--tokenize-prompt",
+            "--gsp-num-groups",
+            "--gsp-prompts-per-group",
+            "--gsp-system-prompt-len",
+            "--gsp-question-len",
+            "--gsp-output-len",
+            "--tag",
+            "--header",
+        }
+    ),
+    ROUTER_MODULE: frozenset(
+        {
+            "--host",
+            "--port",
+            "--worker-urls",
+            "--policy",
+            "--prefill-policy",
+            "--decode-policy",
+            "--cache-threshold",
+            "--balance-abs-threshold",
+            "--balance-rel-threshold",
+            "--dp-aware",
+            "--pd-disaggregation",
+            "--prefill",
+            "--decode",
+            "--worker-startup-timeout-secs",
+            "--model-path",
+            "--tokenizer-path",
+            "--max-concurrent-requests",
+            "--queue-size",
+            "--queue-timeout-secs",
+            "--request-timeout-secs",
+            "--prometheus-host",
+            "--prometheus-port",
+            "--log-level",
+            "--health-check-interval-secs",
+            "--disable-retries",
+            "--disable-circuit-breaker",
+        }
+    ),
+    RUN_EVAL_MODULE: frozenset(
+        {
+            "--base-url",
+            "--host",
+            "--port",
+            "--model",
+            "--repeat",
+            "--eval-name",
+            "--api",
+            "--num-examples",
+            "--num-threads",
+            "--max-tokens",
+            "--temperature",
+            "--top-p",
+            "--top-k",
+            "--min-p",
+            "--chat-template-kwargs",
+            "--reasoning-effort",
+            "--thinking-mode",
+            "--num-shots",
+            "--gsm8k-data-path",
+        }
+    ),
+    MODEL_TRUNCATOR_MODULE: frozenset({"--input", "--output", "--keep-num-layers"}),
+    DUMP_COMPARATOR_MODULE: frozenset(
+        {
+            "--baseline-path",
+            "--target-path",
+            "--start-step",
+            "--end-step",
+            "--diff-threshold",
+            "--filter",
+        }
+    ),
+}
+"""argparse flags of the SGLang tools sgl-agent renders commands for (a subset for the router
+and benchmark: the ones the generated commands may use)."""
+
+TOOL_CHOICES: dict[tuple[str, str], tuple[str, ...]] = {
+    (BENCH_SERVING_MODULE, "--backend"): (
+        "sglang",
+        "sglang-native",
+        "sglang-oai",
+        "sglang-oai-chat",
+        "sglang-embedding",
+        "vllm",
+        "vllm-chat",
+        "vllm-embedding",
+        "lmdeploy",
+        "lmdeploy-chat",
+        "trt",
+        "gserver",
+        "truss",
+    ),
+    (BENCH_SERVING_MODULE, "--dataset-name"): (
+        "agentic-trace",
+        "sharegpt",
+        "custom",
+        "openai",
+        "random",
+        "random-ids",
+        "generated-shared-prefix",
+        "mmmu",
+        "image",
+        "mooncake",
+        "longbench_v2",
+        "speed-bench",
+    ),
+    (ROUTER_MODULE, "--policy"): (
+        "random",
+        "round_robin",
+        "cache_aware",
+        "power_of_two",
+        "bucket",
+        "manual",
+        "consistent_hashing",
+        "prefix_hash",
+    ),
+    (RUN_EVAL_MODULE, "--api"): ("chat", "completion", "generate"),
+}
+TOOL_CHOICES[(ROUTER_MODULE, "--prefill-policy")] = TOOL_CHOICES[(ROUTER_MODULE, "--policy")]
+TOOL_CHOICES[(ROUTER_MODULE, "--decode-policy")] = TOOL_CHOICES[(ROUTER_MODULE, "--policy")]
+
 SOURCES: dict[str, str] = {
     "step_span": "python/sglang/srt/utils/profile_utils.py::build_step_span_name",
     "step_annotations": (
@@ -239,6 +462,294 @@ SOURCES: dict[str, str] = {
         "(#token = max_total_num_tokens - available - evictable)"
     ),
     "retract": "python/sglang/srt/managers/scheduler.py (KV cache pool is full. Retract requests.)",
+    "platform_plugin_discovery": (
+        "python/sglang/srt/platforms/__init__.py::_resolve_platform (entry point group "
+        "sglang.srt.platforms; SGLANG_PLATFORM selects one plugin, otherwise plugin errors are "
+        "only logged and the base platform is used)"
+    ),
+    "general_plugin_hooks": (
+        "python/sglang/srt/plugins/hook_registry.py::HookRegistry.register (entry point group "
+        "sglang.srt.plugins; BEFORE/AFTER/AROUND/REPLACE)"
+    ),
+    "platform_interface": (
+        "python/sglang/srt/platforms/interface.py::SRTPlatform, "
+        "python/sglang/srt/platforms/device_mixin.py::DeviceMixin"
+    ),
+    "oot_device_fallback": (
+        "python/sglang/srt/utils/common.py::get_device (falls back to current_platform.get_device)"
+    ),
+    "oot_memory_hooks": (
+        "python/sglang/srt/utils/common.py::get_available_gpu_memory (out-of-tree: "
+        "get_device_total_memory - get_current_memory_usage)"
+    ),
+    "pinned_h2d": "python/sglang/srt/utils/common.py::async_h2d (pinned staging for H2D copies)",
+    "distributed_backend_fallback": (
+        "python/sglang/srt/distributed/parallel_state.py::get_default_distributed_backend, "
+        "python/sglang/srt/platforms/device_mixin.py::_DEVICE_TO_DISTRIBUTED_BACKEND"
+    ),
+    "oot_default_attention_backend": (
+        "python/sglang/srt/arg_groups/model_override_base.py::get_default_attn_backend"
+    ),
+    "attention_registry": (
+        "python/sglang/srt/layers/attention/attention_registry.py::register_attention_backend"
+    ),
+    "mla_backend_handler": (
+        "python/sglang/srt/models/deepseek_common/attention_backend_handler.py"
+        "::AttentionBackendRegistry (unknown backend names use the triton handler)"
+    ),
+    "graph_capture_capability": (
+        "python/sglang/srt/model_executor/model_runner_components/cuda_graph_setup.py "
+        "(decode graphs are captured only when capabilities.graph_capture)"
+    ),
+    "graph_runner_required": (
+        "python/sglang/srt/model_executor/model_runner_components/cuda_graph_setup.py "
+        "(require_out_of_tree_impl(hook='get_graph_runner_cls()'))"
+    ),
+    "full_graph_backend": (
+        "python/sglang/srt/model_executor/runner_backend/utils.py (out-of-tree: "
+        "get_full_graph_backend_cls(), else FullCudaGraphBackend with torch.cuda.CUDAGraph)"
+    ),
+    "oot_guards": (
+        "python/sglang/srt/platforms/interface.py::require_out_of_tree_impl, reject_out_of_tree_path"
+    ),
+    "fused_op_dispatch": (
+        "python/sglang/kernels/fused_op.py::BaseFusedOp (register_oot_forward on the exact class, "
+        "then forward_<dispatch key>, then forward_native)"
+    ),
+    "fused_op_force_backend": (
+        "python/sglang/kernels/fused_op.py::get_fused_op_backend (SGLANG_FORCE_FUSED_OP_BACKEND)"
+    ),
+    "oot_compile_backend": (
+        "python/sglang/srt/utils/common.py::get_compiler_backend (out-of-tree: "
+        "current_platform.get_compile_backend())"
+    ),
+    "oot_init_backend": (
+        "python/sglang/srt/model_executor/model_runner.py (module level: "
+        "current_platform.init_backend() on out-of-tree platforms)"
+    ),
+    "oot_quantization_hook": (
+        "python/sglang/srt/layers/quantization/__init__.py::get_quantization_config "
+        "(out-of-tree: current_platform.get_quantization_config(name))"
+    ),
+    "kv_pool_hook": (
+        "python/sglang/srt/mem_cache/kv_cache_configurator.py::_resolve_kv_pool_class "
+        "(current_platform.get_kv_pool_cls(kind=mha|mla|dsa))"
+    ),
+    "paged_allocator_triton": (
+        "python/sglang/srt/mem_cache/allocator/paged.py (use_triton_kernels = "
+        "capabilities.supports_triton)"
+    ),
+    "speculative_cache_locs": (
+        "python/sglang/kernels/ops/speculative/cache_locs.py::assign_extend_cache_locs_func "
+        "(out-of-tree: get_speculative_cache_locs_fn(), else Triton)"
+    ),
+    "dflash_platform_gate": (
+        "python/sglang/srt/arg_groups/speculative_hook.py::_handle_dflash "
+        "(supports_speculative_algorithm is consulted for DFLASH only)"
+    ),
+    "speculative_auto_params": (
+        "python/sglang/srt/arg_groups/speculative_hook.py::_auto_choose_speculative_params"
+    ),
+    "speculative_nextn_alias": (
+        "python/sglang/srt/arg_groups/speculative_hook.py (NEXTN resolves to EAGLE; DeepSeek-V3 "
+        "drafts default to the target checkpoint's MTP layers)"
+    ),
+    "torch_compile_sites": (
+        "python/sglang/srt/layers/vocab_parallel_embedding.py::get_masked_input_and_mask, "
+        "python/sglang/srt/layers/moe/topk.py (@torch.compile(backend=get_compiler_backend()))"
+    ),
+    "oot_grouped_topk": (
+        "python/sglang/srt/layers/moe/topk.py::biased_grouped_topk_gpu (non-CUDA/HIP: "
+        "biased_grouped_topk_impl under torch.compile)"
+    ),
+    "oot_softmax_topk": "python/sglang/srt/layers/moe/topk.py::fused_topk_torch_native",
+    "moe_native_fallback": (
+        "python/sglang/srt/layers/quantization/unquant.py::UnquantizedFusedMoEMethod, "
+        "python/sglang/srt/layers/moe/fused_moe_native.py::moe_forward_native (per-expert loop, "
+        "tokens_per_expert.cpu() host sync)"
+    ),
+    "moe_triton_fused_func": (
+        "python/sglang/srt/layers/moe/moe_runner/triton.py (register_fused_func('none', 'triton') "
+        "bypasses register_moe_runner_core)"
+    ),
+    "w8a8_int8_cuda_only": (
+        "python/sglang/srt/layers/quantization/w8a8_int8.py::W8A8Int8LinearMethod "
+        "(int8_scaled_mm imported on CUDA only, per_token_quant_int8 is Triton)"
+    ),
+    "unquantized_linear": (
+        "python/sglang/srt/layers/quantization/unquant.py::UnquantizedLinearMethod (F.linear)"
+    ),
+    "fp8_to_bf16_precedent": (
+        "benchmark/deepseek_v3/README.md (A100 without FP8: fp8_cast_bf16.py, then 4x8 GPUs TP32)"
+    ),
+    "bf16_remove_quant_config": (
+        "benchmark/deepseek_v3/README.md (Troubleshooting: a converted BF16 checkpoint must drop "
+        "quantization_config, else 'output_partition_size = 576 is not divisible by block_n = 128')"
+    ),
+    "int8_checkpoint_precedent": (
+        "benchmark/deepseek_v3/README.md (meituan/DeepSeek-R1-Channel-INT8 --quantization w8a8_int8)"
+    ),
+    "rope_cache_dtype": (
+        "python/sglang/srt/layers/rotary_embedding/base.py::RotaryEmbedding.__init__ (cos/sin "
+        "cache cast to the model dtype off CUDA/HIP/XPU unless SGLANG_ROPE_CACHE_FP32=1)"
+    ),
+    "rope_factory": "python/sglang/srt/layers/rotary_embedding/factory.py::get_rope",
+    "deepseek_yarn_rewrite": (
+        "python/sglang/srt/models/deepseek_v2.py (rope_scaling['rope_type'] = 'deepseek_yarn')"
+    ),
+    "external_model_package": (
+        "python/sglang/srt/models/registry.py (SGLANG_EXTERNAL_MODEL_PACKAGE: every module of the "
+        "package that defines EntryClass registers it under the class __name__, which must equal "
+        "config.json architectures[0]; the in-tree models are then loaded lazily)"
+    ),
+    "fused_op_resolution_cache": (
+        "python/sglang/kernels/fused_op.py::BaseFusedOp.forward (_forward_method is resolved on "
+        "the first call and cached per instance; registrations made later do not reach it)"
+    ),
+    "fused_op_trace": (
+        "python/sglang/kernels/fused_op.py::enable_fused_op_trace / get_fused_op_trace (backend "
+        "label: 'torch' for forward_native, the key for forward_<key>, else the function name)"
+    ),
+    "server_ready_log": (
+        "python/sglang/srt/entrypoints/http_server.py (The server is fired up and ready to roll!)"
+    ),
+    "model_truncator_layers": (
+        "python/sglang/srt/debug_utils/model_truncator.py (keeps model.layers.<i> for i < "
+        "--keep-num-layers and rewrites num_hidden_layers)"
+    ),
+    "platform_resolution": (
+        "python/sglang/srt/platforms/__init__.py (current_platform is resolved lazily on first "
+        "access)"
+    ),
+    "dumper_non_intrusive": (
+        "python/sglang/srt/model_executor/model_runner.py (dumper.register_non_intrusive_dumper "
+        "hooks module outputs when DUMPER_ENABLE=1; DUMPER_DIR defaults to /tmp/dumper)"
+    ),
+    "transformers_fallback": (
+        "python/sglang/srt/model_loader/utils.py::get_model_architecture (--model-impl auto: "
+        "resolve_transformers_arch when no SGLang implementation exists)"
+    ),
+    "dumper": "python/sglang/srt/debug_utils/dumper.py (DUMPER_ENABLE=1, DUMPER_DIR)",
+    "dump_comparator": "python/sglang/srt/debug_utils/dump_comparator.py",
+    "model_truncator": "python/sglang/srt/debug_utils/model_truncator.py",
+    "run_eval": (
+        "python/sglang/test/run_eval.py (deprecated but still scores gsm8k/mgsm_en/humaneval; "
+        "mmlu/gpqa/aime go through sgl-eval: python/sglang/test/sgl_eval_utils.py::run_sgl_eval)"
+    ),
+    "rmsnorm_fp32": (
+        "python/sglang/srt/layers/layernorm.py::RMSNorm.forward_native (x.to(torch.float32) "
+        "before the residual add and the variance)"
+    ),
+    "mla_mscale": (
+        "python/sglang/srt/models/deepseek_v2.py::DeepseekV2AttentionMLA.__init__ "
+        "(self.scaling = compute_mla_mscale_scaling(rope_scaling, scaling))"
+    ),
+    "topk_output_dtypes": (
+        "python/sglang/srt/layers/moe/topk.py::fused_topk_torch_native (topk_weights float32, "
+        "topk_ids int32)"
+    ),
+    "hicache_transfer_kernels": (
+        "python/sglang/srt/mem_cache/pool_host/mha.py, mla.py, memory_pool_host.py "
+        "(transfer kernels imported from sgl_kernel.kvcacheio on CUDA/HIP[/XPU], "
+        "sgl_kernel_npu on NPU)"
+    ),
+    "hicache_layout_io": (
+        "python/sglang/srt/arg_groups/hicache_hook.py::resolve_layout_io_compatibility"
+    ),
+    "hicache_dcp": "python/sglang/srt/arg_groups/hicache_hook.py::resolve_hicache_dcp_compatibility",
+    "layernorm_sp_rules": "python/sglang/srt/arg_groups/layernorm_sp_hook.py::validate_layernorm_sp",
+    "dcp_rules": "python/sglang/srt/arg_groups/parallel_hook.py::handle_decode_context_parallelism",
+    "attn_cp_rules": "python/sglang/srt/arg_groups/parallel_hook.py (attn_cp_size divisibility)",
+    "dwdp_rules": "python/sglang/srt/arg_groups/parallel_hook.py (dwdp_size == tp_size)",
+    "dp_attention": "python/sglang/srt/arg_groups/fields/parallel.py (--attn-dp-size)",
+    "deepep_low_latency_tokens": (
+        "SGLANG_DEEPEP_NUM_MAX_DISPATCH_TOKENS_PER_RANK (python/sglang/srt/environ.py)"
+    ),
+    "benchmark_serving": "python/sglang/benchmark/serving.py",
+    "pd_router": (
+        "sgl-model-gateway/bindings/python/src/sglang_router/router_args.py "
+        "(--pd-disaggregation, --prefill URL [BOOTSTRAP_PORT], --decode URL, --policy)"
+    ),
+    "launch_server": "python/sglang/launch_server.py",
+    "kv_pool_budget": (
+        "python/sglang/srt/mem_cache/kv_cache_configurator.py::_profile_available_bytes "
+        "(free memory - pre_model_load_memory * (1 - mem_fraction_static))"
+    ),
+    "attention_backend_choices": (
+        "python/sglang/srt/arg_groups/choices.py (add_attention_backend_choices, "
+        "add_quantization_method_choices, add_moe_runner_backend_choices, ...; extend before "
+        "ServerArgs is constructed)"
+    ),
+    "general_plugin_load_order": (
+        "python/sglang/launch_server.py (load_plugins() before prepare_server_args); "
+        "scheduler.py, data_parallel_controller.py, detokenizer_manager.py reload them"
+    ),
+    "server_device_default": (
+        "python/sglang/srt/arg_groups/serving_hook.py (device=get_device(), then device.split(':'))"
+    ),
+    "sampler_backend": (
+        "python/sglang/srt/layers/sampler.py::register_sampler_backend, "
+        "python/sglang/srt/arg_groups/overrides.py::_sampling_backend_default "
+        "(flashinfer when available, else pytorch)"
+    ),
+    "moe_runner_core": (
+        "python/sglang/srt/layers/moe/moe_runner/runner.py::register_moe_runner_core"
+    ),
+    "pinned_batch_copies": (
+        "python/sglang/srt/managers/schedule_batch.py, "
+        "python/sglang/srt/model_executor/forward_batch_info.py "
+        "(pin_memory=is_pin_memory_available(device))"
+    ),
+    "kv_store_fallback": (
+        "python/sglang/srt/mem_cache/memory_pool.py::_set_kv_buffer_impl (store_cache on "
+        "CUDA/HIP, XPU and AMX CPU; otherwise k_cache[loc] = k; v_cache[loc] = v)"
+    ),
+    "prefill_graph_default": (
+        "python/sglang/srt/model_executor/cuda_graph_config.py (prefill backend: breakable on "
+        "CUDA, disabled elsewhere)"
+    ),
+    "oot_forward_override": (
+        "python/sglang/kernels/fused_op.py::BaseFusedOp.forward (subclasses that override "
+        "forward() without calling dispatch bypass register_oot_forward)"
+    ),
+    "oot_dispatch_order": (
+        "python/sglang/kernels/fused_op.py::BaseFusedOp._resolve_forward_method (out-of-tree: "
+        "registry[type(self)] -> forward_<key> found through the MRO -> forward_native; the "
+        "triton/jit/aot/flashinfer backends are never auto-selected)"
+    ),
+    "rmsnorm_contract": (
+        "python/sglang/srt/layers/layernorm.py::RMSNorm.forward_native(x, residual, "
+        "post_residual_addition, quant_linear) -> out | (out, residual)"
+    ),
+    "add_norm_plain": (
+        "python/sglang/srt/layers/layer_boundary/residual/add_norm.py"
+        "::_update_and_read_residual_plain (norm(hidden_states, residual, post_residual_addition))"
+    ),
+    "rope_contract": (
+        "python/sglang/srt/layers/rotary_embedding/base.py::RotaryEmbedding.forward_native"
+        "(positions, query, key, offsets, fused_set_kv_buffer_arg) -> (query, key)"
+    ),
+    "deepseek_rope_interleave": (
+        "python/sglang/srt/models/deepseek_v2.py::DeepseekV2AttentionMLA.__init__ "
+        "(is_neox_style = not config.rope_interleave, default True: GPT-J interleaved)"
+    ),
+    "mla_kv_buffer": (
+        "python/sglang/kernels/ops/kvcache/mla_buffer.py (capabilities.supports_triton False -> "
+        "set_mla_kv_buffer_naive)"
+    ),
+    "compute_position": (
+        "python/sglang/srt/model_executor/forward_batch_info.py::compute_position "
+        "(support_triton() False -> compute_position_torch: Python loop over device tensors)"
+    ),
+    "topk_native_asserts": (
+        "python/sglang/srt/layers/moe/topk.py::select_experts (torch_native non-grouped path: "
+        "fused_topk_native asserts num_token_non_padded and expert_location_dispatch_info are None)"
+    ),
+    "num_token_non_padded": (
+        "python/sglang/srt/model_executor/forward_batch_info.py::enable_num_token_non_padded "
+        "(ep_size > 1 or a customized a2a backend), ForwardBatch.moe_num_token_non_padded "
+        "(None only with attention DP > 1 and a2a none)"
+    ),
 }
 
 
