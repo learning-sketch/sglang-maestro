@@ -61,6 +61,8 @@ class CombinedPlan:
     notes: list[str]
     candidates: list[dict[str, Any]]
     command: Command
+    capacity_note: str | None = None
+    """Set when one instance of this layout cannot carry the workload's arrival rate."""
 
     def to_dict(self) -> dict[str, Any]:
         return {
@@ -70,6 +72,7 @@ class CombinedPlan:
             "enabled": self.enabled,
             "dropped": self.dropped,
             "notes": self.notes,
+            "capacity_note": self.capacity_note,
             "candidates": self.candidates,
             "command": self.command.to_dict(),
         }
@@ -248,8 +251,9 @@ def combine(ctx: FeatureContext, advices: list[FeatureAdvice]) -> CombinedPlan:
     notes: list[str] = []
     base = ctx.parallel
     chosen = next((row for row in candidates if row["layout"] == layout.describe()), None)
+    capacity_note = None
     if chosen is not None and chosen["overloaded"]:
-        notes.append(
+        capacity_note = (
             f"单个 {layout.describe()} 实例承载不了该到达率（并发需求 {chosen['concurrency_demand']:g} > "
             f"KV 可承载 {chosen['concurrency_capacity']}）：需要多副本或 PD 分离，见 `sgl-agent deploy`"
         )
@@ -357,6 +361,7 @@ def combine(ctx: FeatureContext, advices: list[FeatureAdvice]) -> CombinedPlan:
         notes=notes,
         candidates=candidates,
         command=command,
+        capacity_note=capacity_note,
     )
 
 
@@ -453,6 +458,7 @@ def render_feature_report(report: FeatureReport) -> str:
                 + ("、".join(combined.enabled) if combined.enabled else "无（基线已是最优）"),
                 *(f"未启用 {item}" for item in combined.dropped),
                 *combined.notes,
+                combined.capacity_note or "",
             ]
         ),
     ]
