@@ -1149,6 +1149,15 @@ SOURCES: dict[str, str] = {
         "python/sglang/srt/arg_groups/parallel_hook.py::handle_data_parallelism (--dp-size > 1 "
         "with --attn-dp-size > 1 raises)"
     ),
+    "device_selection": (
+        "python/sglang/srt/managers/data_parallel_controller.py (gpu_id = base_gpu_id + local "
+        "tp_rank x gpu_id_step), python/sglang/srt/model_executor/model_runner.py "
+        "(torch.get_device_module(device).set_device(gpu_id))"
+    ),
+    "pd_ascend_transfer": (
+        "python/sglang/srt/disaggregation/ascend/conn.py (the ascend backend reuses the Mooncake "
+        "KV manager, sender and receiver with AscendTransferEngine)"
+    ),
 }
 
 
