@@ -100,6 +100,8 @@ class LatencyAssumptions:
 
     kernel_launch_us: float = 4.0
     graph_kernel_gap_us: float = 1.0
+    min_kernel_us: float = 2.0
+    """Shortest GPU-side duration of a tiny kernel (block scheduling, ramp-up and tail)."""
     collective_base_us: float = 10.0
     inter_node_collective_base_us: float = 25.0
     step_overhead_us: float = 400.0

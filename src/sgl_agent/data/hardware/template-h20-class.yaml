@@ -58,6 +58,7 @@ efficiency:
 latency:
   kernel_launch_us: 8.0
   graph_kernel_gap_us: 2.0
+  min_kernel_us: 3.0
   collective_base_us: 20.0
   inter_node_collective_base_us: 40.0
   step_overhead_us: 600.0

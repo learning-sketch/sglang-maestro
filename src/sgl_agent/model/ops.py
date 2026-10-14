@@ -120,6 +120,8 @@ class OpTiming:
     overhead_us: float
     time_us: float
     bound: str
+    kernel_us: float = 0.0
+    """GPU-side duration of the op's kernels for one layer, without launch gaps."""
 
     @property
     def total_us(self) -> float:
@@ -860,6 +862,10 @@ class StepCostModel:
         result += self._head_ops(shape)
         return result
 
+    def head_ops(self, shape: BatchShape) -> list[OpCost]:
+        """Ops that run once per step: embedding, final norm, LM head and sampling."""
+        return self._head_ops(shape)
+
     def layer_ops(self, shape: BatchShape, moe_layer: bool | None = None) -> list[OpCost]:
         """Ops of a single decoder layer (used for MTP draft cost and weight-prefetch analysis)."""
         use_moe = self.arch.is_moe if moe_layer is None else moe_layer and self.arch.is_moe
@@ -892,7 +898,7 @@ class StepCostModel:
                 transfer_s = moved / intra_bw
                 base = latency.collective_base_us
             comm_us = base + transfer_s * 1e6
-            return OpTiming(op, 0.0, 0.0, comm_us, 0.0, comm_us, "comm")
+            return OpTiming(op, 0.0, 0.0, comm_us, 0.0, comm_us, "comm", kernel_us=comm_us)
         dtype = op.compute_dtype if hardware.supports_compute_dtype(op.compute_dtype) else "bf16"
         compute_efficiency = (
             efficiency.attention_compute if op.kind == "attention" else efficiency.gemm_compute
@@ -901,20 +907,23 @@ class StepCostModel:
         memory_us = (
             op.bytes / (hardware.memory_bandwidth_bytes_per_s * efficiency.memory_bandwidth) * 1e6
         )
-        kernel_us = max(compute_us, memory_us)
+        roofline_us = max(compute_us, memory_us)
         kernels = max(op.kernels, 1)
+        kernel_us = max(roofline_us, kernels * latency.min_kernel_us)
         if use_graph:
             time_us = kernel_us + kernels * latency.graph_kernel_gap_us
         else:
             time_us = kernels * max(
                 kernel_us / kernels + latency.graph_kernel_gap_us, latency.kernel_launch_us
             )
-        overhead_us = time_us - kernel_us
-        if overhead_us > kernel_us:
+        overhead_us = time_us - roofline_us
+        if overhead_us > roofline_us:
             bound = "launch"
         else:
             bound = "compute" if compute_us >= memory_us else "memory"
-        return OpTiming(op, compute_us, memory_us, 0.0, overhead_us, time_us, bound)
+        return OpTiming(
+            op, compute_us, memory_us, 0.0, overhead_us, time_us, bound, kernel_us=kernel_us
+        )
 
     def _scale_for(self, shape: BatchShape) -> float:
         if shape.phase == "decode":
