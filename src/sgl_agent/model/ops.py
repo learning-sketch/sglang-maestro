@@ -465,7 +465,7 @@ class StepCostModel:
             out_width = heads * v_dim
         else:
             head_dim = attention.head_dim
-            kv_heads = kv_heads_per_rank(arch, attn_tp)
+            kv_heads = kv_heads_per_rank(arch, attn_tp, dcp)
             qkv_width = (heads + 2 * kv_heads) * head_dim
             ops.append(
                 self._gemm(
@@ -498,11 +498,11 @@ class StepCostModel:
                     kind="rope",
                 )
             )
-            kv_store_bytes_per_token = 2 * kv_heads * head_dim * self._kv_bytes
+            kv_store_bytes_per_token = 2 * kv_heads * head_dim * self._kv_bytes / dcp
             ops.append(
                 self._elementwise(
                     "attn.kv_store",
-                    tokens * 2 * kv_heads * head_dim,
+                    tokens * 2 * kv_heads * head_dim / dcp,
                     ACTIVATION_BYTES + self._kv_bytes,
                     layers,
                     kind="kv_store",
@@ -520,15 +520,26 @@ class StepCostModel:
                 if window:
                     sum_kv = min(sum_kv, shape.num_seqs * float(window))
                     pairs = min(pairs, tokens * float(window))
+                # under DCP each rank attends dcp x the query heads over 1/dcp of the tokens.
                 ops.append(
                     OpCost(
                         name=f"attn.core_{shape.phase}_{label}",
                         kind="attention",
                         flops=2.0 * heads * 2 * head_dim * pairs,
-                        bytes=sum_kv * 2 * kv_heads * head_dim * self._kv_bytes
-                        + tokens * heads * head_dim * ACTIVATION_BYTES * 2,
+                        bytes=sum_kv / dcp * 2 * kv_heads * head_dim * self._kv_bytes
+                        + tokens * heads * dcp * head_dim * ACTIVATION_BYTES * 2,
                         compute_dtype=self._activation_dtype,
                         layers=layer_count,
+                    )
+                )
+            if dcp > 1 and shape.phase == "decode":
+                ops.append(
+                    self._comm(
+                        "attn.dcp_partial_a2a",
+                        tokens * heads * dcp * (head_dim * ACTIVATION_BYTES + 4.0),
+                        "alltoall",
+                        dcp,
+                        layers,
                     )
                 )
             out_width = heads * head_dim

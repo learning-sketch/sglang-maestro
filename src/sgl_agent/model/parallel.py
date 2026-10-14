@@ -21,7 +21,7 @@ class ParallelConfig:
 
     ``tp`` is the TP world (``--tp-size``); attention is laid out as
     ``tp = attn_dp * attn_cp * attn_tp`` (``--attn-dp-size``, ``--attn-cp-size``), DCP stripes
-    MLA KV inside one attention-TP group (``--dcp-size``) and MoE experts are split by ``--ep-size``.
+    KV tokens inside one attention-TP group (``--dcp-size``) and MoE experts are split by ``--ep-size``.
     ``moe_a2a`` is ``--moe-a2a-backend``; ``auto`` means DeepEP whenever ``ep > 1``.
     """
 
@@ -98,11 +98,14 @@ class ParallelConfig:
                 f"tp={self.tp} 必须能被 attn_dp×attn_cp={self.attn_dp * self.attn_cp} 整除"
             )
         if self.dcp > 1:
-            if not attention.is_mla:
-                errors.append("DCP 目前只用于 MLA 注意力（CUDA/ROCm）")
             if self.attn_tp % self.dcp != 0:
                 errors.append(
                     f"DCP 组必须嵌套在 attention-TP 组内：attn_tp={self.attn_tp} 不能被 dcp={self.dcp} 整除"
+                )
+            elif not attention.is_mla and attention.num_kv_heads > self.attn_tp // self.dcp:
+                errors.append(
+                    f"MHA/GQA 的 DCP 要求同一 DCP 组的 rank 持有相同 KV 头：kv_heads={attention.num_kv_heads} "
+                    f"必须 ≤ attn_tp/dcp={self.attn_tp // self.dcp}（否则 KV 会被写坏）"
                 )
         if attention.num_heads % self.attn_tp != 0:
             errors.append(f"注意力头数 {attention.num_heads} 不能被 attn_tp={self.attn_tp} 整除")
@@ -191,8 +194,9 @@ class MemoryPlan:
         return self.max_total_tokens > 0
 
 
-def kv_heads_per_rank(arch: ModelArch, attn_tp: int) -> int:
-    return max(1, arch.attention.num_kv_heads // attn_tp)
+def kv_heads_per_rank(arch: ModelArch, attn_tp: int, dcp: int = 1) -> int:
+    """``ModelConfig.get_num_kv_heads``: DCP ranks share heads, so heads shard over attn_tp/dcp."""
+    return max(1, arch.attention.num_kv_heads // max(attn_tp // dcp, 1))
 
 
 def shared_expert_tp(parallel: ParallelConfig) -> int:
@@ -220,7 +224,13 @@ def kv_bytes_per_token_per_gpu(
         if attention.sparse_indexer and attention.index_head_dim:
             per_layer += attention.index_head_dim * 1.0 + 4.0
         return full_layers * per_layer
-    per_layer = 2 * kv_heads_per_rank(arch, parallel.attn_tp) * attention.head_dim * element
+    per_layer = (
+        2
+        * kv_heads_per_rank(arch, parallel.attn_tp, parallel.dcp)
+        * attention.head_dim
+        * element
+        / parallel.dcp
+    )
     return full_layers * per_layer
 
 
@@ -425,7 +435,7 @@ def enumerate_parallel_configs(
     if allow_ep and arch.moe and num_gpus > 1:
         expert_layouts += [(num_gpus, "none"), (num_gpus, "deepep")]
     for attn_dp in powers if allow_dpa else [1]:
-        for dcp in powers if (allow_dcp and arch.attention.is_mla) else [1]:
+        for dcp in powers if allow_dcp else [1]:
             for ep, a2a in expert_layouts:
                 candidate = ParallelConfig(
                     tp=num_gpus, attn_dp=attn_dp, dcp=dcp, ep=ep, moe_a2a=a2a
