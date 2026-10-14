@@ -457,6 +457,9 @@ def build_snapshot(sglang_root: Path) -> dict[str, Any]:
         "dual_stream_architectures": _architectures_in_files_matching(
             srt / "models", re.compile(r"def forward_normal_dual_stream\(")
         ),
+        "layer_boundary_architectures": _architectures_in_files_matching(
+            srt / "models", re.compile(r"sglang\.srt\.layers\.layer_boundary\b")
+        ),
     }
 
 

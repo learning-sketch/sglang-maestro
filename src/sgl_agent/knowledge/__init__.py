@@ -95,6 +95,15 @@ class SGLangKnowledge:
         """Architectures whose MoE block has a ``forward_normal_dual_stream`` path."""
         return list(self.raw.get("dual_stream_architectures", []))
 
+    @property
+    def layer_boundary_architectures(self) -> list[str]:
+        """Architectures whose residual add + norm go through ``layers/layer_boundary``.
+
+        That path hosts the allreduce + residual + RMSNorm fusion, so the FlashInfer fusion
+        flag only changes kernels for these models.
+        """
+        return list(self.raw.get("layer_boundary_architectures", []))
+
     def validate_flags(self, flag_values: dict[str, Any]) -> list[str]:
         """Return human-readable problems for flags that do not exist, are deprecated or use bad choices."""
         problems: list[str] = []
