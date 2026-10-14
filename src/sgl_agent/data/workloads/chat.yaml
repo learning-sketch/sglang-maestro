@@ -1,0 +1,13 @@
+# Online chat: medium prompts, medium answers, interactive latency targets.
+name: chat
+description: 在线对话：输入 1–4K、输出 128–512，P90 TTFT ≤ 2 s、P90 TPOT ≤ 50 ms
+input_len: 4096
+output_len: 512
+range_ratio: 0.25            # bench_serving: lengths uniform in [int(L*0.25), L]
+request_rate: 8
+num_prompts: 1000
+slo:
+  ttft_ms: 2000
+  tpot_ms: 50
+  percentile: 90
+spec_accept_rate: 0.7        # assumption; measure it from "accept len" in the server log

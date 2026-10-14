@@ -1,0 +1,13 @@
+# Retrieval-augmented generation: long prompts, short answers; prefill dominates.
+name: rag-long-context
+description: 长上下文 RAG：输入 25–32K、输出 64–256，P90 TTFT ≤ 8 s、P90 TPOT ≤ 60 ms
+input_len: 32768
+output_len: 256
+range_ratio: 0.75
+request_rate: 0.5
+num_prompts: 200
+slo:
+  ttft_ms: 8000
+  tpot_ms: 60
+  percentile: 90
+spec_accept_rate: 0.7

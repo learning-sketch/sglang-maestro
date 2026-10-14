@@ -1,0 +1,13 @@
+# Code assistant: medium prompts, long-ish completions, tight per-token latency.
+name: code
+description: 代码助手：输入 2–8K、输出 512–2K，P90 TTFT ≤ 3 s、P90 TPOT ≤ 30 ms
+input_len: 8192
+output_len: 2048
+range_ratio: 0.25
+request_rate: 2
+num_prompts: 500
+slo:
+  ttft_ms: 3000
+  tpot_ms: 30
+  percentile: 90
+spec_accept_rate: 0.75       # code is repetitive: drafts are accepted more often (assumption)

@@ -1,0 +1,18 @@
+# Agents / tool use: many requests share long system prompts (tool schemas), multi-turn.
+name: shared-prefix-agent
+description: Agent/工具调用：32 组共享 8K 系统提示，每组 16 条、3 轮对话，热点组 zipf 分布，P90 TTFT ≤ 1.5 s
+output_len: 256
+request_rate: 4
+shared_prefix:
+  num_groups: 32
+  prompts_per_group: 16
+  system_prompt_len: 8192
+  question_len: 256
+  num_turns: 3
+  distribution: zipf
+  zipf_alpha: 1.1
+slo:
+  ttft_ms: 1500
+  tpot_ms: 50
+  percentile: 90
+spec_accept_rate: 0.7

@@ -1,0 +1,13 @@
+# Reasoning models: short prompts, very long chains of thought; decode dominates.
+name: reasoning
+description: 推理/长思维链：输入 0.5–2K、输出 4–16K，P90 TTFT ≤ 3 s、P90 TPOT ≤ 40 ms
+input_len: 2048
+output_len: 16384
+range_ratio: 0.25
+request_rate: 0.5
+num_prompts: 200
+slo:
+  ttft_ms: 3000
+  tpot_ms: 40
+  percentile: 90
+spec_accept_rate: 0.75
