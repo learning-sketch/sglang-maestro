@@ -689,7 +689,7 @@ def _head_and_template(text: str) -> tuple[str, str | None]:
 
 def short_kernel_name(name: str, max_length: int = 72) -> str:
     """Readable kernel name: no ``void``/parameters, wrapper templates unwrapped, ATen functor kept."""
-    text = name.strip()
+    text = name.strip().replace("(anonymous namespace)::", "")
     if text.startswith("void "):
         text = text[5:]
     head, template = _head_and_template(text)
