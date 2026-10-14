@@ -938,7 +938,7 @@ def _bucket_recommendations(
     ], flags
 
 
-def _comm_floor_us(context: AnalysisContext, group: GroupSummary) -> float | None:
+def comm_floor_us(context: AnalysisContext, group: GroupSummary) -> float | None:
     """Median over the group's steps of the smallest per-rank communication kernel time.
 
     Collectives finish together, so the rank that arrives last spends the least time inside them;
@@ -978,7 +978,7 @@ def detect_bucket_deviation(context: AnalysisContext) -> list[Finding]:
                 continue
             waiting_note = None
             if bucket == "comm":
-                floor = _comm_floor_us(context, group)
+                floor = comm_floor_us(context, group)
                 if floor is not None and floor < actual:
                     waiting_note = (
                         f"本 rank 通信 kernel {actual / 1000:.2f} ms/step，各 rank 同一 step 的最小值 "

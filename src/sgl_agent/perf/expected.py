@@ -130,6 +130,8 @@ class GroupExpectation:
     shape: dict[str, Any]
     buckets_us: dict[str, float]
     timings: list[OpTiming] = field(default_factory=list, repr=False)
+    scale: float = 1.0
+    """Calibration factor already applied to ``buckets_us`` but not to ``timings``."""
 
     @property
     def total_us(self) -> float:
@@ -169,4 +171,5 @@ def expect_shape(model: StepCostModel, shape: BatchShape, shape_source: str) -> 
         },
         buckets_us={bucket: buckets.get(bucket, 0.0) for bucket in BUCKETS},
         timings=estimate.timings,
+        scale=estimate.scale,
     )

@@ -96,6 +96,7 @@ DEFAULT_RULES: tuple[KernelRule, ...] = (
     ),
     _R("comm", r"all_?gather", "allgather"),
     _R("comm", r"reduce_?scatter", "reducescatter"),
+    _R("comm", r"all_?to_?all", "alltoall"),
     _R("hicache", r"hicache|transfer_kernel_impl|transfer_page_head|load_cache_to_device_buffer"),
     # Fused prologue kernels before the generic attention/norm/rope rules.
     _R(

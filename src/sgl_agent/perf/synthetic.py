@@ -2,8 +2,9 @@
 
 They let the trace analyzer run end to end without an accelerator (tests, demos, CI). Kernel names
 are representative of what SGLang launches on Hopper (FA3, DeepGEMM/cuBLAS, Triton fused MoE,
-custom all-reduce, NCCL). Every payload carries ``"synthetic": true`` and reports flag it; these
-traces are not measurements.
+custom all-reduce, NCCL); collectives take the device's ``collective_library`` name instead when it
+is not NCCL/RCCL, and custom all-reduce only appears when the device declares it. Every payload
+carries ``"synthetic": true`` and reports flag it; these traces are not measurements.
 """
 
 from __future__ import annotations
@@ -11,6 +12,7 @@ from __future__ import annotations
 import gzip
 import json
 import random
+import re
 import zlib
 from dataclasses import dataclass, field
 from pathlib import Path
@@ -230,10 +232,15 @@ class _KernelPlanner:
         return _DEEP_GEMM if op.compute_dtype in {"fp8", "int8"} else _CUBLAS_BF16
 
     def _comm_name(self, op: OpCost) -> str:
+        software = self.hardware.software
+        library = software.collective_library.lower()
+        if library not in {"nccl", "rccl"}:
+            prefix = re.sub(r"[^a-z0-9]+", "_", library).strip("_") or "ccl"
+            return f"{prefix}_{op.comm_pattern or 'alltoall'}_kernel"
         if op.comm_pattern == "allreduce":
             return (
                 _CUSTOM_ALLREDUCE
-                if op.comm_bytes <= CUSTOM_ALLREDUCE_MAX_BYTES
+                if software.custom_allreduce and op.comm_bytes <= CUSTOM_ALLREDUCE_MAX_BYTES
                 else _NCCL_ALLREDUCE
             )
         if op.comm_pattern == "allgather":
