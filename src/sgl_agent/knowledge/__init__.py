@@ -104,6 +104,31 @@ class SGLangKnowledge:
         """
         return list(self.raw.get("layer_boundary_architectures", []))
 
+    @property
+    def dwdp_architectures(self) -> list[str]:
+        """Architectures with a ``forward_dwdp`` path (``--dwdp-size``)."""
+        return list(self.raw.get("dwdp_architectures", []))
+
+    @property
+    def fused_op_dispatch(self) -> dict[str, Any]:
+        """``backend_methods``, ``platform_methods`` and ``default_priority`` of ``BaseFusedOp``."""
+        return dict(self.raw.get("fused_op_dispatch", {}))
+
+    @property
+    def fused_op_classes(self) -> dict[str, dict[str, Any]]:
+        return self.raw.get("fused_op_classes", {})
+
+    def fused_op_class(self, qualified_name: str) -> dict[str, Any] | None:
+        return self.fused_op_classes.get(qualified_name)
+
+    def find_fused_op_classes(self, class_name: str) -> list[str]:
+        """Qualified names of fused-op classes whose ``__name__`` is ``class_name``."""
+        return [
+            qualified
+            for qualified in self.fused_op_classes
+            if qualified.rsplit(".", 1)[-1] == class_name
+        ]
+
     def validate_flags(self, flag_values: dict[str, Any]) -> list[str]:
         """Return human-readable problems for flags that do not exist, are deprecated or use bad choices."""
         problems: list[str] = []

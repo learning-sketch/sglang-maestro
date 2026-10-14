@@ -10,6 +10,7 @@ import ast
 import json
 import re
 import subprocess
+import warnings
 from pathlib import Path
 from typing import Any
 
@@ -393,6 +394,354 @@ def _instantiation_pattern(class_names: list[str]) -> re.Pattern[str] | None:
     return re.compile(r"\b(?:" + "|".join(map(re.escape, class_names)) + r")\(")
 
 
+FUSED_OP_BASE = "sglang.kernels.fused_op.BaseFusedOp"
+_FUSED_OP_PACKAGES = ("sglang/srt", "sglang/kernels")
+_MAX_ALIAS_HOPS = 16
+
+
+def _module_qualname(path: Path, python_root: Path) -> str:
+    parts = list(path.relative_to(python_root).with_suffix("").parts)
+    if parts[-1] == "__init__":
+        parts = parts[:-1]
+    return ".".join(parts)
+
+
+def _import_source(module: str, is_package: bool, node: ast.ImportFrom) -> str:
+    if not node.level:
+        return node.module or ""
+    package_parts = module.split(".") if is_package else module.split(".")[:-1]
+    if node.level > 1:
+        package_parts = package_parts[: max(len(package_parts) - (node.level - 1), 0)]
+    return ".".join(package_parts + ([node.module] if node.module else []))
+
+
+def _module_level_statements(statements: list[ast.stmt]) -> list[ast.stmt]:
+    """Top-level statements, including those nested in ``if``/``try``/``with`` blocks."""
+    collected: list[ast.stmt] = []
+    for statement in statements:
+        collected.append(statement)
+        if isinstance(statement, ast.If):
+            collected.extend(_module_level_statements(statement.body + statement.orelse))
+        elif isinstance(statement, ast.Try):
+            handlers = [line for handler in statement.handlers for line in handler.body]
+            collected.extend(
+                _module_level_statements(
+                    statement.body + handlers + statement.orelse + statement.finalbody
+                )
+            )
+        elif isinstance(statement, ast.With):
+            collected.extend(_module_level_statements(statement.body))
+    return collected
+
+
+def _parse_quietly(path: Path) -> ast.Module | None:
+    """Parse a source file, ignoring invalid-escape ``SyntaxWarning``s in third-party code."""
+    try:
+        with warnings.catch_warnings():
+            warnings.simplefilter("ignore", SyntaxWarning)
+            return ast.parse(path.read_text(encoding="utf-8"))
+    except (SyntaxError, UnicodeDecodeError):
+        return None
+
+
+def _is_test_file(relative_parts: tuple[str, ...]) -> bool:
+    return any(part in {"test", "tests"} for part in relative_parts) or relative_parts[
+        -1
+    ].startswith("test_")
+
+
+def _only_raises_not_implemented(function: ast.FunctionDef | ast.AsyncFunctionDef) -> bool:
+    body = function.body
+    if (
+        body
+        and isinstance(body[0], ast.Expr)
+        and isinstance(body[0].value, ast.Constant)
+        and isinstance(body[0].value.value, str)
+    ):
+        body = body[1:]
+    if len(body) != 1 or not isinstance(body[0], ast.Raise) or body[0].exc is None:
+        return False
+    raised = body[0].exc
+    target = raised.func if isinstance(raised, ast.Call) else raised
+    return _dotted_name(target).split(".")[-1] == "NotImplementedError"
+
+
+def _forward_override(function: ast.FunctionDef | ast.AsyncFunctionDef) -> dict[str, Any]:
+    """How an overriding ``forward()`` reaches kernels: via fused-op dispatch or hard-wired."""
+    calls_dispatch = False
+    direct_forwards: set[str] = set()
+    for node in ast.walk(function):
+        if not isinstance(node, ast.Call) or not isinstance(node.func, ast.Attribute):
+            continue
+        receiver, attribute = node.func.value, node.func.attr
+        if attribute == "forward" and (
+            (isinstance(receiver, ast.Call) and _dotted_name(receiver.func) == "super")
+            or (isinstance(receiver, ast.Name) and receiver.id != "self")
+        ):
+            calls_dispatch = True
+        elif (
+            attribute.startswith("forward_")
+            and isinstance(receiver, ast.Name)
+            and receiver.id == "self"
+        ):
+            direct_forwards.add(attribute)
+    return {"calls_dispatch": calls_dispatch, "direct_forwards": sorted(direct_forwards)}
+
+
+def _c3_merge(sequences: list[list[str]]) -> list[str] | None:
+    pending = [list(sequence) for sequence in sequences if sequence]
+    merged: list[str] = []
+    while pending:
+        for sequence in pending:
+            head = sequence[0]
+            if not any(head in other[1:] for other in pending):
+                break
+        else:
+            return None
+        merged.append(head)
+        pending = [
+            sequence[1:] if sequence[0] == head else sequence
+            for sequence in pending
+            if sequence[1:] or sequence[0] != head
+        ]
+    return merged
+
+
+def _linearize(
+    name: str, classes: dict[str, dict[str, Any]], cache: dict[str, list[str]]
+) -> list[str]:
+    """C3 method resolution order over the scanned classes; unknown bases are treated as leaves."""
+    if name in cache:
+        return cache[name]
+    cache[name] = [name]
+    entry = classes.get(name)
+    if entry is None or not entry["bases"]:
+        return cache[name]
+    base_orders = [_linearize(base, classes, cache) for base in entry["bases"]]
+    merged = _c3_merge([*base_orders, list(entry["bases"])])
+    if merged is None:
+        merged = list(dict.fromkeys(item for order in base_orders for item in order))
+    cache[name] = [name, *merged]
+    return cache[name]
+
+
+def extract_fused_op_classes(python_root: Path) -> dict[str, dict[str, Any]]:
+    """Every transitive subclass of ``BaseFusedOp`` with the ``forward_*`` methods it can dispatch to.
+
+    Base names are resolved through each module's imports (and re-exports), so same-named classes
+    in different modules stay distinct. ``mro`` stops before ``BaseFusedOp`` because that is where
+    ``BaseFusedOp._defined_method`` stops looking. ``forwards`` are the class's own methods,
+    ``effective_forwards`` include inherited ones, and ``stub_forwards`` are effective methods whose
+    resolving definition only raises ``NotImplementedError``. ``forward_override`` describes a
+    ``forward()`` that replaces ``BaseFusedOp.forward``: whether it still calls into dispatch
+    (``super().forward`` / ``Base.forward``) and which ``self.forward_*`` it calls directly; paths
+    that do neither bypass OOT overrides. OOT dispatch matches ``register_oot_forward`` entries on
+    the exact class, while ``forward_<key>`` methods are inherited along the MRO.
+    """
+    aliases: dict[str, str] = {}
+    classes: dict[str, dict[str, Any]] = {}
+    for package in _FUSED_OP_PACKAGES:
+        for path in sorted((python_root / package).rglob("*.py")):
+            relative = path.relative_to(python_root)
+            if _is_test_file(relative.parts):
+                continue
+            tree = _parse_quietly(path)
+            if tree is None:
+                continue
+            module = _module_qualname(path, python_root)
+            is_package = path.name == "__init__.py"
+            statements = _module_level_statements(tree.body)
+            local_names: dict[str, str] = {}
+            for statement in statements:
+                if isinstance(statement, ast.ClassDef):
+                    local_names[statement.name] = f"{module}.{statement.name}"
+            for statement in statements:
+                if isinstance(statement, ast.ImportFrom):
+                    source = _import_source(module, is_package, statement)
+                    for alias in statement.names:
+                        if alias.name != "*":
+                            local_names[alias.asname or alias.name] = f"{source}.{alias.name}"
+                elif isinstance(statement, ast.Import):
+                    for alias in statement.names:
+                        if alias.asname:
+                            local_names[alias.asname] = alias.name
+                        else:
+                            head = alias.name.split(".")[0]
+                            local_names.setdefault(head, head)
+                elif (
+                    isinstance(statement, ast.Assign)
+                    and len(statement.targets) == 1
+                    and isinstance(statement.targets[0], ast.Name)
+                    and isinstance(statement.value, ast.Name)
+                ):
+                    target_name = statement.targets[0].id
+                    value_name = statement.value.id
+                    local_names[target_name] = local_names.get(value_name, f"{module}.{value_name}")
+            for name, target in local_names.items():
+                own = f"{module}.{name}"
+                if target != own:
+                    aliases.setdefault(own, target)
+
+            def resolve_base(node: ast.expr, names: dict[str, str] = local_names) -> str | None:
+                dotted = _dotted_name(node)
+                if not dotted:
+                    return None
+                head, _, rest = dotted.partition(".")
+                if head in names:
+                    return names[head] + (f".{rest}" if rest else "")
+                return dotted
+
+            for statement in statements:
+                if not isinstance(statement, ast.ClassDef):
+                    continue
+                forwards: set[str] = set()
+                stubs: set[str] = set()
+                forward_override: dict[str, Any] | None = None
+                for item in statement.body:
+                    if isinstance(item, (ast.FunctionDef, ast.AsyncFunctionDef)):
+                        if item.name == "forward":
+                            forward_override = _forward_override(item)
+                        elif item.name.startswith("forward_"):
+                            forwards.add(item.name)
+                            if _only_raises_not_implemented(item):
+                                stubs.add(item.name)
+                    elif isinstance(item, ast.Assign):
+                        forwards.update(
+                            target.id
+                            for target in item.targets
+                            if isinstance(target, ast.Name) and target.id.startswith("forward_")
+                        )
+                classes[f"{module}.{statement.name}"] = {
+                    "file": (Path("python") / relative).as_posix(),
+                    "line": statement.lineno,
+                    "bases": [base for base in map(resolve_base, statement.bases) if base],
+                    "forwards": forwards,
+                    "stubs": stubs,
+                    "forward_override": forward_override,
+                }
+
+    def canonical(name: str) -> str:
+        for _ in range(_MAX_ALIAS_HOPS):
+            if name in classes or name not in aliases:
+                return name
+            name = aliases[name]
+        return name
+
+    for entry in classes.values():
+        entry["bases"] = [canonical(base) for base in entry["bases"]]
+    fused = {FUSED_OP_BASE}
+    changed = True
+    while changed:
+        changed = False
+        for name, entry in classes.items():
+            if name not in fused and any(base in fused for base in entry["bases"]):
+                fused.add(name)
+                changed = True
+
+    linearization_cache: dict[str, list[str]] = {}
+    result: dict[str, dict[str, Any]] = {}
+    for name in sorted(fused - {FUSED_OP_BASE}):
+        entry = classes.get(name)
+        if entry is None:
+            continue
+        order = _linearize(name, classes, linearization_cache)
+        mro = order[: order.index(FUSED_OP_BASE)] if FUSED_OP_BASE in order else order
+        resolved_is_stub: dict[str, bool] = {}
+        forward_override: dict[str, Any] | None = None
+        for klass in mro:
+            klass_entry = classes.get(klass)
+            if klass_entry is None:
+                continue
+            for method in klass_entry["forwards"]:
+                resolved_is_stub.setdefault(method, method in klass_entry["stubs"])
+            if forward_override is None and klass_entry["forward_override"] is not None:
+                forward_override = {"defined_in": klass, **klass_entry["forward_override"]}
+        result[name] = {
+            "file": entry["file"],
+            "line": entry["line"],
+            "bases": entry["bases"],
+            "mro": mro,
+            "forwards": sorted(entry["forwards"]),
+            "effective_forwards": sorted(resolved_is_stub),
+            "stub_forwards": sorted(method for method, stub in resolved_is_stub.items() if stub),
+            "forward_override": forward_override,
+        }
+    return result
+
+
+def _enum_member_values(path: Path, class_name: str) -> dict[str, str]:
+    tree = _parse_quietly(path)
+    if tree is None:
+        return {}
+    for node in tree.body:
+        if isinstance(node, ast.ClassDef) and node.name == class_name:
+            values: dict[str, str] = {}
+            for statement in node.body:
+                if (
+                    isinstance(statement, ast.Assign)
+                    and len(statement.targets) == 1
+                    and isinstance(statement.targets[0], ast.Name)
+                    and isinstance(statement.value, ast.Constant)
+                    and isinstance(statement.value.value, str)
+                ):
+                    values[statement.targets[0].id] = statement.value.value
+            return values
+    return {}
+
+
+def extract_fused_op_dispatch(kernels_dir: Path) -> dict[str, Any]:
+    """``BACKEND_METHODS``, ``_PLATFORM_METHODS`` and ``DEFAULT_PRIORITY`` from ``fused_op.py``.
+
+    Backends are keyed by their ``KernelBackend`` value, i.e. what ``SGLANG_FORCE_FUSED_OP_BACKEND``
+    accepts.
+    """
+    tree = _parse_quietly(kernels_dir / "fused_op.py")
+    if tree is None:
+        return {}
+    member_values = _enum_member_values(kernels_dir / "spec.py", "KernelBackend")
+
+    def backend_value(node: ast.AST) -> str | None:
+        member = _dotted_name(node).split(".")[-1]
+        return member_values.get(member, member.lower()) if member else None
+
+    dispatch: dict[str, Any] = {}
+    for node in tree.body:
+        if isinstance(node, ast.AnnAssign) and isinstance(node.target, ast.Name):
+            name, value = node.target.id, node.value
+        elif (
+            isinstance(node, ast.Assign)
+            and len(node.targets) == 1
+            and isinstance(node.targets[0], ast.Name)
+        ):
+            name, value = node.targets[0].id, node.value
+        else:
+            continue
+        if name == "BACKEND_METHODS" and isinstance(value, ast.Dict):
+            dispatch["backend_methods"] = {
+                backend: method
+                for backend, method in (
+                    (backend_value(key), _literal(item))
+                    for key, item in zip(value.keys, value.values, strict=True)
+                    if key is not None
+                )
+                if backend and isinstance(method, str)
+            }
+        elif name == "_PLATFORM_METHODS" and isinstance(value, ast.Dict):
+            dispatch["platform_methods"] = {
+                key: list(methods)
+                for key, methods in (
+                    (_literal(key), _literal(item))
+                    for key, item in zip(value.keys, value.values, strict=True)
+                )
+                if isinstance(key, str) and isinstance(methods, (list, tuple))
+            }
+        elif name == "DEFAULT_PRIORITY" and isinstance(value, ast.Tuple):
+            dispatch["default_priority"] = [
+                backend for backend in map(backend_value, value.elts) if backend
+            ]
+    return dispatch
+
+
 def _git_commit(repo_root: Path) -> tuple[str | None, str | None]:
     try:
         output = subprocess.run(
@@ -460,6 +809,13 @@ def build_snapshot(sglang_root: Path) -> dict[str, Any]:
         "layer_boundary_architectures": _architectures_in_files_matching(
             srt / "models", re.compile(r"sglang\.srt\.layers\.layer_boundary\b")
         ),
+        "dwdp_architectures": _architectures_in_files_matching(
+            srt / "models", re.compile(r"def forward_dwdp\(")
+        ),
+        "fused_op_dispatch": extract_fused_op_dispatch(
+            sglang_root / "python" / "sglang" / "kernels"
+        ),
+        "fused_op_classes": extract_fused_op_classes(sglang_root / "python"),
     }
 
 

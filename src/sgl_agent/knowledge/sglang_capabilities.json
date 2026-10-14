@@ -10665,5 +10665,1455 @@
   "Step3p5MTP",
   "XllmForCausalLM",
   "ZayaForCausalLM"
- ]
+ ],
+ "dwdp_architectures": [
+  "GptOssForCausalLM"
+ ],
+ "fused_op_dispatch": {
+  "backend_methods": {
+   "torch": "forward_native",
+   "torch_compile": "forward_torch_compile",
+   "triton": "forward_triton",
+   "jit": "forward_jit",
+   "aot": "forward_aot",
+   "cute_dsl": "forward_cute_dsl",
+   "flydsl": "forward_flydsl",
+   "KDA": "forward_kda",
+   "flashinfer": "forward_flashinfer",
+   "deepgemm": "forward_deepgemm",
+   "aiter": "forward_aiter",
+   "torch_npu": "forward_torch_npu"
+  },
+  "default_priority": [
+   "KDA",
+   "aot",
+   "jit",
+   "flashinfer",
+   "deepgemm",
+   "cute_dsl",
+   "aiter",
+   "torch_npu",
+   "triton",
+   "torch"
+  ],
+  "platform_methods": {
+   "cuda": [
+    "forward_cuda"
+   ],
+   "hip": [
+    "forward_hip",
+    "forward_cuda"
+   ],
+   "musa": [
+    "forward_musa"
+   ],
+   "npu": [
+    "forward_npu"
+   ],
+   "xpu": [
+    "forward_xpu"
+   ],
+   "cpu": [
+    "forward_cpu"
+   ]
+  }
+ },
+ "fused_op_classes": {
+  "sglang.kernels.ops.activation.GeluAndMulOp": {
+   "file": "python/sglang/kernels/ops/activation/__init__.py",
+   "line": 149,
+   "bases": [
+    "sglang.kernels.ops.activation._GatedActivationOp"
+   ],
+   "mro": [
+    "sglang.kernels.ops.activation.GeluAndMulOp",
+    "sglang.kernels.ops.activation._GatedActivationOp"
+   ],
+   "forwards": [],
+   "effective_forwards": [
+    "forward_aot",
+    "forward_jit",
+    "forward_native"
+   ],
+   "stub_forwards": [],
+   "forward_override": null
+  },
+  "sglang.kernels.ops.activation.GeluTanhAndMulOp": {
+   "file": "python/sglang/kernels/ops/activation/__init__.py",
+   "line": 166,
+   "bases": [
+    "sglang.kernels.ops.activation._GatedActivationOp"
+   ],
+   "mro": [
+    "sglang.kernels.ops.activation.GeluTanhAndMulOp",
+    "sglang.kernels.ops.activation._GatedActivationOp"
+   ],
+   "forwards": [],
+   "effective_forwards": [
+    "forward_aot",
+    "forward_jit",
+    "forward_native"
+   ],
+   "stub_forwards": [],
+   "forward_override": null
+  },
+  "sglang.kernels.ops.activation.QuickGELUOp": {
+   "file": "python/sglang/kernels/ops/activation/__init__.py",
+   "line": 226,
+   "bases": [
+    "sglang.kernels.fused_op.BaseFusedOp"
+   ],
+   "mro": [
+    "sglang.kernels.ops.activation.QuickGELUOp"
+   ],
+   "forwards": [
+    "forward_aot",
+    "forward_native"
+   ],
+   "effective_forwards": [
+    "forward_aot",
+    "forward_native"
+   ],
+   "stub_forwards": [],
+   "forward_override": null
+  },
+  "sglang.kernels.ops.activation.ReLU2Op": {
+   "file": "python/sglang/kernels/ops/activation/__init__.py",
+   "line": 183,
+   "bases": [
+    "sglang.kernels.fused_op.BaseFusedOp"
+   ],
+   "mro": [
+    "sglang.kernels.ops.activation.ReLU2Op"
+   ],
+   "forwards": [
+    "forward_jit",
+    "forward_native"
+   ],
+   "effective_forwards": [
+    "forward_jit",
+    "forward_native"
+   ],
+   "stub_forwards": [],
+   "forward_override": null
+  },
+  "sglang.kernels.ops.activation.SiluAndMulOp": {
+   "file": "python/sglang/kernels/ops/activation/__init__.py",
+   "line": 92,
+   "bases": [
+    "sglang.kernels.ops.activation._GatedActivationOp"
+   ],
+   "mro": [
+    "sglang.kernels.ops.activation.SiluAndMulOp",
+    "sglang.kernels.ops.activation._GatedActivationOp"
+   ],
+   "forwards": [
+    "forward_aiter"
+   ],
+   "effective_forwards": [
+    "forward_aiter",
+    "forward_aot",
+    "forward_jit",
+    "forward_native"
+   ],
+   "stub_forwards": [],
+   "forward_override": null
+  },
+  "sglang.kernels.ops.activation._GatedActivationOp": {
+   "file": "python/sglang/kernels/ops/activation/__init__.py",
+   "line": 42,
+   "bases": [
+    "sglang.kernels.fused_op.BaseFusedOp"
+   ],
+   "mro": [
+    "sglang.kernels.ops.activation._GatedActivationOp"
+   ],
+   "forwards": [
+    "forward_aot",
+    "forward_jit",
+    "forward_native"
+   ],
+   "effective_forwards": [
+    "forward_aot",
+    "forward_jit",
+    "forward_native"
+   ],
+   "stub_forwards": [],
+   "forward_override": null
+  },
+  "sglang.kernels.ops.attention.clamp_position.ClampPositionOp": {
+   "file": "python/sglang/kernels/ops/attention/clamp_position.py",
+   "line": 44,
+   "bases": [
+    "sglang.kernels.fused_op.BaseFusedOp"
+   ],
+   "mro": [
+    "sglang.kernels.ops.attention.clamp_position.ClampPositionOp"
+   ],
+   "forwards": [
+    "forward_jit",
+    "forward_native"
+   ],
+   "effective_forwards": [
+    "forward_jit",
+    "forward_native"
+   ],
+   "stub_forwards": [],
+   "forward_override": null
+  },
+  "sglang.kernels.ops.gemm.Fp8ScaledMMOp": {
+   "file": "python/sglang/kernels/ops/gemm/__init__.py",
+   "line": 78,
+   "bases": [
+    "sglang.kernels.fused_op.BaseFusedOp"
+   ],
+   "mro": [
+    "sglang.kernels.ops.gemm.Fp8ScaledMMOp"
+   ],
+   "forwards": [
+    "forward_aot",
+    "forward_native"
+   ],
+   "effective_forwards": [
+    "forward_aot",
+    "forward_native"
+   ],
+   "stub_forwards": [],
+   "forward_override": null
+  },
+  "sglang.kernels.ops.layernorm.FusedAddRMSNormOp": {
+   "file": "python/sglang/kernels/ops/layernorm/__init__.py",
+   "line": 158,
+   "bases": [
+    "sglang.kernels.fused_op.BaseFusedOp"
+   ],
+   "mro": [
+    "sglang.kernels.ops.layernorm.FusedAddRMSNormOp"
+   ],
+   "forwards": [
+    "forward_aiter",
+    "forward_aot",
+    "forward_jit",
+    "forward_native",
+    "forward_torch_npu"
+   ],
+   "effective_forwards": [
+    "forward_aiter",
+    "forward_aot",
+    "forward_jit",
+    "forward_native",
+    "forward_torch_npu"
+   ],
+   "stub_forwards": [],
+   "forward_override": null
+  },
+  "sglang.kernels.ops.layernorm.GemmaFusedAddRMSNormOp": {
+   "file": "python/sglang/kernels/ops/layernorm/__init__.py",
+   "line": 364,
+   "bases": [
+    "sglang.kernels.fused_op.BaseFusedOp"
+   ],
+   "mro": [
+    "sglang.kernels.ops.layernorm.GemmaFusedAddRMSNormOp"
+   ],
+   "forwards": [
+    "forward_aot",
+    "forward_jit",
+    "forward_native"
+   ],
+   "effective_forwards": [
+    "forward_aot",
+    "forward_jit",
+    "forward_native"
+   ],
+   "stub_forwards": [],
+   "forward_override": null
+  },
+  "sglang.kernels.ops.layernorm.GemmaRMSNormOp": {
+   "file": "python/sglang/kernels/ops/layernorm/__init__.py",
+   "line": 272,
+   "bases": [
+    "sglang.kernels.fused_op.BaseFusedOp"
+   ],
+   "mro": [
+    "sglang.kernels.ops.layernorm.GemmaRMSNormOp"
+   ],
+   "forwards": [
+    "forward_aot",
+    "forward_jit",
+    "forward_native",
+    "forward_torch_npu"
+   ],
+   "effective_forwards": [
+    "forward_aot",
+    "forward_jit",
+    "forward_native",
+    "forward_torch_npu"
+   ],
+   "stub_forwards": [],
+   "forward_override": null
+  },
+  "sglang.kernels.ops.layernorm.RMSNormOp": {
+   "file": "python/sglang/kernels/ops/layernorm/__init__.py",
+   "line": 49,
+   "bases": [
+    "sglang.kernels.fused_op.BaseFusedOp"
+   ],
+   "mro": [
+    "sglang.kernels.ops.layernorm.RMSNormOp"
+   ],
+   "forwards": [
+    "forward_aiter",
+    "forward_aot",
+    "forward_jit",
+    "forward_native",
+    "forward_torch_npu"
+   ],
+   "effective_forwards": [
+    "forward_aiter",
+    "forward_aot",
+    "forward_jit",
+    "forward_native",
+    "forward_torch_npu"
+   ],
+   "stub_forwards": [],
+   "forward_override": null
+  },
+  "sglang.srt.hardware_backend.npu.quantization.online_moe_methods.NPUMXFP8OnlineMoEMethod": {
+   "file": "python/sglang/srt/hardware_backend/npu/quantization/online_moe_methods.py",
+   "line": 27,
+   "bases": [
+    "sglang.srt.layers.quantization.unquant.UnquantizedFusedMoEMethod"
+   ],
+   "mro": [
+    "sglang.srt.hardware_backend.npu.quantization.online_moe_methods.NPUMXFP8OnlineMoEMethod",
+    "sglang.srt.layers.quantization.unquant.UnquantizedFusedMoEMethod",
+    "sglang.srt.layers.quantization.base_config.FusedMoEMethodBase",
+    "sglang.srt.layers.quantization.base_config.QuantizeMethodBase"
+   ],
+   "forwards": [],
+   "effective_forwards": [
+    "forward_cpu",
+    "forward_cuda",
+    "forward_musa",
+    "forward_native",
+    "forward_npu",
+    "forward_tpu",
+    "forward_xpu"
+   ],
+   "stub_forwards": [
+    "forward_tpu"
+   ],
+   "forward_override": null
+  },
+  "sglang.srt.layers.activation.GeluAndMul": {
+   "file": "python/sglang/srt/layers/activation.py",
+   "line": 223,
+   "bases": [
+    "sglang.kernels.fused_op.BaseFusedOp"
+   ],
+   "mro": [
+    "sglang.srt.layers.activation.GeluAndMul"
+   ],
+   "forwards": [
+    "forward_cpu",
+    "forward_cuda",
+    "forward_native",
+    "forward_npu",
+    "forward_xpu"
+   ],
+   "effective_forwards": [
+    "forward_cpu",
+    "forward_cuda",
+    "forward_native",
+    "forward_npu",
+    "forward_xpu"
+   ],
+   "stub_forwards": [],
+   "forward_override": null
+  },
+  "sglang.srt.layers.activation.NewGELU": {
+   "file": "python/sglang/srt/layers/activation.py",
+   "line": 270,
+   "bases": [
+    "sglang.kernels.fused_op.BaseFusedOp"
+   ],
+   "mro": [
+    "sglang.srt.layers.activation.NewGELU"
+   ],
+   "forwards": [
+    "forward_cuda",
+    "forward_native"
+   ],
+   "effective_forwards": [
+    "forward_cuda",
+    "forward_native"
+   ],
+   "stub_forwards": [],
+   "forward_override": null
+  },
+  "sglang.srt.layers.activation.QuickGELU": {
+   "file": "python/sglang/srt/layers/activation.py",
+   "line": 294,
+   "bases": [
+    "sglang.kernels.fused_op.BaseFusedOp"
+   ],
+   "mro": [
+    "sglang.srt.layers.activation.QuickGELU"
+   ],
+   "forwards": [
+    "forward_cuda",
+    "forward_hip",
+    "forward_native",
+    "forward_npu"
+   ],
+   "effective_forwards": [
+    "forward_cuda",
+    "forward_hip",
+    "forward_native",
+    "forward_npu"
+   ],
+   "stub_forwards": [],
+   "forward_override": null
+  },
+  "sglang.srt.layers.activation.ReLU2": {
+   "file": "python/sglang/srt/layers/activation.py",
+   "line": 280,
+   "bases": [
+    "sglang.kernels.fused_op.BaseFusedOp"
+   ],
+   "mro": [
+    "sglang.srt.layers.activation.ReLU2"
+   ],
+   "forwards": [
+    "forward_cuda",
+    "forward_native"
+   ],
+   "effective_forwards": [
+    "forward_cuda",
+    "forward_native"
+   ],
+   "stub_forwards": [],
+   "forward_override": null
+  },
+  "sglang.srt.layers.activation.SiluAndMul": {
+   "file": "python/sglang/srt/layers/activation.py",
+   "line": 130,
+   "bases": [
+    "sglang.kernels.fused_op.BaseFusedOp"
+   ],
+   "mro": [
+    "sglang.srt.layers.activation.SiluAndMul"
+   ],
+   "forwards": [
+    "forward_aiter",
+    "forward_cpu",
+    "forward_cuda",
+    "forward_musa",
+    "forward_native",
+    "forward_npu",
+    "forward_xpu"
+   ],
+   "effective_forwards": [
+    "forward_aiter",
+    "forward_cpu",
+    "forward_cuda",
+    "forward_musa",
+    "forward_native",
+    "forward_npu",
+    "forward_xpu"
+   ],
+   "stub_forwards": [],
+   "forward_override": null
+  },
+  "sglang.srt.layers.activation.SituAndMul": {
+   "file": "python/sglang/srt/layers/activation.py",
+   "line": 187,
+   "bases": [
+    "sglang.kernels.fused_op.BaseFusedOp"
+   ],
+   "mro": [
+    "sglang.srt.layers.activation.SituAndMul"
+   ],
+   "forwards": [
+    "forward_cpu",
+    "forward_cuda",
+    "forward_native",
+    "forward_npu"
+   ],
+   "effective_forwards": [
+    "forward_cpu",
+    "forward_cuda",
+    "forward_native",
+    "forward_npu"
+   ],
+   "stub_forwards": [],
+   "forward_override": null
+  },
+  "sglang.srt.layers.activation.XIELU": {
+   "file": "python/sglang/srt/layers/activation.py",
+   "line": 310,
+   "bases": [
+    "sglang.kernels.fused_op.BaseFusedOp"
+   ],
+   "mro": [
+    "sglang.srt.layers.activation.XIELU"
+   ],
+   "forwards": [
+    "forward_native"
+   ],
+   "effective_forwards": [
+    "forward_native"
+   ],
+   "stub_forwards": [],
+   "forward_override": {
+    "defined_in": "sglang.srt.layers.activation.XIELU",
+    "calls_dispatch": false,
+    "direct_forwards": []
+   }
+  },
+  "sglang.srt.layers.attention.dsa.dsa_indexer.Indexer": {
+   "file": "python/sglang/srt/layers/attention/dsa/dsa_indexer.py",
+   "line": 256,
+   "bases": [
+    "sglang.srt.layers.attention.dsa.dsa_npu_indexer.DSANPUIndexerMixin",
+    "sglang.kernels.fused_op.BaseFusedOp"
+   ],
+   "mro": [
+    "sglang.srt.layers.attention.dsa.dsa_indexer.Indexer",
+    "sglang.srt.layers.attention.dsa.dsa_npu_indexer.DSANPUIndexerMixin"
+   ],
+   "forwards": [
+    "forward_cuda",
+    "forward_native",
+    "forward_xpu"
+   ],
+   "effective_forwards": [
+    "forward_cuda",
+    "forward_native",
+    "forward_npu",
+    "forward_xpu"
+   ],
+   "stub_forwards": [
+    "forward_native"
+   ],
+   "forward_override": null
+  },
+  "sglang.srt.layers.attention.dsa.dsa_indexer_kpool.IndexerKPool": {
+   "file": "python/sglang/srt/layers/attention/dsa/dsa_indexer_kpool.py",
+   "line": 128,
+   "bases": [
+    "sglang.srt.layers.utils.multi_platform.MultiPlatformOp"
+   ],
+   "mro": [
+    "sglang.srt.layers.attention.dsa.dsa_indexer_kpool.IndexerKPool",
+    "sglang.srt.layers.utils.multi_platform.MultiPlatformOp"
+   ],
+   "forwards": [
+    "forward_cuda"
+   ],
+   "effective_forwards": [
+    "forward_cpu",
+    "forward_cuda",
+    "forward_hip",
+    "forward_hpu",
+    "forward_musa",
+    "forward_native",
+    "forward_npu",
+    "forward_xpu"
+   ],
+   "stub_forwards": [
+    "forward_native"
+   ],
+   "forward_override": null
+  },
+  "sglang.srt.layers.attention.dsv4.compress_hip.CompressorHip": {
+   "file": "python/sglang/srt/layers/attention/dsv4/compress_hip.py",
+   "line": 48,
+   "bases": [
+    "sglang.srt.layers.attention.dsv4.compressor.Compressor"
+   ],
+   "mro": [
+    "sglang.srt.layers.attention.dsv4.compress_hip.CompressorHip",
+    "sglang.srt.layers.attention.dsv4.compressor.Compressor"
+   ],
+   "forwards": [],
+   "effective_forwards": [
+    "forward_native",
+    "forward_npu"
+   ],
+   "stub_forwards": [],
+   "forward_override": {
+    "defined_in": "sglang.srt.layers.attention.dsv4.compress_hip.CompressorHip",
+    "calls_dispatch": false,
+    "direct_forwards": []
+   }
+  },
+  "sglang.srt.layers.attention.dsv4.compressor.Compressor": {
+   "file": "python/sglang/srt/layers/attention/dsv4/compressor.py",
+   "line": 334,
+   "bases": [
+    "sglang.kernels.fused_op.BaseFusedOp"
+   ],
+   "mro": [
+    "sglang.srt.layers.attention.dsv4.compressor.Compressor"
+   ],
+   "forwards": [
+    "forward_native",
+    "forward_npu"
+   ],
+   "effective_forwards": [
+    "forward_native",
+    "forward_npu"
+   ],
+   "stub_forwards": [],
+   "forward_override": null
+  },
+  "sglang.srt.layers.attention.mamba.mixer2_rms_norm_gated.Mixer2RMSNormGated": {
+   "file": "python/sglang/srt/layers/attention/mamba/mixer2_rms_norm_gated.py",
+   "line": 20,
+   "bases": [
+    "sglang.kernels.fused_op.BaseFusedOp"
+   ],
+   "mro": [
+    "sglang.srt.layers.attention.mamba.mixer2_rms_norm_gated.Mixer2RMSNormGated"
+   ],
+   "forwards": [
+    "forward_cuda",
+    "forward_native"
+   ],
+   "effective_forwards": [
+    "forward_cuda",
+    "forward_native"
+   ],
+   "stub_forwards": [],
+   "forward_override": null
+  },
+  "sglang.srt.layers.attention.qsa.qsa_indexer.QSAIndexer": {
+   "file": "python/sglang/srt/layers/attention/qsa/qsa_indexer.py",
+   "line": 48,
+   "bases": [
+    "sglang.srt.layers.utils.multi_platform.MultiPlatformOp"
+   ],
+   "mro": [
+    "sglang.srt.layers.attention.qsa.qsa_indexer.QSAIndexer",
+    "sglang.srt.layers.utils.multi_platform.MultiPlatformOp"
+   ],
+   "forwards": [
+    "forward_cuda",
+    "forward_cuda_cp",
+    "forward_xpu"
+   ],
+   "effective_forwards": [
+    "forward_cpu",
+    "forward_cuda",
+    "forward_cuda_cp",
+    "forward_hip",
+    "forward_hpu",
+    "forward_musa",
+    "forward_native",
+    "forward_npu",
+    "forward_xpu"
+   ],
+   "stub_forwards": [
+    "forward_native"
+   ],
+   "forward_override": null
+  },
+  "sglang.srt.layers.conv.Conv2dLayer": {
+   "file": "python/sglang/srt/layers/conv.py",
+   "line": 101,
+   "bases": [
+    "sglang.kernels.fused_op.BaseFusedOp"
+   ],
+   "mro": [
+    "sglang.srt.layers.conv.Conv2dLayer"
+   ],
+   "forwards": [
+    "forward_cuda",
+    "forward_native"
+   ],
+   "effective_forwards": [
+    "forward_cuda",
+    "forward_native"
+   ],
+   "stub_forwards": [],
+   "forward_override": null
+  },
+  "sglang.srt.layers.conv.Conv3dLayer": {
+   "file": "python/sglang/srt/layers/conv.py",
+   "line": 207,
+   "bases": [
+    "sglang.kernels.fused_op.BaseFusedOp"
+   ],
+   "mro": [
+    "sglang.srt.layers.conv.Conv3dLayer"
+   ],
+   "forwards": [
+    "forward_cpu",
+    "forward_cuda",
+    "forward_native"
+   ],
+   "effective_forwards": [
+    "forward_cpu",
+    "forward_cuda",
+    "forward_native"
+   ],
+   "stub_forwards": [],
+   "forward_override": null
+  },
+  "sglang.srt.layers.layernorm.Gemma3RMSNorm": {
+   "file": "python/sglang/srt/layers/layernorm.py",
+   "line": 1309,
+   "bases": [
+    "sglang.kernels.fused_op.BaseFusedOp"
+   ],
+   "mro": [
+    "sglang.srt.layers.layernorm.Gemma3RMSNorm"
+   ],
+   "forwards": [
+    "forward_cpu",
+    "forward_cuda",
+    "forward_hip",
+    "forward_musa",
+    "forward_native",
+    "forward_npu",
+    "forward_xpu"
+   ],
+   "effective_forwards": [
+    "forward_cpu",
+    "forward_cuda",
+    "forward_hip",
+    "forward_musa",
+    "forward_native",
+    "forward_npu",
+    "forward_xpu"
+   ],
+   "stub_forwards": [],
+   "forward_override": null
+  },
+  "sglang.srt.layers.layernorm.Gemma4RMSNorm": {
+   "file": "python/sglang/srt/layers/layernorm.py",
+   "line": 1380,
+   "bases": [
+    "sglang.kernels.fused_op.BaseFusedOp"
+   ],
+   "mro": [
+    "sglang.srt.layers.layernorm.Gemma4RMSNorm"
+   ],
+   "forwards": [
+    "forward_cpu",
+    "forward_cuda",
+    "forward_hip",
+    "forward_musa",
+    "forward_native",
+    "forward_xpu"
+   ],
+   "effective_forwards": [
+    "forward_cpu",
+    "forward_cuda",
+    "forward_hip",
+    "forward_musa",
+    "forward_native",
+    "forward_xpu"
+   ],
+   "stub_forwards": [],
+   "forward_override": null
+  },
+  "sglang.srt.layers.layernorm.GemmaRMSNorm": {
+   "file": "python/sglang/srt/layers/layernorm.py",
+   "line": 1096,
+   "bases": [
+    "sglang.kernels.fused_op.BaseFusedOp"
+   ],
+   "mro": [
+    "sglang.srt.layers.layernorm.GemmaRMSNorm"
+   ],
+   "forwards": [
+    "forward_cpu",
+    "forward_cuda",
+    "forward_hip",
+    "forward_musa",
+    "forward_native",
+    "forward_npu",
+    "forward_with_allreduce_fusion",
+    "forward_with_allreduce_fusion_quant_per_group",
+    "forward_xpu"
+   ],
+   "effective_forwards": [
+    "forward_cpu",
+    "forward_cuda",
+    "forward_hip",
+    "forward_musa",
+    "forward_native",
+    "forward_npu",
+    "forward_with_allreduce_fusion",
+    "forward_with_allreduce_fusion_quant_per_group",
+    "forward_xpu"
+   ],
+   "stub_forwards": [],
+   "forward_override": null
+  },
+  "sglang.srt.layers.layernorm.LayerNorm": {
+   "file": "python/sglang/srt/layers/layernorm.py",
+   "line": 1012,
+   "bases": [
+    "sglang.kernels.fused_op.BaseFusedOp"
+   ],
+   "mro": [
+    "sglang.srt.layers.layernorm.LayerNorm"
+   ],
+   "forwards": [
+    "forward_cpu",
+    "forward_cuda",
+    "forward_hip",
+    "forward_native",
+    "forward_npu"
+   ],
+   "effective_forwards": [
+    "forward_cpu",
+    "forward_cuda",
+    "forward_hip",
+    "forward_native",
+    "forward_npu"
+   ],
+   "stub_forwards": [],
+   "forward_override": null
+  },
+  "sglang.srt.layers.layernorm.RMSNorm": {
+   "file": "python/sglang/srt/layers/layernorm.py",
+   "line": 451,
+   "bases": [
+    "sglang.kernels.fused_op.BaseFusedOp"
+   ],
+   "mro": [
+    "sglang.srt.layers.layernorm.RMSNorm"
+   ],
+   "forwards": [
+    "forward_aiter",
+    "forward_cpu",
+    "forward_cuda",
+    "forward_hip",
+    "forward_musa",
+    "forward_native",
+    "forward_npu",
+    "forward_with_allreduce_fusion",
+    "forward_with_allreduce_fusion_quant_per_group",
+    "forward_with_per_tensor_quant_fusion",
+    "forward_xpu"
+   ],
+   "effective_forwards": [
+    "forward_aiter",
+    "forward_cpu",
+    "forward_cuda",
+    "forward_hip",
+    "forward_musa",
+    "forward_native",
+    "forward_npu",
+    "forward_with_allreduce_fusion",
+    "forward_with_allreduce_fusion_quant_per_group",
+    "forward_with_per_tensor_quant_fusion",
+    "forward_xpu"
+   ],
+   "stub_forwards": [],
+   "forward_override": null
+  },
+  "sglang.srt.layers.layernorm.RMSNormWithoutScale": {
+   "file": "python/sglang/srt/layers/layernorm.py",
+   "line": 1466,
+   "bases": [
+    "sglang.kernels.fused_op.BaseFusedOp"
+   ],
+   "mro": [
+    "sglang.srt.layers.layernorm.RMSNormWithoutScale"
+   ],
+   "forwards": [
+    "forward_cuda",
+    "forward_native"
+   ],
+   "effective_forwards": [
+    "forward_cuda",
+    "forward_native"
+   ],
+   "stub_forwards": [],
+   "forward_override": null
+  },
+  "sglang.srt.layers.moe.topk.TopK": {
+   "file": "python/sglang/srt/layers/moe/topk.py",
+   "line": 580,
+   "bases": [
+    "sglang.kernels.fused_op.BaseFusedOp"
+   ],
+   "mro": [
+    "sglang.srt.layers.moe.topk.TopK"
+   ],
+   "forwards": [
+    "forward_cpu",
+    "forward_cuda",
+    "forward_musa",
+    "forward_native",
+    "forward_npu",
+    "forward_xpu"
+   ],
+   "effective_forwards": [
+    "forward_cpu",
+    "forward_cuda",
+    "forward_musa",
+    "forward_native",
+    "forward_npu",
+    "forward_xpu"
+   ],
+   "stub_forwards": [],
+   "forward_override": null
+  },
+  "sglang.srt.layers.quantization.unquant.UnquantizedFusedMoEMethod": {
+   "file": "python/sglang/srt/layers/quantization/unquant.py",
+   "line": 664,
+   "bases": [
+    "sglang.srt.layers.quantization.base_config.FusedMoEMethodBase",
+    "sglang.kernels.fused_op.BaseFusedOp"
+   ],
+   "mro": [
+    "sglang.srt.layers.quantization.unquant.UnquantizedFusedMoEMethod",
+    "sglang.srt.layers.quantization.base_config.FusedMoEMethodBase",
+    "sglang.srt.layers.quantization.base_config.QuantizeMethodBase"
+   ],
+   "forwards": [
+    "forward_cpu",
+    "forward_cuda",
+    "forward_musa",
+    "forward_native",
+    "forward_npu",
+    "forward_tpu",
+    "forward_xpu"
+   ],
+   "effective_forwards": [
+    "forward_cpu",
+    "forward_cuda",
+    "forward_musa",
+    "forward_native",
+    "forward_npu",
+    "forward_tpu",
+    "forward_xpu"
+   ],
+   "stub_forwards": [
+    "forward_tpu"
+   ],
+   "forward_override": null
+  },
+  "sglang.srt.layers.rotary_embedding.bailing_mrope.BailingMRotaryEmbedding": {
+   "file": "python/sglang/srt/layers/rotary_embedding/bailing_mrope.py",
+   "line": 18,
+   "bases": [
+    "sglang.srt.layers.rotary_embedding.base.RotaryEmbedding"
+   ],
+   "mro": [
+    "sglang.srt.layers.rotary_embedding.bailing_mrope.BailingMRotaryEmbedding",
+    "sglang.srt.layers.rotary_embedding.base.RotaryEmbedding"
+   ],
+   "forwards": [],
+   "effective_forwards": [
+    "forward_cpu",
+    "forward_cuda",
+    "forward_native",
+    "forward_npu",
+    "forward_xpu"
+   ],
+   "stub_forwards": [],
+   "forward_override": {
+    "defined_in": "sglang.srt.layers.rotary_embedding.bailing_mrope.BailingMRotaryEmbedding",
+    "calls_dispatch": true,
+    "direct_forwards": []
+   }
+  },
+  "sglang.srt.layers.rotary_embedding.base.LinearScalingRotaryEmbedding": {
+   "file": "python/sglang/srt/layers/rotary_embedding/base.py",
+   "line": 531,
+   "bases": [
+    "sglang.srt.layers.rotary_embedding.base.RotaryEmbedding"
+   ],
+   "mro": [
+    "sglang.srt.layers.rotary_embedding.base.LinearScalingRotaryEmbedding",
+    "sglang.srt.layers.rotary_embedding.base.RotaryEmbedding"
+   ],
+   "forwards": [],
+   "effective_forwards": [
+    "forward_cpu",
+    "forward_cuda",
+    "forward_native",
+    "forward_npu",
+    "forward_xpu"
+   ],
+   "stub_forwards": [],
+   "forward_override": null
+  },
+  "sglang.srt.layers.rotary_embedding.base.RotaryEmbedding": {
+   "file": "python/sglang/srt/layers/rotary_embedding/base.py",
+   "line": 86,
+   "bases": [
+    "sglang.kernels.fused_op.BaseFusedOp"
+   ],
+   "mro": [
+    "sglang.srt.layers.rotary_embedding.base.RotaryEmbedding"
+   ],
+   "forwards": [
+    "forward_cpu",
+    "forward_cuda",
+    "forward_native",
+    "forward_npu",
+    "forward_xpu"
+   ],
+   "effective_forwards": [
+    "forward_cpu",
+    "forward_cuda",
+    "forward_native",
+    "forward_npu",
+    "forward_xpu"
+   ],
+   "stub_forwards": [],
+   "forward_override": null
+  },
+  "sglang.srt.layers.rotary_embedding.mrope.Ernie4_5_VLRotaryEmbedding": {
+   "file": "python/sglang/srt/layers/rotary_embedding/mrope.py",
+   "line": 521,
+   "bases": [
+    "sglang.srt.layers.rotary_embedding.mrope.MRotaryEmbedding"
+   ],
+   "mro": [
+    "sglang.srt.layers.rotary_embedding.mrope.Ernie4_5_VLRotaryEmbedding",
+    "sglang.srt.layers.rotary_embedding.mrope.MRotaryEmbedding",
+    "sglang.srt.layers.rotary_embedding.base.RotaryEmbedding"
+   ],
+   "forwards": [
+    "forward_cuda",
+    "forward_native",
+    "forward_xpu"
+   ],
+   "effective_forwards": [
+    "forward_cpu",
+    "forward_cuda",
+    "forward_native",
+    "forward_npu",
+    "forward_triton",
+    "forward_xpu"
+   ],
+   "stub_forwards": [],
+   "forward_override": {
+    "defined_in": "sglang.srt.layers.rotary_embedding.mrope.Ernie4_5_VLRotaryEmbedding",
+    "calls_dispatch": false,
+    "direct_forwards": [
+     "forward_cuda",
+     "forward_xpu"
+    ]
+   }
+  },
+  "sglang.srt.layers.rotary_embedding.mrope.MRotaryEmbedding": {
+   "file": "python/sglang/srt/layers/rotary_embedding/mrope.py",
+   "line": 60,
+   "bases": [
+    "sglang.srt.layers.rotary_embedding.base.RotaryEmbedding"
+   ],
+   "mro": [
+    "sglang.srt.layers.rotary_embedding.mrope.MRotaryEmbedding",
+    "sglang.srt.layers.rotary_embedding.base.RotaryEmbedding"
+   ],
+   "forwards": [
+    "forward_cpu",
+    "forward_cuda",
+    "forward_native",
+    "forward_npu",
+    "forward_triton",
+    "forward_xpu"
+   ],
+   "effective_forwards": [
+    "forward_cpu",
+    "forward_cuda",
+    "forward_native",
+    "forward_npu",
+    "forward_triton",
+    "forward_xpu"
+   ],
+   "stub_forwards": [],
+   "forward_override": null
+  },
+  "sglang.srt.layers.rotary_embedding.mrope.YaRNScalingMRotaryEmbedding": {
+   "file": "python/sglang/srt/layers/rotary_embedding/mrope.py",
+   "line": 438,
+   "bases": [
+    "sglang.srt.layers.rotary_embedding.mrope.MRotaryEmbedding"
+   ],
+   "mro": [
+    "sglang.srt.layers.rotary_embedding.mrope.YaRNScalingMRotaryEmbedding",
+    "sglang.srt.layers.rotary_embedding.mrope.MRotaryEmbedding",
+    "sglang.srt.layers.rotary_embedding.base.RotaryEmbedding"
+   ],
+   "forwards": [],
+   "effective_forwards": [
+    "forward_cpu",
+    "forward_cuda",
+    "forward_native",
+    "forward_npu",
+    "forward_triton",
+    "forward_xpu"
+   ],
+   "stub_forwards": [],
+   "forward_override": null
+  },
+  "sglang.srt.layers.rotary_embedding.rope_variant.DeepseekScalingRotaryEmbedding": {
+   "file": "python/sglang/srt/layers/rotary_embedding/rope_variant.py",
+   "line": 335,
+   "bases": [
+    "sglang.srt.layers.rotary_embedding.base.RotaryEmbedding"
+   ],
+   "mro": [
+    "sglang.srt.layers.rotary_embedding.rope_variant.DeepseekScalingRotaryEmbedding",
+    "sglang.srt.layers.rotary_embedding.base.RotaryEmbedding"
+   ],
+   "forwards": [
+    "forward_cpu",
+    "forward_native",
+    "forward_npu"
+   ],
+   "effective_forwards": [
+    "forward_cpu",
+    "forward_cuda",
+    "forward_native",
+    "forward_npu",
+    "forward_xpu"
+   ],
+   "stub_forwards": [],
+   "forward_override": null
+  },
+  "sglang.srt.layers.rotary_embedding.rope_variant.DualChunkRotaryEmbedding": {
+   "file": "python/sglang/srt/layers/rotary_embedding/rope_variant.py",
+   "line": 696,
+   "bases": [
+    "sglang.kernels.fused_op.BaseFusedOp"
+   ],
+   "mro": [
+    "sglang.srt.layers.rotary_embedding.rope_variant.DualChunkRotaryEmbedding"
+   ],
+   "forwards": [
+    "forward_native"
+   ],
+   "effective_forwards": [
+    "forward_native"
+   ],
+   "stub_forwards": [
+    "forward_native"
+   ],
+   "forward_override": {
+    "defined_in": "sglang.srt.layers.rotary_embedding.rope_variant.DualChunkRotaryEmbedding",
+    "calls_dispatch": false,
+    "direct_forwards": []
+   }
+  },
+  "sglang.srt.layers.rotary_embedding.rope_variant.DynamicNTKAlphaRotaryEmbedding": {
+   "file": "python/sglang/srt/layers/rotary_embedding/rope_variant.py",
+   "line": 661,
+   "bases": [
+    "sglang.srt.layers.rotary_embedding.base.RotaryEmbedding"
+   ],
+   "mro": [
+    "sglang.srt.layers.rotary_embedding.rope_variant.DynamicNTKAlphaRotaryEmbedding",
+    "sglang.srt.layers.rotary_embedding.base.RotaryEmbedding"
+   ],
+   "forwards": [],
+   "effective_forwards": [
+    "forward_cpu",
+    "forward_cuda",
+    "forward_native",
+    "forward_npu",
+    "forward_xpu"
+   ],
+   "stub_forwards": [],
+   "forward_override": null
+  },
+  "sglang.srt.layers.rotary_embedding.rope_variant.DynamicNTKScalingRotaryEmbedding": {
+   "file": "python/sglang/srt/layers/rotary_embedding/rope_variant.py",
+   "line": 859,
+   "bases": [
+    "sglang.srt.layers.rotary_embedding.base.RotaryEmbedding"
+   ],
+   "mro": [
+    "sglang.srt.layers.rotary_embedding.rope_variant.DynamicNTKScalingRotaryEmbedding",
+    "sglang.srt.layers.rotary_embedding.base.RotaryEmbedding"
+   ],
+   "forwards": [],
+   "effective_forwards": [
+    "forward_cpu",
+    "forward_cuda",
+    "forward_native",
+    "forward_npu",
+    "forward_xpu"
+   ],
+   "stub_forwards": [],
+   "forward_override": null
+  },
+  "sglang.srt.layers.rotary_embedding.rope_variant.Gemma4RotaryEmbedding": {
+   "file": "python/sglang/srt/layers/rotary_embedding/rope_variant.py",
+   "line": 895,
+   "bases": [
+    "sglang.srt.layers.rotary_embedding.base.RotaryEmbedding"
+   ],
+   "mro": [
+    "sglang.srt.layers.rotary_embedding.rope_variant.Gemma4RotaryEmbedding",
+    "sglang.srt.layers.rotary_embedding.base.RotaryEmbedding"
+   ],
+   "forwards": [],
+   "effective_forwards": [
+    "forward_cpu",
+    "forward_cuda",
+    "forward_native",
+    "forward_npu",
+    "forward_xpu"
+   ],
+   "stub_forwards": [],
+   "forward_override": null
+  },
+  "sglang.srt.layers.rotary_embedding.rope_variant.Llama3RotaryEmbedding": {
+   "file": "python/sglang/srt/layers/rotary_embedding/rope_variant.py",
+   "line": 557,
+   "bases": [
+    "sglang.srt.layers.rotary_embedding.base.RotaryEmbedding"
+   ],
+   "mro": [
+    "sglang.srt.layers.rotary_embedding.rope_variant.Llama3RotaryEmbedding",
+    "sglang.srt.layers.rotary_embedding.base.RotaryEmbedding"
+   ],
+   "forwards": [],
+   "effective_forwards": [
+    "forward_cpu",
+    "forward_cuda",
+    "forward_native",
+    "forward_npu",
+    "forward_xpu"
+   ],
+   "stub_forwards": [],
+   "forward_override": null
+  },
+  "sglang.srt.layers.rotary_embedding.rope_variant.Llama4VisionRotaryEmbedding": {
+   "file": "python/sglang/srt/layers/rotary_embedding/rope_variant.py",
+   "line": 602,
+   "bases": [
+    "sglang.srt.layers.rotary_embedding.base.RotaryEmbedding"
+   ],
+   "mro": [
+    "sglang.srt.layers.rotary_embedding.rope_variant.Llama4VisionRotaryEmbedding",
+    "sglang.srt.layers.rotary_embedding.base.RotaryEmbedding"
+   ],
+   "forwards": [],
+   "effective_forwards": [
+    "forward_cpu",
+    "forward_cuda",
+    "forward_native",
+    "forward_npu",
+    "forward_xpu"
+   ],
+   "stub_forwards": [],
+   "forward_override": {
+    "defined_in": "sglang.srt.layers.rotary_embedding.rope_variant.Llama4VisionRotaryEmbedding",
+    "calls_dispatch": false,
+    "direct_forwards": []
+   }
+  },
+  "sglang.srt.layers.rotary_embedding.yarn.YaRNScalingRotaryEmbedding": {
+   "file": "python/sglang/srt/layers/rotary_embedding/yarn.py",
+   "line": 91,
+   "bases": [
+    "sglang.srt.layers.rotary_embedding.base.RotaryEmbedding"
+   ],
+   "mro": [
+    "sglang.srt.layers.rotary_embedding.yarn.YaRNScalingRotaryEmbedding",
+    "sglang.srt.layers.rotary_embedding.base.RotaryEmbedding"
+   ],
+   "forwards": [],
+   "effective_forwards": [
+    "forward_cpu",
+    "forward_cuda",
+    "forward_native",
+    "forward_npu",
+    "forward_xpu"
+   ],
+   "stub_forwards": [],
+   "forward_override": null
+  },
+  "sglang.srt.layers.utils.multi_platform.MultiPlatformOp": {
+   "file": "python/sglang/srt/layers/utils/multi_platform.py",
+   "line": 21,
+   "bases": [
+    "sglang.kernels.fused_op.BaseFusedOp"
+   ],
+   "mro": [
+    "sglang.srt.layers.utils.multi_platform.MultiPlatformOp"
+   ],
+   "forwards": [
+    "forward_cpu",
+    "forward_cuda",
+    "forward_hip",
+    "forward_hpu",
+    "forward_musa",
+    "forward_native",
+    "forward_npu",
+    "forward_xpu"
+   ],
+   "effective_forwards": [
+    "forward_cpu",
+    "forward_cuda",
+    "forward_hip",
+    "forward_hpu",
+    "forward_musa",
+    "forward_native",
+    "forward_npu",
+    "forward_xpu"
+   ],
+   "stub_forwards": [
+    "forward_cuda",
+    "forward_native"
+   ],
+   "forward_override": null
+  },
+  "sglang.srt.models.gemma3n_causal.Gemma3nRMSNorm": {
+   "file": "python/sglang/srt/models/gemma3n_causal.py",
+   "line": 38,
+   "bases": [
+    "sglang.srt.layers.layernorm.RMSNorm"
+   ],
+   "mro": [
+    "sglang.srt.models.gemma3n_causal.Gemma3nRMSNorm",
+    "sglang.srt.layers.layernorm.RMSNorm"
+   ],
+   "forwards": [],
+   "effective_forwards": [
+    "forward_aiter",
+    "forward_cpu",
+    "forward_cuda",
+    "forward_hip",
+    "forward_musa",
+    "forward_native",
+    "forward_npu",
+    "forward_with_allreduce_fusion",
+    "forward_with_allreduce_fusion_quant_per_group",
+    "forward_with_per_tensor_quant_fusion",
+    "forward_xpu"
+   ],
+   "stub_forwards": [],
+   "forward_override": {
+    "defined_in": "sglang.srt.models.gemma3n_causal.Gemma3nRMSNorm",
+    "calls_dispatch": true,
+    "direct_forwards": []
+   }
+  },
+  "sglang.srt.models.glm4v.Glm4vRMSNorm": {
+   "file": "python/sglang/srt/models/glm4v.py",
+   "line": 70,
+   "bases": [
+    "sglang.srt.layers.layernorm.RMSNorm"
+   ],
+   "mro": [
+    "sglang.srt.models.glm4v.Glm4vRMSNorm",
+    "sglang.srt.layers.layernorm.RMSNorm"
+   ],
+   "forwards": [],
+   "effective_forwards": [
+    "forward_aiter",
+    "forward_cpu",
+    "forward_cuda",
+    "forward_hip",
+    "forward_musa",
+    "forward_native",
+    "forward_npu",
+    "forward_with_allreduce_fusion",
+    "forward_with_allreduce_fusion_quant_per_group",
+    "forward_with_per_tensor_quant_fusion",
+    "forward_xpu"
+   ],
+   "stub_forwards": [],
+   "forward_override": {
+    "defined_in": "sglang.srt.models.glm4v.Glm4vRMSNorm",
+    "calls_dispatch": true,
+    "direct_forwards": []
+   }
+  },
+  "sglang.srt.models.glm_ocr.GlmOcrRMSNorm": {
+   "file": "python/sglang/srt/models/glm_ocr.py",
+   "line": 65,
+   "bases": [
+    "sglang.srt.models.glm4v.Glm4vRMSNorm"
+   ],
+   "mro": [
+    "sglang.srt.models.glm_ocr.GlmOcrRMSNorm",
+    "sglang.srt.models.glm4v.Glm4vRMSNorm",
+    "sglang.srt.layers.layernorm.RMSNorm"
+   ],
+   "forwards": [],
+   "effective_forwards": [
+    "forward_aiter",
+    "forward_cpu",
+    "forward_cuda",
+    "forward_hip",
+    "forward_musa",
+    "forward_native",
+    "forward_npu",
+    "forward_with_allreduce_fusion",
+    "forward_with_allreduce_fusion_quant_per_group",
+    "forward_with_per_tensor_quant_fusion",
+    "forward_xpu"
+   ],
+   "stub_forwards": [],
+   "forward_override": {
+    "defined_in": "sglang.srt.models.glm4v.Glm4vRMSNorm",
+    "calls_dispatch": true,
+    "direct_forwards": []
+   }
+  },
+  "sglang.srt.models.grok.ScalingRotaryEmbedding": {
+   "file": "python/sglang/srt/models/grok.py",
+   "line": 220,
+   "bases": [
+    "sglang.srt.layers.rotary_embedding.base.RotaryEmbedding"
+   ],
+   "mro": [
+    "sglang.srt.models.grok.ScalingRotaryEmbedding",
+    "sglang.srt.layers.rotary_embedding.base.RotaryEmbedding"
+   ],
+   "forwards": [],
+   "effective_forwards": [
+    "forward_cpu",
+    "forward_cuda",
+    "forward_native",
+    "forward_npu",
+    "forward_xpu"
+   ],
+   "stub_forwards": [],
+   "forward_override": null
+  },
+  "sglang.srt.models.inkling_common.dense_mlp._InklingUnquantizedFusedMoEMethod": {
+   "file": "python/sglang/srt/models/inkling_common/dense_mlp.py",
+   "line": 27,
+   "bases": [
+    "sglang.srt.layers.quantization.unquant.UnquantizedFusedMoEMethod"
+   ],
+   "mro": [
+    "sglang.srt.models.inkling_common.dense_mlp._InklingUnquantizedFusedMoEMethod",
+    "sglang.srt.layers.quantization.unquant.UnquantizedFusedMoEMethod",
+    "sglang.srt.layers.quantization.base_config.FusedMoEMethodBase",
+    "sglang.srt.layers.quantization.base_config.QuantizeMethodBase"
+   ],
+   "forwards": [],
+   "effective_forwards": [
+    "forward_cpu",
+    "forward_cuda",
+    "forward_musa",
+    "forward_native",
+    "forward_npu",
+    "forward_tpu",
+    "forward_xpu"
+   ],
+   "stub_forwards": [
+    "forward_tpu"
+   ],
+   "forward_override": null
+  }
+ }
 }
