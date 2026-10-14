@@ -338,6 +338,61 @@ def _frozenset_strings(path: Path, variable: str) -> list[str]:
     return []
 
 
+_MODELS_PACKAGE = "sglang.srt.models"
+
+
+def _imported_modules(module: ast.Module) -> set[str]:
+    imported: set[str] = set()
+    for node in ast.walk(module):
+        if isinstance(node, ast.ImportFrom) and node.module:
+            if node.level == 1:
+                imported.add(f"{_MODELS_PACKAGE}.{node.module}")
+            elif node.level == 0:
+                imported.add(node.module)
+    return imported
+
+
+def _architectures_in_files_matching(models_dir: Path, pattern: re.Pattern[str]) -> list[str]:
+    """``EntryClass`` names of model files whose source matches ``pattern``.
+
+    Top-level model files also count when they import a helper module under a model subpackage
+    (e.g. ``models/dots3_common/modeling.py``) that matches.
+    """
+    matching_helpers = {
+        f"{_MODELS_PACKAGE}." + ".".join(path.relative_to(models_dir).with_suffix("").parts)
+        for path in models_dir.rglob("*.py")
+        if path.parent != models_dir and pattern.search(path.read_text(encoding="utf-8"))
+    }
+    found: set[str] = set()
+    for path in sorted(models_dir.glob("*.py")):
+        text = path.read_text(encoding="utf-8")
+        direct = pattern.search(text) is not None
+        if not direct and not matching_helpers:
+            continue
+        try:
+            module = ast.parse(text)
+        except SyntaxError:
+            continue
+        if direct or _imported_modules(module) & matching_helpers:
+            found.update(_entry_class_names(module))
+    return sorted(found)
+
+
+def extract_tbo_layer_classes(strategy_path: Path) -> list[str]:
+    """Decoder-layer class names ``OperationsStrategy.init_new_tbo`` has a strategy for."""
+    if not strategy_path.exists():
+        return []
+    text = strategy_path.read_text(encoding="utf-8")
+    return sorted(set(re.findall(r'layer_name == "(\w+)"', text)))
+
+
+def _instantiation_pattern(class_names: list[str]) -> re.Pattern[str] | None:
+    """Matches ``Name(`` calls; subclass declarations (``class X(Name)``) do not match."""
+    if not class_names:
+        return None
+    return re.compile(r"\b(?:" + "|".join(map(re.escape, class_names)) + r")\(")
+
+
 def _git_commit(repo_root: Path) -> tuple[str | None, str | None]:
     try:
         output = subprocess.run(
@@ -369,6 +424,8 @@ def build_snapshot(sglang_root: Path) -> dict[str, Any]:
         for path in platforms_dir.glob("*.py")
         if path.stem not in {"__init__", "interface", "device_mixin"}
     )
+    tbo_layer_classes = extract_tbo_layer_classes(srt / "batch_overlap" / "operations_strategy.py")
+    tbo_pattern = _instantiation_pattern(tbo_layer_classes)
     return {
         "schema_version": SNAPSHOT_SCHEMA_VERSION,
         "sglang_commit": commit,
@@ -382,6 +439,23 @@ def build_snapshot(sglang_root: Path) -> dict[str, Any]:
         ),
         "moe_triton_tuned_configs": extract_moe_tuned_configs(
             srt / "layers" / "moe" / "moe_runner" / "triton_utils" / "configs"
+        ),
+        "allreduce_fusion_auto_architectures": _frozenset_strings(
+            srt / "arg_groups" / "overrides.py", "_FLASHINFER_ALLREDUCE_FUSION_ARCHS"
+        ),
+        "fused_qk_norm_rope_architectures": _architectures_in_files_matching(
+            srt / "models", re.compile(r"enable_fused_qk_norm_rope")
+        ),
+        "fused_rope_kv_store_architectures": _architectures_in_files_matching(
+            srt / "models",
+            re.compile(r"create_fused_set_kv_buffer_arg|enable_fused_set_kv_buffer\("),
+        ),
+        "tbo_layer_classes": tbo_layer_classes,
+        "tbo_architectures": _architectures_in_files_matching(srt / "models", tbo_pattern)
+        if tbo_pattern
+        else [],
+        "dual_stream_architectures": _architectures_in_files_matching(
+            srt / "models", re.compile(r"def forward_normal_dual_stream\(")
         ),
     }
 

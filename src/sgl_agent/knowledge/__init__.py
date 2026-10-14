@@ -70,6 +70,31 @@ class SGLangKnowledge:
     def layernorm_sp_architectures(self) -> list[str]:
         return list(self.raw.get("layernorm_sp_supported_architectures", []))
 
+    @property
+    def allreduce_fusion_auto_architectures(self) -> list[str]:
+        """Architectures for which SGLang auto-enables FlashInfer allreduce+RMSNorm fusion."""
+        return list(self.raw.get("allreduce_fusion_auto_architectures", []))
+
+    @property
+    def fused_qk_norm_rope_architectures(self) -> list[str]:
+        """Architectures whose model file honours ``--enable-fused-qk-norm-rope``."""
+        return list(self.raw.get("fused_qk_norm_rope_architectures", []))
+
+    @property
+    def fused_rope_kv_store_architectures(self) -> list[str]:
+        """Architectures that write K/V inside the RoPE kernel (``fused_set_kv_buffer_arg``)."""
+        return list(self.raw.get("fused_rope_kv_store_architectures", []))
+
+    @property
+    def tbo_architectures(self) -> list[str]:
+        """Architectures built from a decoder layer that two-batch overlap has a strategy for."""
+        return list(self.raw.get("tbo_architectures", []))
+
+    @property
+    def dual_stream_architectures(self) -> list[str]:
+        """Architectures whose MoE block has a ``forward_normal_dual_stream`` path."""
+        return list(self.raw.get("dual_stream_architectures", []))
+
     def validate_flags(self, flag_values: dict[str, Any]) -> list[str]:
         """Return human-readable problems for flags that do not exist, are deprecated or use bad choices."""
         problems: list[str] = []

@@ -10495,5 +10495,79 @@
    "per_channel_quant": false,
    "down": true
   }
+ ],
+ "allreduce_fusion_auto_architectures": [
+  "DeepseekV32ForCausalLM",
+  "DeepseekV3ForCausalLM",
+  "DeepseekV4ForCausalLM",
+  "Glm4MoeForCausalLM",
+  "Glm4MoeLiteForCausalLM",
+  "GlmMoeDsaForCausalLM",
+  "GptOssForCausalLM",
+  "InternS2PreviewForConditionalGeneration",
+  "KimiK25ForConditionalGeneration",
+  "MistralLarge3ForCausalLM",
+  "NemotronHForCausalLM",
+  "NemotronHPuzzleForCausalLM",
+  "NemotronH_Omni_Reasoning_V3",
+  "Qwen3MoeForCausalLM",
+  "Qwen3NextForCausalLM",
+  "Qwen3VLMoeForConditionalGeneration",
+  "Qwen3_5ForConditionalGeneration",
+  "Qwen3_5MoeForConditionalGeneration",
+  "Qwen4ExpForConditionalGeneration"
+ ],
+ "fused_qk_norm_rope_architectures": [
+  "MellumForCausalLM",
+  "Qwen3MoeForCausalLM"
+ ],
+ "fused_rope_kv_store_architectures": [
+  "BailingMoEForCausalLM",
+  "BailingMoeForCausalLM",
+  "BailingMoeV2ForCausalLM",
+  "Gemma4ForCausalLM",
+  "GptOssForCausalLM",
+  "LLaDA2MoeModelLM",
+  "MellumForCausalLM",
+  "Qwen3MoeForCausalLM",
+  "SDARForCausalLM",
+  "SDARMoeForCausalLM"
+ ],
+ "tbo_layer_classes": [
+  "DeepseekV2DecoderLayer",
+  "DeepseekV4DecoderLayer",
+  "MiMoV2DecoderLayer",
+  "Qwen3MoeDecoderLayer"
+ ],
+ "tbo_architectures": [
+  "DeepseekV2ForCausalLM",
+  "DeepseekV32ForCausalLM",
+  "DeepseekV3ForCausalLM",
+  "DeepseekV3ForCausalLMNextN",
+  "DeepseekV4ForCausalLM",
+  "DeepseekV4ForCausalLMNextN",
+  "MiMoV2FlashForCausalLM",
+  "MiMoV2ForCausalLM",
+  "Qwen3MoeForCausalLM"
+ ],
+ "dual_stream_architectures": [
+  "BailingMoEForCausalLM",
+  "BailingMoeForCausalLM",
+  "BailingMoeV2ForCausalLM",
+  "BailingMoeV3ForCausalLM",
+  "DeepseekV2ForCausalLM",
+  "DeepseekV32ForCausalLM",
+  "DeepseekV3ForCausalLM",
+  "Dots3NoteForCausalLM",
+  "ExaoneMoEForCausalLM",
+  "ExaoneMoeForCausalLM",
+  "Glm4MoeForCausalLM",
+  "Glm4MoeLiteForCausalLM",
+  "GlmMoeDsaForCausalLM",
+  "GlmMoeDsaForCausalLMNextN",
+  "LLaDA2MoeModelLM",
+  "Qwen2MoeForCausalLM",
+  "SarvamMLAForCausalLM",
+  "SarvamMoEForCausalLM"
  ]
 }
