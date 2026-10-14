@@ -190,8 +190,10 @@ tokens per request (new requests in full, running ones scaled by the new-token r
 INIT_NEW_TOKEN_RATIO = 0.7
 MIN_NEW_TOKEN_RATIO_FACTOR = 0.14
 NEW_TOKEN_RATIO_DECAY_STEPS = 600
-"""``NewTokenRatioTracker``: starts at 0.7 x schedule_conservativeness, decays linearly to
-init x 0.14 over 600 decode steps, and resets after a retraction."""
+RETRACT_DECODE_STEPS = 20
+"""``NewTokenRatioTracker``: starts at 0.7 x schedule_conservativeness and decays linearly to
+init x 0.14 over 600 decode steps. A retraction sets it to ``min(1, (decoded + 20 x running) /
+(sum of max_new_tokens + 1))`` over the requests left running; an idle scheduler resets it."""
 
 HICACHE_DEFAULT_RATIO = 2.0
 HICACHE_BUFFER_ONLY_RATIO = 1.2
@@ -218,6 +220,48 @@ less than this share of tokens is split inside a sequence (two-chunk overlap); 0
 
 DISAGGREGATION_BOOTSTRAP_PORT = 8998
 """``--disaggregation-bootstrap-port`` default; the router's ``--prefill URL PORT`` must match."""
+PD_RESERVED_DECODE_TOKENS = 512
+"""``--num-reserved-decode-tokens``: a PD decode server admits a transferred request only while
+``free KV - 512 x active requests`` still holds its prompt plus 512 tokens."""
+PD_DECODE_EXTRA_SLOTS_MAX_BATCH = 32
+"""Unset ``--disaggregation-decode-extra-slots``: a decode worker whose ``--max-running-requests``
+share is at most 32 gets twice that many extra request slots for in-transfer KV, otherwise none;
+the running batch itself never exceeds ``max_running_requests``."""
+PD_TRANSFER_BACKENDS = ("mooncake", "nixl", "ascend", "mori", "mooncake_tcp")
+"""Real ``--disaggregation-transfer-backend`` choices (``fake`` moves no KV); ``mooncake`` is the
+default and ``mooncake_tcp`` forces the TCP transport (``MC_FORCE_TCP=1``, no RDMA)."""
+PD_DECODE_DCP_TRANSFER_BACKENDS = ("mooncake", "nixl", "mori", "ascend")
+"""Transfer backends that relayout KV for a DCP decode server (``fake`` aside)."""
+
+DEFAULT_MAX_PREFILL_TOKENS = 16384
+"""``--max-prefill-tokens``: extend tokens one prefill batch may carry (the chunk size caps it)."""
+MIXED_CHUNK_SPECULATIVE_ALGORITHMS = ("EAGLE", "EAGLE3", "DFLASH", "DSPARK")
+"""``--enable-mixed-chunk`` (needs chunked prefill) runs the decode batch inside each prefill
+batch: chunk and input budgets shrink by the running batch size and every running request
+advances one token per mixed step. These speculative algorithms keep it (running requests fall
+back to a plain one-token decode in a mixed step); others turn it off."""
+MAX_REQ_INPUT_MARGIN = 5
+"""``max_req_len = min(context_len - 1, KV tokens - 1)``; prompts of ``max_req_len - 5`` tokens or
+more are aborted and ``max_new_tokens`` is clamped to ``max_req_len - input - 1``."""
+MAX_RUNNING_REQUESTS_FLOOR = 2048
+MAX_RUNNING_REQUESTS_CEIL = 4096
+"""Unset ``--max-running-requests``: per DP worker ``min(clamp(KV tokens / context_len x 512,
+2048, 4096), KV tokens // 2)``; set: ``min(value // attn_dp, KV tokens // 2)``."""
+
+ZMQ_TCP_PORT_DELTA = 233
+DP_ATTENTION_HANDSHAKE_PORT_DELTA = 13
+"""Ports an attention-DP server binds besides ``--port``: the worker-port handshake at ``--port + 13``
+and, on one node without ``--dist-init-addr``, dist init at ``--port + 233`` plus six ZMQ ports
+up to ``--port + 239`` (with ``--dist-init-addr`` they follow its port: ``+1 .. +6`` and ``+13``).
+Instances sharing a machine need ``--port`` and ``--dist-init-addr`` values whose ranges stay apart."""
+ROUTER_DEFAULT_PORT = 30000
+ROUTER_DEFAULT_POLICY = "cache_aware"
+ROUTER_CACHE_THRESHOLD = 0.3
+ROUTER_BALANCE_ABS_THRESHOLD = 64
+ROUTER_BALANCE_REL_THRESHOLD = 1.5
+"""``cache_aware`` routes to the worker with the longest prefix match when the match ratio exceeds
+0.3, else to the least loaded one; it balances by load once ``max - min > 64`` and
+``max > 1.5 x min``."""
 
 PLATFORM_PLUGIN_GROUP = "sglang.srt.platforms"
 GENERAL_PLUGIN_GROUP = "sglang.srt.plugins"
@@ -1040,6 +1084,70 @@ SOURCES: dict[str, str] = {
     "dflash_rules": (
         "python/sglang/srt/arg_groups/speculative_hook.py::_handle_dflash (draft model required, "
         "no attention DP except NPU, pp_size 1, steps/topk forced to 1)"
+    ),
+    "scheduler_prefill_first": (
+        "python/sglang/srt/managers/scheduler.py::get_next_batch_to_run (a prefill batch runs "
+        "first whenever one can be built; decode otherwise)"
+    ),
+    "mixed_chunk": (
+        "python/sglang/srt/managers/scheduler.py::get_new_batch_prefill (mixed-style chunked "
+        "prefill, PrefillAdder gets running_bs), schedule_policy.py::PrefillAdder.__init__ "
+        "(budgets minus num_mixed_decode_tokens), speculative/spec_info.py::supports_mixed_chunk"
+    ),
+    "chunked_prefill_single": (
+        "python/sglang/srt/managers/schedule_policy.py::PrefillAdder._select_prefill_admission "
+        "(only one unfinished chunked request; the request over the chunk budget is truncated)"
+    ),
+    "max_num_reqs_default": (
+        "python/sglang/srt/mem_cache/kv_cache_configurator.py::resolve_max_num_reqs"
+    ),
+    "max_req_len": (
+        "python/sglang/srt/managers/tp_worker.py::get_worker_info (max_req_len, max_req_input_len "
+        "= max_req_len - 5), scheduler.py (max_new_tokens clamped to max_req_len - input - 1), "
+        "tokenizer_manager.py (input + max_new_tokens > context_len is rejected)"
+    ),
+    "pd_kv_layout_match": (
+        "python/sglang/srt/disaggregation/common/conn.py (prefill and decode must use the same "
+        "--page-size and --kv-cache-dtype; decode DCP needs an MLA KV pool and prefill CP 1)"
+    ),
+    "pd_decode_prealloc": (
+        "python/sglang/srt/disaggregation/decode.py::DecodePreallocQueue (reserves "
+        "num_reserved_decode_tokens per active request; the first token comes from prefill)"
+    ),
+    "pd_decode_slots": (
+        "python/sglang/srt/arg_groups/pd_disaggregation_hook.py::handle_pd_disaggregation "
+        "(extra decode request slots), python/sglang/srt/disaggregation/decode.py"
+        "::_get_new_prebuilt_batch (running batch capped at max_running_requests)"
+    ),
+    "pd_decode_retraction": (
+        "python/sglang/srt/mem_cache/kv_cache_builder.py (decode retraction keeps a host_pool or "
+        "cpu_tensor KV backup and resumes), python/sglang/srt/managers/scheduler.py"
+        "::_add_request_to_queue (colocated retractions rejoin the back of the waiting queue)"
+    ),
+    "pd_transfer_backend": (
+        "python/sglang/srt/arg_groups/pd_disaggregation_hook.py::handle_pd_disaggregation "
+        "(mooncake_tcp -> mooncake + MC_FORCE_TCP; decode DCP transfer backends)"
+    ),
+    "pd_speculative_both_roles": (
+        "python/sglang/srt/disaggregation/prefill.py (EAGLE prefill sends draft hidden states and "
+        "top-k), test/registered/disaggregation/test_disaggregation_dsv4.py (same EAGLE flags on "
+        "both roles)"
+    ),
+    "pd_router_bootstrap": (
+        "sgl-model-gateway/bindings/python/src/sglang_router/router_args.py (--prefill URL "
+        "[BOOTSTRAP_PORT], omitted means none: decode falls back to its own bootstrap port)"
+    ),
+    "router_cache_aware": "sgl-model-gateway/src/policies/cache_aware.rs::select_worker",
+    "multi_instance_ports": (
+        "python/sglang/srt/server_args.py::PortArgs.init_new (attention DP: ZMQ ports from "
+        "--port + 233; nccl_port random), python/sglang/srt/managers/data_parallel_controller.py"
+        "::_broadcast_worker_ports (handshake at port + 13), "
+        "python/sglang/srt/arg_groups/fields/device.py (--base-gpu-id for several instances on "
+        "one machine)"
+    ),
+    "dp_size_vs_attn_dp": (
+        "python/sglang/srt/arg_groups/parallel_hook.py::handle_data_parallelism (--dp-size > 1 "
+        "with --attn-dp-size > 1 raises)"
     ),
 }
 
