@@ -82,6 +82,20 @@ SOURCES: dict[str, str] = {
         "python/sglang/srt/model_executor/step_span_utils.py::build_detailed_annotation_suffix"
     ),
     "profile_request": "python/sglang/srt/managers/io_struct.py::ProfileReq",
+    "profiler_output": (
+        "python/sglang/srt/managers/scheduler_components/profiler_manager.py "
+        "(SGLANG_TORCH_PROFILER_DIR, {profile_id}-TP-{rank}[-DP-..][-PP-..][-EP-..].trace.json.gz)"
+    ),
+    "oot_profiler_activity": (
+        "python/sglang/srt/managers/scheduler_components/profiler_manager.py (out-of-tree platforms: "
+        "current_platform.get_torch_profiler_activity_str(); the DeviceMixin default raises "
+        "NotImplementedError)"
+    ),
+    "npu_profiler_export": (
+        "python/sglang/srt/managers/scheduler_components/profiler_manager.py (NPU: "
+        "ProfilerActivity.CUDA patched to torch_npu NPU; tensorboard_trace_handler instead of "
+        "export_chrome_trace)"
+    ),
     "server_log": "python/sglang/srt/managers/scheduler_components/metrics_reporter.py",
     "cuda_graph_defaults": "python/sglang/srt/model_executor/cuda_graph_config.py::CudaGraphConfig",
     "decode_graph_fallback": (
@@ -216,6 +230,15 @@ SOURCES: dict[str, str] = {
         "([Planned], not called)"
     ),
     "l2_prefetch_helper": "python/sglang/kernels/aot/csrc/elementwise/utils.cuh::prefetch_L2",
+    "moe_config_dir": (
+        "python/sglang/srt/layers/moe/moe_runner/triton_utils/fused_moe_triton_config.py"
+        "::get_moe_configs (SGLANG_MOE_CONFIG_DIR, configs/triton_<version>/)"
+    ),
+    "kv_pool_stats": (
+        "python/sglang/srt/managers/scheduler_components/pool_stats_observer.py::_get_token_info "
+        "(#token = max_total_num_tokens - available - evictable)"
+    ),
+    "retract": "python/sglang/srt/managers/scheduler.py (KV cache pool is full. Retract requests.)",
 }
 
 
