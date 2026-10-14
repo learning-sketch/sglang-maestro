@@ -18,22 +18,34 @@ from sgl_agent.features.parallelism import (
     advise_layernorm_sp,
     advise_prefill_cp,
 )
+from sgl_agent.features.report import (
+    FEATURE_KEYS,
+    CombinedPlan,
+    FeatureReport,
+    advise_features,
+    server_flags,
+)
 from sgl_agent.features.speculative import SpecPoint, advise_speculative, spec_point
 
 __all__ = [
+    "FEATURE_KEYS",
+    "CombinedPlan",
     "DecodePoint",
     "FeatureAdvice",
     "FeatureContext",
+    "FeatureReport",
     "SpecPoint",
     "advise_dcp",
     "advise_dp_attention",
     "advise_eplb",
     "advise_expert_parallel",
+    "advise_features",
     "advise_hicache",
     "advise_layernorm_sp",
     "advise_prefill_cp",
     "advise_speculative",
     "advise_tbo",
     "build_context",
+    "server_flags",
     "spec_point",
 ]
