@@ -492,6 +492,7 @@ class SimResult:
     e2e_ms: dict[int, float]
     mean_ttft_ms: float
     mean_tpot_ms: float
+    mean_e2e_ms: float
     slo_attainment: float
     goodput_rps: float
     meets_slo: bool
@@ -524,6 +525,7 @@ class SimResult:
             "e2e_ms": {f"p{k}": round(v, 1) for k, v in self.e2e_ms.items()},
             "mean_ttft_ms": round(self.mean_ttft_ms, 1),
             "mean_tpot_ms": round(self.mean_tpot_ms, 2),
+            "mean_e2e_ms": round(self.mean_e2e_ms, 1),
             "slo_attainment": round(self.slo_attainment, 4),
             "goodput_rps": round(self.goodput_rps, 3),
             "meets_slo": self.meets_slo,
@@ -1007,6 +1009,7 @@ class ClusterSim:
                 e2e_ms=dict.fromkeys(PERCENTILES, math.inf),
                 mean_ttft_ms=math.inf,
                 mean_tpot_ms=math.inf,
+                mean_e2e_ms=math.inf,
                 slo_attainment=0.0,
                 goodput_rps=0.0,
                 meets_slo=False,
@@ -1070,6 +1073,7 @@ class ClusterSim:
             e2e_ms={p: percentile(e2e, p) for p in PERCENTILES},
             mean_ttft_ms=sum(ttft) / len(ttft),
             mean_tpot_ms=sum(tpot) / len(tpot) if tpot else 0.0,
+            mean_e2e_ms=sum(e2e) / len(e2e),
             slo_attainment=good / len(done),
             goodput_rps=good / duration_s,
             meets_slo=meets,
