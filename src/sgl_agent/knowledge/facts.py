@@ -120,6 +120,73 @@ MOE_NATIVE_ACTIVATIONS = ("silu", "gelu", "situ")
 DEEPSEEK_V3_MTP_DEFAULT_PARAMS = (3, 1, 4)
 """``(num_steps, eagle_topk, num_draft_tokens)`` SGLang picks for DeepSeek-V3 MTP when unset."""
 
+SPECULATIVE_WIDE_TREE_ARCHITECTURES = frozenset(
+    {"LlamaForCausalLM", "Grok1ForCausalLM", "Grok1VForCausalLM"}
+)
+SPECULATIVE_WIDE_TREE_PARAMS = (5, 4, 8)
+"""``_auto_choose_speculative_params``: these architectures get (5, 4, 8), every other one and
+STANDALONE get ``DEEPSEEK_V3_MTP_DEFAULT_PARAMS``."""
+
+MTP_DRAFT_FROM_TARGET_ARCHITECTURES = frozenset(
+    {
+        "DeepseekV32ForCausalLM",
+        "DeepseekV3ForCausalLM",
+        "DeepseekV4ForCausalLM",
+        "Glm4MoeForCausalLM",
+        "Glm4MoeLiteForCausalLM",
+        "GlmMoeDsaForCausalLM",
+        "BailingMoeForCausalLM",
+        "BailingMoeV2ForCausalLM",
+        "BailingMoeV2_5ForCausalLM",
+        "MistralLarge3ForCausalLM",
+        "PixtralForConditionalGeneration",
+        "HYV3ForCausalLM",
+        "HYV4ForCausalLM",
+        "Qwen4ExpForConditionalGeneration",
+    }
+)
+"""EAGLE-family drafts default to the target checkpoint (its MTP/NextN layers) for these."""
+
+SPECULATIVE_DEFAULT_MAX_RUNNING_REQUESTS = 48
+"""EAGLE/EAGLE3/NEXTN/STANDALONE, NGRAM and DFLASH reset ``--max-running-requests`` to 48 unless
+it is given explicitly."""
+NGRAM_DEVICES = ("cuda", "cpu", "xpu")
+NGRAM_DEFAULT_DRAFT_TOKENS = 12
+PAGED_TREE_SPECULATIVE_BACKENDS = ("flashinfer", "fa3", "triton")
+"""``speculative_eagle_topk > 1`` with ``page_size > 1`` only runs on these attention backends."""
+
+PREFILL_CP_INTERLEAVE_ONLY_ARCHITECTURES = frozenset({"DeepseekV32ForCausalLM"})
+PREFILL_CP_ZIGZAG_ONLY_ARCHITECTURES = frozenset({"MiMoV2ForCausalLM", "MiMoV2FlashForCausalLM"})
+PREFILL_CP_HIP_ARCHITECTURES = frozenset({"DeepseekV4ForCausalLM"})
+NO_ATTN_CP_MODEL_TYPES = frozenset({"nemotron_h", "nemotron_h_puzzle"})
+BREAKABLE_PREFILL_GRAPH_A2A_BACKENDS = ("none", "deepep", "megamoe", "flashinfer")
+"""a2a backends the breakable prefill CUDA graph is validated with; DCP > 1, TBO and CP > 1
+(outside the supported prefill-CP path) also turn the prefill graph off."""
+
+DP_ATTENTION_CONSERVATIVENESS_FACTOR = 0.3
+"""With attention DP, ``schedule_conservativeness`` is multiplied by this factor and
+``--chunked-prefill-size`` is divided by the attention-DP size."""
+
+CLIP_MAX_NEW_TOKENS = 4096
+"""``SGLANG_CLIP_MAX_NEW_TOKENS_ESTIMATION`` default: admission reserves at most this many decode
+tokens per request (new requests in full, running ones scaled by the new-token ratio)."""
+INIT_NEW_TOKEN_RATIO = 0.7
+MIN_NEW_TOKEN_RATIO_FACTOR = 0.14
+NEW_TOKEN_RATIO_DECAY_STEPS = 600
+"""``NewTokenRatioTracker``: starts at 0.7 x schedule_conservativeness, decays linearly to
+init x 0.14 over 600 decode steps, and resets after a retraction."""
+
+HICACHE_DEFAULT_RATIO = 2.0
+HICACHE_BUFFER_ONLY_RATIO = 1.2
+HICACHE_HOST_MEMORY_FRACTION = 0.8
+HICACHE_HOST_RESERVE_BYTES = 10 * 1024**3
+HICACHE_ALLOCATION_SLACK = 0.05
+"""Auto-sizing: host pool = min(ratio, fraction x (host free - 10 GiB) / ranks per host x 0.95 /
+device KV bytes) x device KV bytes; an explicit ratio or size turns auto-sizing off."""
+
+DISAGGREGATION_BOOTSTRAP_PORT = 8998
+"""``--disaggregation-bootstrap-port`` default; the router's ``--prefill URL PORT`` must match."""
+
 PLATFORM_PLUGIN_GROUP = "sglang.srt.platforms"
 GENERAL_PLUGIN_GROUP = "sglang.srt.plugins"
 
@@ -182,6 +249,13 @@ TOOL_FLAGS: dict[str, frozenset[str]] = {
             "--gsp-system-prompt-len",
             "--gsp-question-len",
             "--gsp-output-len",
+            "--gsp-range-ratio",
+            "--gsp-num-turns",
+            "--gsp-ordered",
+            "--gsp-group-distribution",
+            "--gsp-zipf-alpha",
+            "--gsp-send-routing-key",
+            "--gsp-fast-prepare",
             "--tag",
             "--header",
         }
@@ -294,6 +368,7 @@ TOOL_CHOICES: dict[tuple[str, str], tuple[str, ...]] = {
         "consistent_hashing",
         "prefix_hash",
     ),
+    (BENCH_SERVING_MODULE, "--gsp-group-distribution"): ("uniform", "zipf"),
     (RUN_EVAL_MODULE, "--api"): ("chat", "completion", "generate"),
 }
 TOOL_CHOICES[(ROUTER_MODULE, "--prefill-policy")] = TOOL_CHOICES[(ROUTER_MODULE, "--policy")]
@@ -749,6 +824,112 @@ SOURCES: dict[str, str] = {
         "python/sglang/srt/model_executor/forward_batch_info.py::enable_num_token_non_padded "
         "(ep_size > 1 or a customized a2a backend), ForwardBatch.moe_num_token_non_padded "
         "(None only with attention DP > 1 and a2a none)"
+    ),
+    "prefill_cp_rules": (
+        "python/sglang/srt/arg_groups/parallel_hook.py::handle_context_parallelism "
+        "(--cp-strategy required, per-model strategy limits, tp % (attn_dp x attn_cp) == 0)"
+    ),
+    "prefill_cp_platform": (
+        "python/sglang/srt/arg_groups/parallel_hook.py::validate_prefill_cp_platform"
+    ),
+    "cp_strategies": (
+        "python/sglang/srt/layers/cp/zigzag.py (2 x cp blocks, rank i owns i and 2cp-1-i), "
+        "python/sglang/srt/layers/cp/interleave.py (rank i owns every cp-th token)"
+    ),
+    "dp_attention_resolution": (
+        "python/sglang/srt/arg_groups/parallel_hook.py::handle_data_parallelism "
+        "(schedule_conservativeness x 0.3, chunked_prefill_size // attn_dp_size, "
+        "--dp-size with --attn-dp-size raises)"
+    ),
+    "dp_attention_deprecated": (
+        "python/sglang/srt/arg_groups/parallel_hook.py::handle_deprecated_dp_attention "
+        "(--enable-dp-attention --dp-size N -> --attn-dp-size N)"
+    ),
+    "dp_lm_head": "python/sglang/srt/arg_groups/overrides.py::_dp_lm_head_validation",
+    "dp_attention_collectives": (
+        "python/sglang/srt/layers/dp_attention.py (_dp_gather_via_all_gather, "
+        "_dp_gather_via_all_reduce)"
+    ),
+    "dcp_comm_backend_default": (
+        "python/sglang/srt/arg_groups/overrides.py::_dcp_comm_backend_default (fi_a2a on a "
+        "supported MNNVL domain, a2a on CUDA/HIP/XPU, otherwise ag_rs)"
+    ),
+    "a2a_ep_size": (
+        "python/sglang/srt/arg_groups/overrides.py::_a2a_ep_size (a2a backends set ep_size = tp_size)"
+    ),
+    "speculative_max_running": (
+        "python/sglang/srt/arg_groups/speculative_hook.py::_handle_eagle_family, _handle_ngram, "
+        "_handle_dflash (max_running_requests defaults to 48)"
+    ),
+    "speculative_eagle_rules": (
+        "python/sglang/srt/arg_groups/speculative_hook.py::_handle_eagle_family (STANDALONE "
+        "rejects attention DP, trtllm_mha needs topk 1, paged topk > 1 needs flashinfer/fa3/"
+        "triton, mixed chunk off)"
+    ),
+    "speculative_ngram": "python/sglang/srt/arg_groups/speculative_hook.py::_handle_ngram",
+    "deepep_normal_graph": (
+        "python/sglang/srt/arg_groups/moe_hook.py::handle_a2a_moe (deepep_mode normal disables "
+        "the decode and prefill graphs)"
+    ),
+    "deepep_auto_mode": (
+        "python/sglang/srt/layers/moe/utils.py::DeepEPMode.resolve (auto: normal for batches "
+        "with EXTEND, low_latency otherwise)"
+    ),
+    "deepep_v2_overlap": (
+        "python/sglang/srt/arg_groups/moe_hook.py::handle_a2a_moe (deepep_v2 rejects TBO/SBO)"
+    ),
+    "a2a_dispatcher_factory": (
+        "python/sglang/srt/layers/moe/fused_moe_triton/layer.py::create_moe_dispatcher "
+        "(deepep/mooncake/mori/nixl/pplx -> MaybeTboDeepEPDispatcher, else NotImplementedError)"
+    ),
+    "deepep_buffer_import": (
+        "python/sglang/srt/layers/moe/token_dispatcher/deepep.py (from deep_ep import Buffer, "
+        "Config; two-phase dispatch_a/dispatch_b/combine_a/combine_b)"
+    ),
+    "hicache_auto_size": (
+        "python/sglang/srt/mem_cache/hicache_auto_size.py::auto_size_hicache, "
+        "python/sglang/srt/mem_cache/pool_host/base.py::host_memory_budget_bytes"
+    ),
+    "hicache_ratio_default": (
+        "python/sglang/srt/arg_groups/hicache_hook.py::handle_hicache_ratio_default"
+    ),
+    "hicache_buffer_only": (
+        "python/sglang/srt/arg_groups/hicache_hook.py::validate_hicache_host_memory_mode"
+    ),
+    "hicache_host_pool_io": (
+        "python/sglang/srt/mem_cache/pool_host/mha.py::MHATokenToKVPoolHost, "
+        "python/sglang/srt/mem_cache/pool_host/mla.py::MLATokenToKVPoolHost "
+        "(load_to_device_per_layer, backup_from_device_all_layer)"
+    ),
+    "breakable_prefill_graph": (
+        "python/sglang/srt/arg_groups/cuda_graph_hook.py::disable_breakable_cudagraph_if_incompatible"
+    ),
+    "pd_disaggregation_rules": (
+        "python/sglang/srt/arg_groups/pd_disaggregation_hook.py::handle_pd_disaggregation "
+        "(decode servers disable the radix cache by default)"
+    ),
+    "admission_reserve": (
+        "python/sglang/srt/managers/schedule_policy.py::PrefillAdder (new requests reserve "
+        "extend + min(max_new_tokens, CLIP_MAX_NEW_TOKENS); running ones x new_token_ratio)"
+    ),
+    "new_token_ratio": (
+        "python/sglang/srt/managers/scheduler_components/new_token_ratio_tracker.py"
+        "::NewTokenRatioTracker"
+    ),
+    "prefill_log_throughput": (
+        "python/sglang/srt/managers/scheduler_components/metrics_reporter.py::report_prefill_stats "
+        "(input throughput = new tokens / time since the previous prefill log)"
+    ),
+    "bench_random_lengths": (
+        "python/sglang/benchmark/datasets/common.py::compute_random_lens (uniform integers in "
+        "[max(int(L x range_ratio), 1), L])"
+    ),
+    "bench_gsp": "python/sglang/benchmark/datasets/generated_shared_prefix.py",
+    "bench_metrics": (
+        "python/sglang/benchmark/serving.py (mean/median/p90/p95/p99 TTFT, TPOT, ITL, E2E)"
+    ),
+    "expert_distribution": (
+        "python/sglang/srt/eplb/expert_distribution.py (--expert-distribution-recorder-mode)"
     ),
 }
 
