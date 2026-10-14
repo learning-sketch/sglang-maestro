@@ -292,7 +292,9 @@ class StepCostModel:
         arch, parallel = self.arch, self.parallel
         attention = arch.attention
         hidden = arch.hidden_size
-        attn_tp, cp, dcp = parallel.attn_tp, parallel.attn_cp, parallel.dcp
+        attn_tp, dcp = parallel.attn_tp, parallel.dcp
+        # prefill CP splits EXTEND/MIXED batches only; decode runs the whole batch on every CP rank.
+        cp = parallel.attn_cp if shape.phase != "decode" else 1
         tokens = shape.new_tokens / cp
         heads = attention.num_heads / attn_tp
         linear_bpp = self._precision.linear
@@ -585,12 +587,17 @@ class StepCostModel:
     def _gathered_tokens(self, shape: BatchShape) -> float:
         return shape.new_tokens * self.parallel.attn_dp
 
+    def _cp(self, shape: BatchShape) -> int:
+        return self.parallel.attn_cp if shape.phase != "decode" else 1
+
     def _dense_mlp_ops(self, shape: BatchShape, layers: float) -> list[OpCost]:
         arch, parallel = self.arch, self.parallel
         hidden = arch.hidden_size
         mlp_tp = parallel.effective_dense_mlp_tp
-        regrouped = parallel.attn_dp * parallel.attn_cp > 1 and mlp_tp > parallel.attn_tp
-        tokens = self._gathered_tokens(shape) if regrouped else shape.new_tokens / parallel.attn_cp
+        cp = self._cp(shape)
+        group = parallel.attn_dp * cp
+        regrouped = group > 1 and mlp_tp > parallel.attn_tp
+        tokens = self._gathered_tokens(shape) if regrouped else shape.new_tokens / cp
         intermediate = arch.dense_intermediate_size / mlp_tp
         matrices_up = 2 if arch.gated_mlp else 1
         ops: list[OpCost | None] = []
@@ -600,7 +607,7 @@ class StepCostModel:
                     "mlp.dp_allgather",
                     tokens * hidden * ACTIVATION_BYTES,
                     "allgather",
-                    parallel.attn_dp * parallel.attn_cp,
+                    group,
                     layers,
                 )
             )
@@ -667,7 +674,7 @@ class StepCostModel:
         expert_bpp = self._precision.experts
         hit_probability = 1.0 - (1.0 - top_k / experts) ** max(group_tokens, 0.0)
         uses_a2a = parallel.uses_a2a
-        dp_group = parallel.attn_dp * parallel.attn_cp
+        dp_group = parallel.attn_dp * self._cp(shape)
         # a2a backends route each rank's own tokens; otherwise every rank sees the gathered batch.
         local_tokens = group_tokens / parallel.tp if uses_a2a else group_tokens
         assignments = group_tokens * top_k / parallel.ep
@@ -816,7 +823,7 @@ class StepCostModel:
         hidden = arch.hidden_size
         vocab_local = arch.vocab_size / parallel.tp
         logits_tokens = shape.logits_tokens * parallel.attn_dp
-        tokens = shape.new_tokens / parallel.attn_cp
+        tokens = shape.new_tokens / self._cp(shape)
         ops: list[OpCost | None] = [
             self._elementwise(
                 "embed.lookup", tokens * hidden, 2 * ACTIVATION_BYTES, 1.0, kind="elementwise"
