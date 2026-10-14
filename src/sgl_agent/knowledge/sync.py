@@ -873,6 +873,69 @@ def _location_sort_key(location: str) -> tuple[str, int]:
     return (path, int(line)) if line.isdigit() else (location, 0)
 
 
+def _platform_compile_decorator(decorator: ast.expr) -> ast.Call | None:
+    """``@torch.compile(..., backend=get_compiler_backend(...))``, whose backend the platform picks."""
+    if not (isinstance(decorator, ast.Call) and _dotted_name(decorator.func) == "torch.compile"):
+        return None
+    for keyword in decorator.keywords:
+        if (
+            keyword.arg == "backend"
+            and isinstance(keyword.value, ast.Call)
+            and _dotted_name(keyword.value.func).rsplit(".", 1)[-1] == "get_compiler_backend"
+        ):
+            return decorator
+    return None
+
+
+def _platform_compile_sites_in(
+    statements: list[ast.stmt], qualified_prefix: str, location_prefix: str
+) -> Iterator[dict[str, Any]]:
+    for statement in statements:
+        if isinstance(statement, (ast.FunctionDef, ast.AsyncFunctionDef)):
+            qualified = f"{qualified_prefix}.{statement.name}"
+            for decorator in statement.decorator_list:
+                call = _platform_compile_decorator(decorator)
+                if call is None:
+                    continue
+                keywords = {keyword.arg: keyword.value for keyword in call.keywords if keyword.arg}
+                dynamic = _literal(keywords.get("dynamic"))
+                yield {
+                    "function": qualified,
+                    "location": f"{location_prefix}:{decorator.lineno}",
+                    "dynamic": None if dynamic is _UNRESOLVED else dynamic,
+                    "disabled_when": (
+                        ast.unparse(keywords["disable"]) if "disable" in keywords else None
+                    ),
+                }
+            yield from _platform_compile_sites_in(statement.body, qualified, location_prefix)
+        elif isinstance(statement, ast.ClassDef):
+            yield from _platform_compile_sites_in(
+                statement.body, f"{qualified_prefix}.{statement.name}", location_prefix
+            )
+
+
+def extract_platform_compile_sites(
+    python_root: Path, modules: list[ParsedModule] | None = None
+) -> list[dict[str, Any]]:
+    """Functions compiled at import time with ``backend=get_compiler_backend()``.
+
+    On an out-of-tree platform that backend is ``current_platform.get_compile_backend()``, so these
+    sites run through the platform's torch.compile backend even when ``--enable-torch-compile`` is off.
+    """
+    sites: list[dict[str, Any]] = []
+    for relative, tree in modules if modules is not None else parse_runtime_modules(python_root):
+        if "get_compiler_backend" not in (python_root / relative).read_text(encoding="utf-8"):
+            continue
+        sites.extend(
+            _platform_compile_sites_in(
+                _module_level_statements(tree.body),
+                _module_qualname(python_root / relative, python_root),
+                f"python/{relative.as_posix()}",
+            )
+        )
+    return sorted(sites, key=lambda site: _location_sort_key(site["location"]))
+
+
 def _enum_member_values(path: Path, class_name: str) -> dict[str, str]:
     tree = _parse_quietly(path)
     if tree is None:
@@ -1026,6 +1089,7 @@ def _build_snapshot(sglang_root: Path) -> dict[str, Any]:
         "fused_op_dispatch": extract_fused_op_dispatch(python_root / "sglang" / "kernels"),
         "fused_op_classes": extract_fused_op_classes(python_root, runtime_modules),
         "platform_interface": extract_platform_hooks(python_root, runtime_modules),
+        "platform_compile_sites": extract_platform_compile_sites(python_root, runtime_modules),
     }
 
 

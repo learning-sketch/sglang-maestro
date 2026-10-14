@@ -12658,5 +12658,121 @@
     ]
    }
   }
- }
+ },
+ "platform_compile_sites": [
+  {
+   "function": "sglang.srt.layers.attention.flashattention_backend.draft_decode_set_expand_metadata",
+   "location": "python/sglang/srt/layers/attention/flashattention_backend.py:3455",
+   "dynamic": true,
+   "disabled_when": null
+  },
+  {
+   "function": "sglang.srt.layers.moe.kt_ep_wrapper.mask_cpu_expert_ids",
+   "location": "python/sglang/srt/layers/moe/kt_ep_wrapper.py:98",
+   "dynamic": true,
+   "disabled_when": null
+  },
+  {
+   "function": "sglang.srt.layers.moe.topk.grouped_topk_gpu",
+   "location": "python/sglang/srt/layers/moe/topk.py:1207",
+   "dynamic": true,
+   "disabled_when": "_is_npu"
+  },
+  {
+   "function": "sglang.srt.layers.moe.topk.kimi_k2_biased_topk_impl",
+   "location": "python/sglang/srt/layers/moe/topk.py:1365",
+   "dynamic": true,
+   "disabled_when": "_is_npu"
+  },
+  {
+   "function": "sglang.srt.layers.moe.topk.biased_topk_impl",
+   "location": "python/sglang/srt/layers/moe/topk.py:1406",
+   "dynamic": true,
+   "disabled_when": "_is_npu"
+  },
+  {
+   "function": "sglang.srt.layers.moe.topk.biased_grouped_topk_impl",
+   "location": "python/sglang/srt/layers/moe/topk.py:1603",
+   "dynamic": true,
+   "disabled_when": "_is_npu"
+  },
+  {
+   "function": "sglang.srt.layers.moe.topk._biased_grouped_topk_postprocess",
+   "location": "python/sglang/srt/layers/moe/topk.py:1768",
+   "dynamic": true,
+   "disabled_when": null
+  },
+  {
+   "function": "sglang.srt.layers.rotary_embedding.utils.apply_rotary_pos_emb_native",
+   "location": "python/sglang/srt/layers/rotary_embedding/utils.py:96",
+   "dynamic": true,
+   "disabled_when": null
+  },
+  {
+   "function": "sglang.srt.layers.vocab_parallel_embedding.get_masked_input_and_mask",
+   "location": "python/sglang/srt/layers/vocab_parallel_embedding.py:138",
+   "dynamic": true,
+   "disabled_when": "_is_npu"
+  },
+  {
+   "function": "sglang.srt.models.cohere2_moe._cohere_layer_norm",
+   "location": "python/sglang/srt/models/cohere2_moe.py:38",
+   "dynamic": null,
+   "disabled_when": null
+  },
+  {
+   "function": "sglang.srt.models.commandr.layer_norm_func",
+   "location": "python/sglang/srt/models/commandr.py:72",
+   "dynamic": null,
+   "disabled_when": null
+  },
+  {
+   "function": "sglang.srt.models.dflash._grouped_conv",
+   "location": "python/sglang/srt/models/dflash.py:468",
+   "dynamic": true,
+   "disabled_when": "_is_npu"
+  },
+  {
+   "function": "sglang.srt.models.dflash._score_edges",
+   "location": "python/sglang/srt/models/dflash.py:1048",
+   "dynamic": true,
+   "disabled_when": "_is_npu"
+  },
+  {
+   "function": "sglang.srt.models.dflash._follow_maps",
+   "location": "python/sglang/srt/models/dflash.py:1073",
+   "dynamic": true,
+   "disabled_when": "_is_npu"
+  },
+  {
+   "function": "sglang.srt.models.llama4.Llama4MoE.custom_routing_function",
+   "location": "python/sglang/srt/models/llama4.py:75",
+   "dynamic": true,
+   "disabled_when": null
+  },
+  {
+   "function": "sglang.srt.models.llama4.Llama4Attention._mul_attn_scale",
+   "location": "python/sglang/srt/models/llama4.py:311",
+   "dynamic": true,
+   "disabled_when": null
+  },
+  {
+   "function": "sglang.srt.models.minimax_m2.MiniMaxM2RMSNormTP.forward",
+   "location": "python/sglang/srt/models/minimax_m2.py:349",
+   "dynamic": true,
+   "disabled_when": null
+  },
+  {
+   "function": "sglang.srt.models.minimax_vl_common._minimax_rope_applier",
+   "location": "python/sglang/srt/models/minimax_vl_common.py:201",
+   "dynamic": true,
+   "disabled_when": null
+  },
+  {
+   "function": "sglang.srt.sampling.penaltylib.repetition_penalty.apply_scaling_penalties",
+   "location": "python/sglang/srt/sampling/penaltylib/repetition_penalty.py:10",
+   "dynamic": true,
+   "disabled_when": "_is_npu"
+  }
+ ]
 }

@@ -146,6 +146,11 @@ class SGLangKnowledge:
     def platform_attributes(self) -> dict[str, dict[str, Any]]:
         return self.raw.get("platform_interface", {}).get("attributes", {})
 
+    @property
+    def platform_compile_sites(self) -> list[dict[str, Any]]:
+        """Functions decorated with ``torch.compile(backend=get_compiler_backend())`` at import time."""
+        return list(self.raw.get("platform_compile_sites", []))
+
     def validate_flags(self, flag_values: dict[str, Any]) -> list[str]:
         """Return human-readable problems for flags that do not exist, are deprecated or use bad choices."""
         problems: list[str] = []
