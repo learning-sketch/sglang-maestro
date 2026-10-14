@@ -18,11 +18,13 @@ from sgl_agent.features.parallelism import (
     advise_layernorm_sp,
     advise_prefill_cp,
 )
+from sgl_agent.features.speculative import SpecPoint, advise_speculative, spec_point
 
 __all__ = [
     "DecodePoint",
     "FeatureAdvice",
     "FeatureContext",
+    "SpecPoint",
     "advise_dcp",
     "advise_dp_attention",
     "advise_eplb",
@@ -30,6 +32,8 @@ __all__ = [
     "advise_hicache",
     "advise_layernorm_sp",
     "advise_prefill_cp",
+    "advise_speculative",
     "advise_tbo",
     "build_context",
+    "spec_point",
 ]
