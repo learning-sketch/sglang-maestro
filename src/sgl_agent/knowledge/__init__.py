@@ -129,6 +129,23 @@ class SGLangKnowledge:
             if qualified.rsplit(".", 1)[-1] == class_name
         ]
 
+    @property
+    def platform_hooks(self) -> dict[str, dict[str, Any]]:
+        """``DeviceMixin``/``SRTPlatform`` methods with their default behaviour and call sites."""
+        return self.raw.get("platform_interface", {}).get("hooks", {})
+
+    def platform_hook(self, name: str) -> dict[str, Any] | None:
+        return self.platform_hooks.get(name)
+
+    @property
+    def platform_capabilities(self) -> dict[str, dict[str, Any]]:
+        """``PlatformCapabilities`` fields with their defaults and the code that reads them."""
+        return self.raw.get("platform_interface", {}).get("capabilities", {})
+
+    @property
+    def platform_attributes(self) -> dict[str, dict[str, Any]]:
+        return self.raw.get("platform_interface", {}).get("attributes", {})
+
     def validate_flags(self, flag_values: dict[str, Any]) -> list[str]:
         """Return human-readable problems for flags that do not exist, are deprecated or use bad choices."""
         problems: list[str] = []

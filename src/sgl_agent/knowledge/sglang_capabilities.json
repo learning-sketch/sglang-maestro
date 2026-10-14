@@ -12115,5 +12115,548 @@
    ],
    "forward_override": null
   }
+ },
+ "platform_interface": {
+  "hooks": {
+   "get_device_total_memory": {
+    "defined_in": "DeviceMixin",
+    "source": "python/sglang/srt/platforms/device_mixin.py:155",
+    "doc_status": "Active",
+    "default": "raises",
+    "summary": "Get total device memory in bytes.",
+    "call_sites": [
+     "python/sglang/srt/utils/common.py:570",
+     "python/sglang/srt/utils/common.py:958"
+    ]
+   },
+   "get_current_memory_usage": {
+    "defined_in": "DeviceMixin",
+    "source": "python/sglang/srt/platforms/device_mixin.py:159",
+    "doc_status": "Active",
+    "default": "raises",
+    "summary": "Get current peak memory usage in bytes.",
+    "call_sites": [
+     "python/sglang/srt/utils/common.py:571"
+    ]
+   },
+   "is_pin_memory_available": {
+    "defined_in": "DeviceMixin",
+    "source": "python/sglang/srt/platforms/device_mixin.py:165",
+    "doc_status": "Active",
+    "default": "returns",
+    "summary": "Whether pinned host memory is available for a target device.",
+    "call_sites": [
+     "python/sglang/srt/utils/common.py:585"
+    ],
+    "default_return": false
+   },
+   "reindex_device_id": {
+    "defined_in": "DeviceMixin",
+    "source": "python/sglang/srt/platforms/device_mixin.py:170",
+    "doc_status": "Active",
+    "default": "implemented",
+    "summary": "Temporarily remap a physical device to logical device 0.",
+    "call_sites": [
+     "python/sglang/srt/utils/common.py:1322"
+    ]
+   },
+   "get_device": {
+    "defined_in": "DeviceMixin",
+    "source": "python/sglang/srt/platforms/device_mixin.py:182",
+    "doc_status": "Planned",
+    "default": "raises",
+    "summary": "Return ``torch.device`` for the given device id.",
+    "call_sites": [
+     "python/sglang/srt/model_loader/weight_utils.py:1248",
+     "python/sglang/srt/utils/common.py:1080",
+     "python/sglang/srt/weight_cache/daemon.py:269"
+    ]
+   },
+   "set_device": {
+    "defined_in": "DeviceMixin",
+    "source": "python/sglang/srt/platforms/device_mixin.py:186",
+    "doc_status": "Planned",
+    "default": "raises",
+    "summary": "Set the current device.",
+    "call_sites": [
+     "python/sglang/srt/weight_cache/daemon.py:269"
+    ]
+   },
+   "get_device_name": {
+    "defined_in": "DeviceMixin",
+    "source": "python/sglang/srt/platforms/device_mixin.py:190",
+    "doc_status": "Planned",
+    "default": "raises",
+    "summary": "Get human-readable device name.",
+    "call_sites": []
+   },
+   "get_device_uuid": {
+    "defined_in": "DeviceMixin",
+    "source": "python/sglang/srt/platforms/device_mixin.py:194",
+    "doc_status": "Planned",
+    "default": "raises",
+    "summary": "Get unique device identifier string.",
+    "call_sites": [
+     "python/sglang/srt/checkpoint_engine/checkpoint_engine_worker.py:118",
+     "python/sglang/srt/entrypoints/engine.py:789",
+     "python/sglang/srt/entrypoints/engine.py:830",
+     "python/sglang/srt/model_executor/runner/flashinfer_autotune.py:188",
+     "python/sglang/srt/weight_cache/daemon.py:181",
+     "python/sglang/srt/weight_cache/daemon.py:775",
+     "python/sglang/srt/weight_cache/daemon.py:816",
+     "python/sglang/srt/weight_cache/daemon.py:910",
+     "python/sglang/srt/weight_cache/ipc_loader.py:461"
+    ]
+   },
+   "get_device_capability": {
+    "defined_in": "DeviceMixin",
+    "source": "python/sglang/srt/platforms/device_mixin.py:198",
+    "doc_status": "Planned",
+    "default": "raises",
+    "summary": "Get device compute capability. None if N/A.",
+    "call_sites": [
+     "python/sglang/srt/weight_cache/protocol.py:263"
+    ]
+   },
+   "empty_cache": {
+    "defined_in": "DeviceMixin",
+    "source": "python/sglang/srt/platforms/device_mixin.py:202",
+    "doc_status": "Planned",
+    "default": "noop",
+    "summary": "Release cached device memory. No-op for CPU-like platforms.",
+    "call_sites": [
+     "python/sglang/srt/distributed/bootstrap.py:390",
+     "python/sglang/srt/distributed/bootstrap.py:424",
+     "python/sglang/srt/managers/scheduler.py:5364",
+     "python/sglang/srt/managers/scheduler_components/idle_sleeper.py:44",
+     "python/sglang/srt/managers/scheduler_components/idle_sleeper.py:74",
+     "python/sglang/srt/model_executor/model_runner_components/cuda_graph_setup.py:364",
+     "python/sglang/srt/model_executor/model_runner_components/load_model_utils.py:66",
+     "python/sglang/srt/model_executor/model_runner_components/load_model_utils.py:70",
+     "python/sglang/srt/model_executor/model_runner_components/load_model_utils.py:359",
+     "python/sglang/srt/model_executor/model_runner_components/weight_exporter.py:55",
+     "python/sglang/srt/model_executor/model_runner_components/weight_exporter.py:75",
+     "python/sglang/srt/model_executor/model_runner_components/weight_exporter.py:103",
+     "python/sglang/srt/model_executor/model_runner_components/weight_exporter.py:123",
+     "python/sglang/srt/model_loader/loader.py:1470",
+     "python/sglang/srt/model_loader/loader.py:2944",
+     "python/sglang/srt/model_loader/loader.py:3320",
+     "python/sglang/srt/models/llama.py:897",
+     "python/sglang/srt/models/llama.py:916",
+     "python/sglang/srt/models/mimo_mtp.py:203",
+     "python/sglang/srt/models/qwen2.py:768",
+     "python/sglang/srt/models/qwen3.py:719",
+     "python/sglang/srt/models/qwen3_5_mtp.py:179",
+     "python/sglang/srt/models/qwen3_5_text.py:157",
+     "python/sglang/srt/models/spark2_5.py:553",
+     "python/sglang/srt/weight_cache/daemon.py:357",
+     "python/sglang/srt/weight_cache/daemon.py:390",
+     "python/sglang/srt/weight_cache/daemon.py:621"
+    ]
+   },
+   "synchronize": {
+    "defined_in": "DeviceMixin",
+    "source": "python/sglang/srt/platforms/device_mixin.py:206",
+    "doc_status": "Planned",
+    "default": "noop",
+    "summary": "Synchronize device operations. No-op for CPU-like platforms.",
+    "call_sites": [
+     "python/sglang/srt/distributed/bootstrap.py:356",
+     "python/sglang/srt/distributed/bootstrap.py:388",
+     "python/sglang/srt/distributed/bootstrap.py:421",
+     "python/sglang/srt/mem_cache/dsa_cache_layer_split.py:558",
+     "python/sglang/srt/mem_cache/dsa_cache_layer_split.py:571",
+     "python/sglang/srt/mem_cache/dsa_cache_layer_split.py:588",
+     "python/sglang/srt/mem_cache/dsa_cache_layer_split.py:599",
+     "python/sglang/srt/mem_cache/memory_pool.py:1223",
+     "python/sglang/srt/mem_cache/memory_pool.py:1232",
+     "python/sglang/srt/mem_cache/memory_pool.py:1250",
+     "python/sglang/srt/mem_cache/memory_pool.py:1259",
+     "python/sglang/srt/mem_cache/memory_pool.py:2730",
+     "python/sglang/srt/mem_cache/memory_pool.py:2744",
+     "python/sglang/srt/mem_cache/memory_pool.py:2754",
+     "python/sglang/srt/mem_cache/memory_pool.py:2768",
+     "python/sglang/srt/mem_cache/memory_pool.py:4059",
+     "python/sglang/srt/mem_cache/memory_pool.py:4079",
+     "python/sglang/srt/mem_cache/memory_pool.py:4089",
+     "python/sglang/srt/mem_cache/memory_pool.py:4111",
+     "python/sglang/srt/mem_cache/memory_pool.py:4969",
+     "python/sglang/srt/mem_cache/memory_pool.py:4982",
+     "python/sglang/srt/mem_cache/memory_pool.py:4991",
+     "python/sglang/srt/mem_cache/memory_pool.py:5002",
+     "python/sglang/srt/model_executor/model_runner.py:2510",
+     "python/sglang/srt/model_executor/model_runner_components/cuda_graph_setup.py:351",
+     "python/sglang/srt/model_executor/model_runner_components/cuda_graph_setup.py:358",
+     "python/sglang/srt/model_executor/model_runner_components/cuda_graph_setup.py:361",
+     "python/sglang/srt/model_executor/model_runner_components/load_model_utils.py:65",
+     "python/sglang/srt/model_executor/model_runner_components/load_model_utils.py:69",
+     "python/sglang/srt/model_loader/loader.py:3283",
+     "python/sglang/srt/model_loader/loader.py:3309",
+     "python/sglang/srt/models/llama.py:898",
+     "python/sglang/srt/models/llama.py:917",
+     "python/sglang/srt/models/mimo_mtp.py:204",
+     "python/sglang/srt/models/qwen2.py:769",
+     "python/sglang/srt/models/qwen3.py:720",
+     "python/sglang/srt/models/qwen3_5_mtp.py:180",
+     "python/sglang/srt/models/qwen3_5_text.py:158",
+     "python/sglang/srt/models/spark2_5.py:554",
+     "python/sglang/srt/weight_cache/daemon.py:389"
+    ]
+   },
+   "get_available_memory": {
+    "defined_in": "DeviceMixin",
+    "source": "python/sglang/srt/platforms/device_mixin.py:212",
+    "doc_status": "Planned",
+    "default": "raises",
+    "summary": "Return ``(free_bytes, total_bytes)``.",
+    "call_sites": []
+   },
+   "get_torch_distributed_backend_str": {
+    "defined_in": "DeviceMixin",
+    "source": "python/sglang/srt/platforms/device_mixin.py:218",
+    "doc_status": null,
+    "default": "implemented",
+    "summary": "Return the torch.distributed backend string (e.g. \"nccl\", \"hccl\").",
+    "call_sites": [
+     "python/sglang/srt/distributed/parallel_state.py:2390",
+     "python/sglang/srt/weight_cache/daemon.py:230"
+    ]
+   },
+   "get_communicator_class": {
+    "defined_in": "DeviceMixin",
+    "source": "python/sglang/srt/platforms/device_mixin.py:227",
+    "doc_status": "Planned",
+    "default": "returns",
+    "summary": "Return platform-specific communicator class, or None for default.",
+    "call_sites": [],
+    "default_return": null
+   },
+   "inference_mode": {
+    "defined_in": "DeviceMixin",
+    "source": "python/sglang/srt/platforms/device_mixin.py:234",
+    "doc_status": "Planned",
+    "default": "implemented",
+    "summary": "Return inference mode context manager.",
+    "call_sites": []
+   },
+   "seed_everything": {
+    "defined_in": "DeviceMixin",
+    "source": "python/sglang/srt/platforms/device_mixin.py:239",
+    "doc_status": "Planned",
+    "default": "implemented",
+    "summary": "Set random seeds for reproducibility across all libraries.",
+    "call_sites": []
+   },
+   "verify_quantization": {
+    "defined_in": "DeviceMixin",
+    "source": "python/sglang/srt/platforms/device_mixin.py:246",
+    "doc_status": "Planned",
+    "default": "noop",
+    "summary": "Validate that a quantization method is supported. No-op by default.",
+    "call_sites": []
+   },
+   "get_cpu_architecture": {
+    "defined_in": "DeviceMixin",
+    "source": "python/sglang/srt/platforms/device_mixin.py:255",
+    "doc_status": "Planned",
+    "default": "implemented",
+    "summary": "Detect CPU architecture.",
+    "call_sites": []
+   },
+   "get_torch_profiler_activity_str": {
+    "defined_in": "DeviceMixin",
+    "source": "python/sglang/srt/platforms/device_mixin.py:266",
+    "doc_status": "Planned",
+    "default": "raises",
+    "summary": "Return the torch profiler activity string.",
+    "call_sites": [
+     "python/sglang/srt/managers/scheduler_components/profiler_manager.py:194",
+     "python/sglang/srt/managers/scheduler_components/profiler_manager.py:196",
+     "python/sglang/srt/utils/profile_utils.py:250",
+     "python/sglang/srt/utils/profile_utils.py:329"
+    ]
+   },
+   "get_torch_profiler_activity": {
+    "defined_in": "DeviceMixin",
+    "source": "python/sglang/srt/platforms/device_mixin.py:270",
+    "doc_status": "Planned",
+    "default": "raises",
+    "summary": "Return the torch profiler activity.",
+    "call_sites": [
+     "python/sglang/srt/managers/scheduler_components/profiler_manager.py:197",
+     "python/sglang/srt/utils/profile_utils.py:330"
+    ]
+   },
+   "apply_server_args_defaults": {
+    "defined_in": "SRTPlatform",
+    "source": "python/sglang/srt/platforms/interface.py:92",
+    "doc_status": null,
+    "default": "noop",
+    "summary": "Apply platform-specific default values to server arguments.",
+    "call_sites": [
+     "python/sglang/srt/arg_groups/platform_hook.py:95"
+    ]
+   },
+   "get_default_attention_backend": {
+    "defined_in": "SRTPlatform",
+    "source": "python/sglang/srt/platforms/interface.py:103",
+    "doc_status": null,
+    "default": "raises",
+    "summary": "Return the default attention backend name for this platform.",
+    "call_sites": [
+     "python/sglang/srt/arg_groups/model_override_base.py:285"
+    ]
+   },
+   "get_default_speculative_draft_attention_backend": {
+    "defined_in": "SRTPlatform",
+    "source": "python/sglang/srt/platforms/interface.py:107",
+    "doc_status": null,
+    "default": "raises",
+    "summary": "Return the default draft attention backend for an algorithm.",
+    "call_sites": [
+     "python/sglang/srt/arg_groups/speculative_hook.py:832"
+    ]
+   },
+   "get_graph_runner_cls": {
+    "defined_in": "SRTPlatform",
+    "source": "python/sglang/srt/platforms/interface.py:111",
+    "doc_status": null,
+    "default": "returns",
+    "summary": "Return the graph runner class, or None for the in-tree default.",
+    "call_sites": [
+     "python/sglang/srt/model_executor/model_runner_components/cuda_graph_setup.py:721"
+    ],
+    "default_return": null
+   },
+   "get_full_graph_backend_cls": {
+    "defined_in": "SRTPlatform",
+    "source": "python/sglang/srt/platforms/interface.py:119",
+    "doc_status": null,
+    "default": "returns",
+    "summary": "Return the full device-graph backend class for this platform.",
+    "call_sites": [
+     "python/sglang/srt/model_executor/runner_backend/utils.py:96"
+    ],
+    "default_return": null
+   },
+   "get_kv_pool_cls": {
+    "defined_in": "SRTPlatform",
+    "source": "python/sglang/srt/platforms/interface.py:123",
+    "doc_status": null,
+    "default": "implemented",
+    "summary": "Return this platform's KV pool class for ``kind``, or None.",
+    "call_sites": [
+     "python/sglang/srt/mem_cache/kv_cache_configurator.py:1854"
+    ]
+   },
+   "get_paged_allocator_cls": {
+    "defined_in": "SRTPlatform",
+    "source": "python/sglang/srt/platforms/interface.py:157",
+    "doc_status": null,
+    "default": "returns",
+    "summary": "Return the paged allocator class, or None for the in-tree default.",
+    "call_sites": [
+     "python/sglang/srt/mem_cache/allocator/hisparse.py:45",
+     "python/sglang/srt/mem_cache/allocator/hisparse.py:327",
+     "python/sglang/srt/mem_cache/allocator/swa.py:78",
+     "python/sglang/srt/mem_cache/kv_cache_configurator.py:2604"
+    ],
+    "default_return": null
+   },
+   "get_compile_backend": {
+    "defined_in": "SRTPlatform",
+    "source": "python/sglang/srt/platforms/interface.py:167",
+    "doc_status": null,
+    "default": "returns",
+    "summary": "Return the compilation backend identifier.",
+    "call_sites": [
+     "python/sglang/srt/utils/common.py:1157"
+    ],
+    "default_return": "inductor"
+   },
+   "get_piecewise_backend_cls": {
+    "defined_in": "SRTPlatform",
+    "source": "python/sglang/srt/platforms/interface.py:174",
+    "doc_status": null,
+    "default": "returns",
+    "summary": "Return the piecewise compilation backend class, or None for the",
+    "call_sites": [
+     "python/sglang/srt/compilation/backend.py:56"
+    ],
+    "default_return": null
+   },
+   "get_speculative_cache_locs_fn": {
+    "defined_in": "SRTPlatform",
+    "source": "python/sglang/srt/platforms/interface.py:179",
+    "doc_status": null,
+    "default": "returns",
+    "summary": "Return a platform implementation for speculative KV-cache locations.",
+    "call_sites": [
+     "python/sglang/kernels/ops/speculative/cache_locs.py:35"
+    ],
+    "default_return": null
+   },
+   "get_quantization_config": {
+    "defined_in": "SRTPlatform",
+    "source": "python/sglang/srt/platforms/interface.py:185",
+    "doc_status": null,
+    "default": "returns",
+    "summary": "Return hardware-specific quantization config for the specific",
+    "call_sites": [
+     "python/sglang/srt/layers/quantization/__init__.py:178"
+    ],
+    "default_return": null
+   },
+   "supports_speculative_algorithm": {
+    "defined_in": "SRTPlatform",
+    "source": "python/sglang/srt/platforms/interface.py:197",
+    "doc_status": null,
+    "default": "returns",
+    "summary": "Whether this platform supports the named speculative algorithm.",
+    "call_sites": [
+     "python/sglang/srt/arg_groups/speculative_hook.py:284"
+    ],
+    "default_return": false
+   },
+   "supports_speculative_draft_attention_backend": {
+    "defined_in": "SRTPlatform",
+    "source": "python/sglang/srt/platforms/interface.py:201",
+    "doc_status": null,
+    "default": "returns",
+    "summary": "Whether this platform supports a draft backend for an algorithm.",
+    "call_sites": [
+     "python/sglang/srt/arg_groups/speculative_hook.py:823"
+    ],
+    "default_return": false
+   },
+   "support_mamba_cache_extra_buffer": {
+    "defined_in": "SRTPlatform",
+    "source": "python/sglang/srt/platforms/interface.py:207",
+    "doc_status": null,
+    "default": "returns",
+    "summary": "Whether this out-of-tree platform supports Mamba cache snapshots.",
+    "call_sites": [
+     "python/sglang/srt/arg_groups/mamba_hook.py:104"
+    ],
+    "default_return": false
+   },
+   "init_backend": {
+    "defined_in": "SRTPlatform",
+    "source": "python/sglang/srt/platforms/interface.py:215",
+    "doc_status": null,
+    "default": "noop",
+    "summary": "One-time backend initialization. Called in each worker.",
+    "call_sites": [
+     "python/sglang/srt/model_executor/model_runner.py:259"
+    ]
+   },
+   "post_load_model": {
+    "defined_in": "SRTPlatform",
+    "source": "python/sglang/srt/platforms/interface.py:219",
+    "doc_status": null,
+    "default": "noop",
+    "summary": "Called once after the model's weights are loaded, in the worker.",
+    "call_sites": [
+     "python/sglang/srt/model_executor/model_runner.py:1303"
+    ]
+   },
+   "get_dispatch_key_name": {
+    "defined_in": "SRTPlatform",
+    "source": "python/sglang/srt/platforms/interface.py:231",
+    "doc_status": null,
+    "default": "returns",
+    "summary": "Return the dispatch key name for BaseFusedOp",
+    "call_sites": [
+     "python/sglang/kernels/fused_op.py:204"
+    ],
+    "default_return": "native"
+   }
+  },
+  "attributes": {
+   "device_name": {
+    "defined_in": "DeviceMixin",
+    "source": "python/sglang/srt/platforms/device_mixin.py:107",
+    "readers": [
+     "python/sglang/srt/arg_groups/platform_hook.py:94",
+     "python/sglang/srt/distributed/parallel_state.py:2389",
+     "python/sglang/srt/model_executor/model_runner_components/cuda_graph_setup.py:698"
+    ]
+   },
+   "device_type": {
+    "defined_in": "DeviceMixin",
+    "source": "python/sglang/srt/platforms/device_mixin.py:108",
+    "readers": [
+     "python/sglang/srt/distributed/parallel_state.py:2389",
+     "python/sglang/srt/model_loader/weight_utils.py:1201",
+     "python/sglang/srt/model_loader/weight_utils.py:1204",
+     "python/sglang/srt/multimodal/processors/base_processor.py:795",
+     "python/sglang/srt/utils/common.py:656",
+     "python/sglang/srt/weight_cache/daemon.py:261",
+     "python/sglang/srt/weight_cache/daemon.py:377"
+    ]
+   },
+   "supported_quantization": {
+    "defined_in": "SRTPlatform",
+    "source": "python/sglang/srt/platforms/interface.py:85",
+    "readers": []
+   },
+   "capabilities": {
+    "defined_in": "SRTPlatform",
+    "source": "python/sglang/srt/platforms/interface.py:86",
+    "readers": [
+     "python/sglang/kernels/ops/kvcache/mla_buffer.py:205",
+     "python/sglang/srt/kv_canary/api.py:47",
+     "python/sglang/srt/mem_cache/allocator/paged.py:155",
+     "python/sglang/srt/mem_cache/memory_pool_host.py:337",
+     "python/sglang/srt/mem_cache/memory_pool_host.py:876",
+     "python/sglang/srt/mem_cache/pool_host/dsa.py:312",
+     "python/sglang/srt/mem_cache/pool_host/mha.py:301",
+     "python/sglang/srt/mem_cache/pool_host/mla.py:374",
+     "python/sglang/srt/model_executor/model_runner_components/cuda_graph_setup.py:412",
+     "python/sglang/srt/model_executor/model_runner_components/weight_updater.py:250",
+     "python/sglang/srt/speculative/dflash_worker_v2.py:657",
+     "python/sglang/srt/utils/common.py:658",
+     "python/sglang/srt/utils/common.py:1443"
+    ]
+   }
+  },
+  "capabilities": {
+   "supports_triton": {
+    "default": false,
+    "source": "python/sglang/srt/platforms/interface.py:66",
+    "readers": [
+     "python/sglang/kernels/ops/kvcache/mla_buffer.py:205",
+     "python/sglang/srt/mem_cache/allocator/paged.py:155",
+     "python/sglang/srt/utils/common.py:1443"
+    ]
+   },
+   "graph_capture": {
+    "default": false,
+    "source": "python/sglang/srt/platforms/interface.py:67",
+    "readers": [
+     "python/sglang/srt/kv_canary/api.py:47",
+     "python/sglang/srt/model_executor/model_runner_components/cuda_graph_setup.py:412",
+     "python/sglang/srt/model_executor/model_runner_components/weight_updater.py:250",
+     "python/sglang/srt/speculative/dflash_worker_v2.py:657",
+     "python/sglang/srt/utils/common.py:658"
+    ]
+   },
+   "piecewise_graph": {
+    "default": false,
+    "source": "python/sglang/srt/platforms/interface.py:68",
+    "readers": []
+   },
+   "hicache_device_kernels": {
+    "default": false,
+    "source": "python/sglang/srt/platforms/interface.py:69",
+    "readers": [
+     "python/sglang/srt/mem_cache/memory_pool_host.py:337",
+     "python/sglang/srt/mem_cache/memory_pool_host.py:876",
+     "python/sglang/srt/mem_cache/pool_host/dsa.py:312",
+     "python/sglang/srt/mem_cache/pool_host/mha.py:301",
+     "python/sglang/srt/mem_cache/pool_host/mla.py:374"
+    ]
+   }
+  }
  }
 }

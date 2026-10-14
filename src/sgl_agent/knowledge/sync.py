@@ -7,10 +7,13 @@ snapshot can be regenerated on a machine without GPUs or SGLang's dependencies.
 from __future__ import annotations
 
 import ast
+import gc
 import json
 import re
 import subprocess
 import warnings
+from collections.abc import Iterator
+from contextlib import contextmanager
 from pathlib import Path
 from typing import Any
 
@@ -395,8 +398,11 @@ def _instantiation_pattern(class_names: list[str]) -> re.Pattern[str] | None:
 
 
 FUSED_OP_BASE = "sglang.kernels.fused_op.BaseFusedOp"
-_FUSED_OP_PACKAGES = ("sglang/srt", "sglang/kernels")
+_RUNTIME_PACKAGES = ("sglang/srt", "sglang/kernels")
+_PLATFORMS_PACKAGE = Path("sglang/srt/platforms")
 _MAX_ALIAS_HOPS = 16
+
+ParsedModule = tuple[Path, ast.Module]
 
 
 def _module_qualname(path: Path, python_root: Path) -> str:
@@ -448,6 +454,34 @@ def _is_test_file(relative_parts: tuple[str, ...]) -> bool:
     return any(part in {"test", "tests"} for part in relative_parts) or relative_parts[
         -1
     ].startswith("test_")
+
+
+@contextmanager
+def _cyclic_gc_paused() -> Iterator[None]:
+    """Thousands of live AST trees (which hold no reference cycles) make every full collection
+    rescan millions of nodes; pausing the cyclic GC keeps parsing and extraction ~4x faster."""
+    was_enabled = gc.isenabled()
+    gc.disable()
+    try:
+        yield
+    finally:
+        if was_enabled:
+            gc.enable()
+
+
+def parse_runtime_modules(python_root: Path) -> list[ParsedModule]:
+    """``(path relative to python_root, tree)`` for every non-test module of the serving runtime."""
+    modules: list[ParsedModule] = []
+    with _cyclic_gc_paused():
+        for package in _RUNTIME_PACKAGES:
+            for path in sorted((python_root / package).rglob("*.py")):
+                relative = path.relative_to(python_root)
+                if _is_test_file(relative.parts):
+                    continue
+                tree = _parse_quietly(path)
+                if tree is not None:
+                    modules.append((relative, tree))
+    return modules
 
 
 def _only_raises_not_implemented(function: ast.FunctionDef | ast.AsyncFunctionDef) -> bool:
@@ -525,7 +559,82 @@ def _linearize(
     return cache[name]
 
 
-def extract_fused_op_classes(python_root: Path) -> dict[str, dict[str, Any]]:
+def _module_local_names(
+    module: str, is_package: bool, statements: list[ast.stmt]
+) -> dict[str, str]:
+    """Module-level names mapped to the qualified name they refer to (classes, imports, aliases)."""
+    local_names: dict[str, str] = {}
+    for statement in statements:
+        if isinstance(statement, ast.ClassDef):
+            local_names[statement.name] = f"{module}.{statement.name}"
+    for statement in statements:
+        if isinstance(statement, ast.ImportFrom):
+            source = _import_source(module, is_package, statement)
+            for alias in statement.names:
+                if alias.name != "*":
+                    local_names[alias.asname or alias.name] = f"{source}.{alias.name}"
+        elif isinstance(statement, ast.Import):
+            for alias in statement.names:
+                if alias.asname:
+                    local_names[alias.asname] = alias.name
+                else:
+                    head = alias.name.split(".")[0]
+                    local_names.setdefault(head, head)
+        elif (
+            isinstance(statement, ast.Assign)
+            and len(statement.targets) == 1
+            and isinstance(statement.targets[0], ast.Name)
+            and isinstance(statement.value, ast.Name)
+        ):
+            value_name = statement.value.id
+            local_names[statement.targets[0].id] = local_names.get(
+                value_name, f"{module}.{value_name}"
+            )
+    return local_names
+
+
+def _class_record(
+    class_node: ast.ClassDef, relative: Path, local_names: dict[str, str]
+) -> dict[str, Any]:
+    def resolve_base(node: ast.expr) -> str | None:
+        dotted = _dotted_name(node)
+        if not dotted:
+            return None
+        head, _, rest = dotted.partition(".")
+        if head in local_names:
+            return local_names[head] + (f".{rest}" if rest else "")
+        return dotted
+
+    forwards: set[str] = set()
+    stubs: set[str] = set()
+    forward_override: dict[str, Any] | None = None
+    for item in class_node.body:
+        if isinstance(item, (ast.FunctionDef, ast.AsyncFunctionDef)):
+            if item.name == "forward":
+                forward_override = _forward_override(item)
+            elif item.name.startswith("forward_"):
+                forwards.add(item.name)
+                if _only_raises_not_implemented(item):
+                    stubs.add(item.name)
+        elif isinstance(item, ast.Assign):
+            forwards.update(
+                target.id
+                for target in item.targets
+                if isinstance(target, ast.Name) and target.id.startswith("forward_")
+            )
+    return {
+        "file": (Path("python") / relative).as_posix(),
+        "line": class_node.lineno,
+        "bases": [base for base in map(resolve_base, class_node.bases) if base],
+        "forwards": forwards,
+        "stubs": stubs,
+        "forward_override": forward_override,
+    }
+
+
+def extract_fused_op_classes(
+    python_root: Path, modules: list[ParsedModule] | None = None
+) -> dict[str, dict[str, Any]]:
     """Every transitive subclass of ``BaseFusedOp`` with the ``forward_*`` methods it can dispatch to.
 
     Base names are resolved through each module's imports (and re-exports), so same-named classes
@@ -540,85 +649,19 @@ def extract_fused_op_classes(python_root: Path) -> dict[str, dict[str, Any]]:
     """
     aliases: dict[str, str] = {}
     classes: dict[str, dict[str, Any]] = {}
-    for package in _FUSED_OP_PACKAGES:
-        for path in sorted((python_root / package).rglob("*.py")):
-            relative = path.relative_to(python_root)
-            if _is_test_file(relative.parts):
-                continue
-            tree = _parse_quietly(path)
-            if tree is None:
-                continue
-            module = _module_qualname(path, python_root)
-            is_package = path.name == "__init__.py"
-            statements = _module_level_statements(tree.body)
-            local_names: dict[str, str] = {}
-            for statement in statements:
-                if isinstance(statement, ast.ClassDef):
-                    local_names[statement.name] = f"{module}.{statement.name}"
-            for statement in statements:
-                if isinstance(statement, ast.ImportFrom):
-                    source = _import_source(module, is_package, statement)
-                    for alias in statement.names:
-                        if alias.name != "*":
-                            local_names[alias.asname or alias.name] = f"{source}.{alias.name}"
-                elif isinstance(statement, ast.Import):
-                    for alias in statement.names:
-                        if alias.asname:
-                            local_names[alias.asname] = alias.name
-                        else:
-                            head = alias.name.split(".")[0]
-                            local_names.setdefault(head, head)
-                elif (
-                    isinstance(statement, ast.Assign)
-                    and len(statement.targets) == 1
-                    and isinstance(statement.targets[0], ast.Name)
-                    and isinstance(statement.value, ast.Name)
-                ):
-                    target_name = statement.targets[0].id
-                    value_name = statement.value.id
-                    local_names[target_name] = local_names.get(value_name, f"{module}.{value_name}")
-            for name, target in local_names.items():
-                own = f"{module}.{name}"
-                if target != own:
-                    aliases.setdefault(own, target)
-
-            def resolve_base(node: ast.expr, names: dict[str, str] = local_names) -> str | None:
-                dotted = _dotted_name(node)
-                if not dotted:
-                    return None
-                head, _, rest = dotted.partition(".")
-                if head in names:
-                    return names[head] + (f".{rest}" if rest else "")
-                return dotted
-
-            for statement in statements:
-                if not isinstance(statement, ast.ClassDef):
-                    continue
-                forwards: set[str] = set()
-                stubs: set[str] = set()
-                forward_override: dict[str, Any] | None = None
-                for item in statement.body:
-                    if isinstance(item, (ast.FunctionDef, ast.AsyncFunctionDef)):
-                        if item.name == "forward":
-                            forward_override = _forward_override(item)
-                        elif item.name.startswith("forward_"):
-                            forwards.add(item.name)
-                            if _only_raises_not_implemented(item):
-                                stubs.add(item.name)
-                    elif isinstance(item, ast.Assign):
-                        forwards.update(
-                            target.id
-                            for target in item.targets
-                            if isinstance(target, ast.Name) and target.id.startswith("forward_")
-                        )
-                classes[f"{module}.{statement.name}"] = {
-                    "file": (Path("python") / relative).as_posix(),
-                    "line": statement.lineno,
-                    "bases": [base for base in map(resolve_base, statement.bases) if base],
-                    "forwards": forwards,
-                    "stubs": stubs,
-                    "forward_override": forward_override,
-                }
+    for relative, tree in modules if modules is not None else parse_runtime_modules(python_root):
+        module = _module_qualname(python_root / relative, python_root)
+        statements = _module_level_statements(tree.body)
+        local_names = _module_local_names(module, relative.name == "__init__.py", statements)
+        for name, target in local_names.items():
+            own = f"{module}.{name}"
+            if target != own:
+                aliases.setdefault(own, target)
+        for statement in statements:
+            if isinstance(statement, ast.ClassDef):
+                classes[f"{module}.{statement.name}"] = _class_record(
+                    statement, relative, local_names
+                )
 
     def canonical(name: str) -> str:
         for _ in range(_MAX_ALIAS_HOPS):
@@ -667,6 +710,167 @@ def extract_fused_op_classes(python_root: Path) -> dict[str, dict[str, Any]]:
             "forward_override": forward_override,
         }
     return result
+
+
+_PLATFORM_HOOK_CLASSES = (("device_mixin.py", "DeviceMixin"), ("interface.py", "SRTPlatform"))
+_DOC_STATUS_RE = re.compile(r"\[(Active|Planned)\]\s*")
+
+
+def _body_without_docstring(function: ast.FunctionDef | ast.AsyncFunctionDef) -> list[ast.stmt]:
+    body = function.body
+    if (
+        body
+        and isinstance(body[0], ast.Expr)
+        and isinstance(body[0].value, ast.Constant)
+        and isinstance(body[0].value.value, str)
+    ):
+        return body[1:]
+    return body
+
+
+def _hook_default(function: ast.FunctionDef | ast.AsyncFunctionDef) -> tuple[str, Any]:
+    """``(kind, literal)``: raises / noop / returns (with the literal) / implemented."""
+    if _only_raises_not_implemented(function):
+        return "raises", None
+    body = _body_without_docstring(function)
+    if all(
+        isinstance(statement, ast.Pass)
+        or (
+            isinstance(statement, ast.Expr)
+            and isinstance(statement.value, ast.Constant)
+            and statement.value.value is Ellipsis
+        )
+        for statement in body
+    ):
+        return "noop", None
+    if len(body) == 1 and isinstance(body[0], ast.Return):
+        value = _literal(body[0].value) if body[0].value is not None else None
+        if value is not _UNRESOLVED:
+            return "returns", value
+    return "implemented", None
+
+
+def _is_platform_expression(node: ast.AST) -> bool:
+    """``current_platform`` or ``<package>.current_platform`` (e.g. ``platforms.current_platform``)."""
+    if isinstance(node, ast.Name):
+        return node.id == "current_platform"
+    return isinstance(node, ast.Attribute) and node.attr == "current_platform"
+
+
+def _is_identity_query(function: ast.FunctionDef | ast.AsyncFunctionDef) -> bool:
+    return any(
+        isinstance(node, ast.Attribute) and node.attr == "_enum" for node in ast.walk(function)
+    ) or any(_dotted_name(decorator).endswith("property") for decorator in function.decorator_list)
+
+
+def extract_platform_hooks(
+    python_root: Path, modules: list[ParsedModule] | None = None
+) -> dict[str, Any]:
+    """Platform plugin interface: hooks, class attributes and capability flags, with call sites.
+
+    ``doc_status`` is the ``[Active]``/``[Planned]`` tag from the docstring; ``call_sites`` are the
+    accesses outside ``srt/platforms`` (tests excluded) through ``current_platform``,
+    ``platforms.current_platform`` or a local name bound only to one of them. A hook tagged Planned
+    can still have call sites, and an Active one can have none: trust the call sites.
+    """
+    hooks: dict[str, dict[str, Any]] = {}
+    attributes: dict[str, dict[str, Any]] = {}
+    capabilities: dict[str, dict[str, Any]] = {}
+    for file_name, class_name in _PLATFORM_HOOK_CLASSES:
+        relative = _PLATFORMS_PACKAGE / file_name
+        tree = _parse_quietly(python_root / relative)
+        if tree is None:
+            continue
+        for node in tree.body:
+            if not isinstance(node, ast.ClassDef):
+                continue
+            if node.name == "PlatformCapabilities":
+                for item in node.body:
+                    if isinstance(item, ast.AnnAssign) and isinstance(item.target, ast.Name):
+                        default = _literal(item.value)
+                        capabilities[item.target.id] = {
+                            "default": None if default is _UNRESOLVED else default,
+                            "source": f"python/{relative.as_posix()}:{item.lineno}",
+                            "readers": [],
+                        }
+            if node.name != class_name:
+                continue
+            for item in node.body:
+                if isinstance(item, (ast.FunctionDef, ast.AsyncFunctionDef)):
+                    if item.name.startswith("_") or _is_identity_query(item):
+                        continue
+                    docstring = (ast.get_docstring(item) or "").strip()
+                    status = _DOC_STATUS_RE.search(docstring)
+                    first_line = docstring.splitlines()[0] if docstring else ""
+                    kind, returned = _hook_default(item)
+                    record: dict[str, Any] = {
+                        "defined_in": class_name,
+                        "source": f"python/{relative.as_posix()}:{item.lineno}",
+                        "doc_status": status.group(1) if status else None,
+                        "default": kind,
+                        "summary": _first_sentence(_DOC_STATUS_RE.sub("", first_line), 160),
+                        "call_sites": [],
+                    }
+                    if kind == "returns":
+                        record["default_return"] = returned
+                    hooks[item.name] = record
+                elif isinstance(item, (ast.Assign, ast.AnnAssign)):
+                    target = item.targets[0] if isinstance(item, ast.Assign) else item.target
+                    if isinstance(target, ast.Name) and not target.id.startswith("_"):
+                        attributes[target.id] = {
+                            "defined_in": class_name,
+                            "source": f"python/{relative.as_posix()}:{item.lineno}",
+                            "readers": [],
+                        }
+    platforms_prefix = _PLATFORMS_PACKAGE.parts
+    for relative, tree in modules if modules is not None else parse_runtime_modules(python_root):
+        if relative.parts[: len(platforms_prefix)] == platforms_prefix:
+            continue
+        if "current_platform" not in (python_root / relative).read_text(encoding="utf-8"):
+            continue
+        bound_to_platform: set[str] = set()
+        bound_elsewhere: set[str] = set()
+        accesses: list[ast.Attribute] = []
+        for node in ast.walk(tree):
+            if isinstance(node, ast.Attribute):
+                accesses.append(node)
+            elif isinstance(node, (ast.Assign, ast.AnnAssign)):
+                targets = node.targets if isinstance(node, ast.Assign) else [node.target]
+                for target in targets:
+                    if isinstance(target, ast.Name):
+                        is_platform = node.value is not None and _is_platform_expression(node.value)
+                        (bound_to_platform if is_platform else bound_elsewhere).add(target.id)
+        aliases = bound_to_platform - bound_elsewhere
+
+        def is_platform(receiver: ast.AST, alias_names: set[str] = aliases) -> bool:
+            return _is_platform_expression(receiver) or (
+                isinstance(receiver, ast.Name) and receiver.id in alias_names
+            )
+
+        for node in accesses:
+            location = f"python/{relative.as_posix()}:{node.lineno}"
+            receiver = node.value
+            if is_platform(receiver):
+                if node.attr in hooks:
+                    hooks[node.attr]["call_sites"].append(location)
+                elif node.attr in attributes:
+                    attributes[node.attr]["readers"].append(location)
+            elif (
+                isinstance(receiver, ast.Attribute)
+                and receiver.attr == "capabilities"
+                and is_platform(receiver.value)
+                and node.attr in capabilities
+            ):
+                capabilities[node.attr]["readers"].append(location)
+    for table, key in ((hooks, "call_sites"), (attributes, "readers"), (capabilities, "readers")):
+        for record in table.values():
+            record[key] = sorted(set(record[key]), key=_location_sort_key)
+    return {"hooks": hooks, "attributes": attributes, "capabilities": capabilities}
+
+
+def _location_sort_key(location: str) -> tuple[str, int]:
+    path, _, line = location.rpartition(":")
+    return (path, int(line)) if line.isdigit() else (location, 0)
 
 
 def _enum_member_values(path: Path, class_name: str) -> dict[str, str]:
@@ -757,6 +961,11 @@ def _git_commit(repo_root: Path) -> tuple[str | None, str | None]:
 
 
 def build_snapshot(sglang_root: Path) -> dict[str, Any]:
+    with _cyclic_gc_paused():
+        return _build_snapshot(sglang_root)
+
+
+def _build_snapshot(sglang_root: Path) -> dict[str, Any]:
     sglang_root = sglang_root.resolve()
     srt = sglang_root / "python" / "sglang" / "srt"
     if not srt.is_dir():
@@ -775,6 +984,8 @@ def build_snapshot(sglang_root: Path) -> dict[str, Any]:
     )
     tbo_layer_classes = extract_tbo_layer_classes(srt / "batch_overlap" / "operations_strategy.py")
     tbo_pattern = _instantiation_pattern(tbo_layer_classes)
+    python_root = sglang_root / "python"
+    runtime_modules = parse_runtime_modules(python_root)
     return {
         "schema_version": SNAPSHOT_SCHEMA_VERSION,
         "sglang_commit": commit,
@@ -812,10 +1023,9 @@ def build_snapshot(sglang_root: Path) -> dict[str, Any]:
         "dwdp_architectures": _architectures_in_files_matching(
             srt / "models", re.compile(r"def forward_dwdp\(")
         ),
-        "fused_op_dispatch": extract_fused_op_dispatch(
-            sglang_root / "python" / "sglang" / "kernels"
-        ),
-        "fused_op_classes": extract_fused_op_classes(sglang_root / "python"),
+        "fused_op_dispatch": extract_fused_op_dispatch(python_root / "sglang" / "kernels"),
+        "fused_op_classes": extract_fused_op_classes(python_root, runtime_modules),
+        "platform_interface": extract_platform_hooks(python_root, runtime_modules),
     }
 
 
