@@ -6,6 +6,12 @@ from sgl_agent.features.base import (
     FeatureContext,
     build_context,
 )
+from sgl_agent.features.moe_cache import (
+    advise_eplb,
+    advise_expert_parallel,
+    advise_hicache,
+    advise_tbo,
+)
 from sgl_agent.features.parallelism import (
     advise_dcp,
     advise_dp_attention,
@@ -19,7 +25,11 @@ __all__ = [
     "FeatureContext",
     "advise_dcp",
     "advise_dp_attention",
+    "advise_eplb",
+    "advise_expert_parallel",
+    "advise_hicache",
     "advise_layernorm_sp",
     "advise_prefill_cp",
+    "advise_tbo",
     "build_context",
 ]
