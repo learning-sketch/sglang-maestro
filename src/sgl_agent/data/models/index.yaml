@@ -1,0 +1,6 @@
+# Bundled Hugging Face config.json files (unmodified copies) and the repos they came from.
+deepseek-v3: {file: deepseek-v3.json, hf_repo: deepseek-ai/DeepSeek-V3}
+qwen3-235b-a22b: {file: qwen3-235b-a22b.json, hf_repo: Qwen/Qwen3-235B-A22B}
+qwen3-30b-a3b: {file: qwen3-30b-a3b.json, hf_repo: Qwen/Qwen3-30B-A3B}
+qwen3-32b: {file: qwen3-32b.json, hf_repo: Qwen/Qwen3-32B}
+qwen2.5-72b-instruct: {file: qwen2.5-72b-instruct.json, hf_repo: Qwen/Qwen2.5-72B-Instruct}

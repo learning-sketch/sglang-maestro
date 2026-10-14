@@ -1,0 +1,80 @@
+# NVIDIA H100 SXM5 80GB, kept as a reference point for H20 comparisons.
+# Dense peaks from the H100 architecture whitepaper; efficiency/latency are assumptions.
+name: NVIDIA H100 SXM
+aliases: [h100, h100-sxm, h100_sxm]
+vendor: NVIDIA
+architecture: Hopper (SM90)
+memory:
+  capacity_mib: 81559        # as reported by nvidia-smi; marketed as 80 GB HBM3
+  marketed_capacity_gb: 80
+  bandwidth_gbps: 3352
+  l2_cache_mb: 50
+compute_tflops:
+  bf16: 989.4
+  fp16: 989.4
+  fp8: 1978.9
+  int8: 1978.9
+  tf32: 494.7
+  fp32: 66.9
+num_compute_units: 132
+power_watts: 700
+interconnect:
+  intra_node:
+    bandwidth_gbps: 450
+    topology: nvswitch
+    devices_per_node: 8
+  inter_node:
+    bandwidth_gbps: 50
+  host_link:
+    bandwidth_gbps: 64
+software:
+  platform: cuda
+  torch_device_name: NVIDIA H100 80GB HBM3
+  compute_capability: "9.0"
+  gemm_dtypes: [bf16, fp16, fp8, int8]
+  kv_cache_dtypes: [bf16, fp16, fp8_e4m3, fp8_e5m2]
+  attention_backends: [fa3, flashinfer, triton, flashmla, trtllm_mha, hpc_ops, fa4, torch_native, flex_attention]
+  default_attention_backend: fa3
+  moe_runner_backends: [auto, triton, deep_gemm, marlin, hpc_ops]
+  moe_a2a_backends: [none, deepep]
+  fused_ops:
+    - rmsnorm
+    - fused_add_rmsnorm
+    - layernorm
+    - silu_and_mul
+    - gelu_and_mul
+    - rope
+    - qk_norm
+    - kv_cache_store
+    - topk_softmax
+    - grouped_topk
+    - moe_align
+    - fused_moe
+    - moe_sum
+    - per_token_group_quant_fp8
+    - fp8_blockwise_gemm
+    - fp8_gemm
+    - int8_gemm
+    - w4a16_gemm
+    - sampling
+    - custom_allreduce
+    - allreduce_rmsnorm_fusion
+    - attention_mha_prefill
+    - attention_mha_decode
+    - attention_mla_prefill
+    - attention_mla_decode
+    - attention_sliding_window
+    - hicache_transfer
+  collective_library: nccl
+  supports_triton: true
+  graph_capture: true
+  piecewise_graph: true
+  hicache_device_kernels: true
+  custom_allreduce: true
+  allreduce_fusion: true
+  torch_compile: true
+  multi_stream: true
+  l2_prefetch: true
+  rdma: true
+sources:
+  - https://resources.nvidia.com/en-us-gpu/h100-datasheet-24306

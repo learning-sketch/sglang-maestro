@@ -1,0 +1,65 @@
+# TEMPLATE for an H20-class accelerator that is NOT a CUDA device (all numbers are placeholders).
+# Copy this file, fill in your chip's datasheet and its actual software stack, then run e.g.
+#   sgl-agent adapt --model deepseek-v3 --hardware ./my-chip.yaml
+# The software section drives the adaptation gap analysis: anything not listed is treated as
+# "must be provided by your SGLang platform plugin".
+name: Example H20-class accelerator (placeholder)
+aliases: [h20-class-template]
+vendor: example
+architecture: example
+memory:
+  capacity_gb: 96
+  bandwidth_gbps: 4000
+  l2_cache_mb: 64
+compute_tflops:
+  bf16: 150
+  fp16: 150
+  int8: 300                  # this example chip has INT8 but no FP8 tensor units
+  fp32: 40
+power_watts: 400
+interconnect:
+  intra_node:
+    bandwidth_gbps: 400
+    topology: fullmesh
+    devices_per_node: 8
+  inter_node:
+    bandwidth_gbps: 50
+  host_link:
+    bandwidth_gbps: 64
+software:
+  platform: oot              # out-of-tree SGLang platform plugin (entry point group sglang.srt.platforms)
+  torch_device_name: ExampleNPU
+  compute_capability: null
+  gemm_dtypes: [bf16, fp16, int8]
+  kv_cache_dtypes: [bf16, fp16]
+  attention_backends: []     # no in-tree SGLang attention backend runs here yet
+  default_attention_backend: null
+  moe_runner_backends: []
+  moe_a2a_backends: [none]
+  fused_ops: [rmsnorm, fused_add_rmsnorm, silu_and_mul, rope, int8_gemm, sampling]
+  collective_library: vendor-ccl
+  supports_triton: false
+  graph_capture: true
+  piecewise_graph: false
+  hicache_device_kernels: false
+  custom_allreduce: false
+  allreduce_fusion: false
+  torch_compile: false
+  multi_stream: true
+  l2_prefetch: true
+  rdma: true
+efficiency:
+  gemm_compute: 0.60
+  attention_compute: 0.45
+  memory_bandwidth: 0.75
+  intra_node_comm: 0.60
+  inter_node_comm: 0.60
+  host_link: 0.70
+latency:
+  kernel_launch_us: 8.0
+  graph_kernel_gap_us: 2.0
+  collective_base_us: 20.0
+  inter_node_collective_base_us: 40.0
+  step_overhead_us: 600.0
+notes:
+  - "Placeholder values. Replace every number with your vendor datasheet and measured microbenchmarks."

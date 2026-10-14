@@ -1,0 +1,101 @@
+# NVIDIA H20 (HGX board, SXM). Datasheet values below are dense (non-sparse) peaks.
+# The `efficiency` and `latency` sections are modelling assumptions: replace them with
+# `sgl-agent calibrate` results measured on your machines.
+name: NVIDIA H20
+aliases: [h20, h20-96g, h20_sxm]
+vendor: NVIDIA
+architecture: Hopper (SM90)
+memory:
+  capacity_mib: 97871        # as reported by nvidia-smi; marketed as 96 GB HBM3
+  marketed_capacity_gb: 96
+  bandwidth_gbps: 4000       # 4.0 TB/s; SGLang's simulator spec table uses 4022
+  l2_cache_mb: 60
+compute_tflops:
+  bf16: 148
+  fp16: 148
+  fp8: 296                   # 592 with 2:4 sparsity
+  int8: 296
+  tf32: 74
+  fp32: 44
+num_compute_units: 78        # not in NVIDIA's datasheet; third-party (Geekbench) reports
+interconnect:
+  intra_node:
+    bandwidth_gbps: 450      # NVLink 900 GB/s bidirectional -> 450 GB/s per direction
+    topology: nvswitch
+    devices_per_node: 8
+  inter_node:
+    bandwidth_gbps: 50       # assumption: one 400 Gb/s RDMA NIC per GPU; set to your cluster
+  host_link:
+    bandwidth_gbps: 64       # PCIe Gen5 x16: 128 GB/s bidirectional
+software:
+  platform: cuda
+  torch_device_name: NVIDIA H20
+  compute_capability: "9.0"
+  gemm_dtypes: [bf16, fp16, fp8, int8]
+  kv_cache_dtypes: [bf16, fp16, fp8_e4m3, fp8_e5m2]
+  attention_backends: [fa3, flashinfer, triton, flashmla, trtllm_mha, hpc_ops, fa4, torch_native, flex_attention]
+  default_attention_backend: fa3
+  moe_runner_backends: [auto, triton, deep_gemm, marlin, hpc_ops]
+  moe_a2a_backends: [none, deepep]
+  fused_ops:
+    - rmsnorm
+    - fused_add_rmsnorm
+    - layernorm
+    - silu_and_mul
+    - gelu_and_mul
+    - rope
+    - qk_norm
+    - kv_cache_store
+    - topk_softmax
+    - grouped_topk
+    - moe_align
+    - fused_moe
+    - moe_sum
+    - per_token_group_quant_fp8
+    - fp8_blockwise_gemm
+    - fp8_gemm
+    - int8_gemm
+    - w4a16_gemm
+    - sampling
+    - custom_allreduce
+    - allreduce_rmsnorm_fusion
+    - attention_mha_prefill
+    - attention_mha_decode
+    - attention_mla_prefill
+    - attention_mla_decode
+    - attention_sliding_window
+    - hicache_transfer
+  collective_library: nccl
+  supports_triton: true
+  graph_capture: true
+  piecewise_graph: true
+  hicache_device_kernels: true
+  custom_allreduce: true
+  allreduce_fusion: true
+  torch_compile: true
+  multi_stream: true
+  l2_prefetch: true          # PTX cp.async.bulk.prefetch.L2.global (PTX ISA 8.0, sm_90+)
+  rdma: true
+  notes:
+    - "Hopper defaults in SGLang: fa3 for MHA and MLA attention; trtllm_mha (XQA) is an optimized SM90 decode backend that needs page size 16/32/64."
+    - "FlashMLA needs page size 64; hpc_ops needs the hpc package, page size 64, head_dim 128."
+efficiency:
+  gemm_compute: 0.70
+  attention_compute: 0.55
+  memory_bandwidth: 0.80
+  intra_node_comm: 0.70
+  inter_node_comm: 0.70
+  host_link: 0.75
+latency:
+  kernel_launch_us: 4.0
+  graph_kernel_gap_us: 1.0
+  collective_base_us: 10.0
+  inter_node_collective_base_us: 25.0
+  step_overhead_us: 400.0
+sources:
+  - https://viperatech.com/product/nvidia-hgx-h20
+  - https://github.com/sgl-project/sglang/blob/main/tools/sglang-simulator/src/sglang_simulator/spec/accelerator/info.py
+  - https://docs.nvidia.com/cuda/parallel-thread-execution/
+notes:
+  - "BF16 ridge point = 148 TFLOPS / 4.0 TB/s = 37 FLOPs/byte (H100 SXM: ~295). Decode GEMMs turn compute-bound at ~37 tokens per GPU."
+  - "Compute is ~6.7x lower than H100 while HBM bandwidth is ~1.2x higher: prefill is the bottleneck, small-batch decode is not."
