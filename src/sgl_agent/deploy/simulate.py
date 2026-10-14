@@ -68,6 +68,8 @@ class SimRequest:
     hit: int = 0
     host_hit: int = 0
     private: int = 0
+    decode_reserved: int = 0
+    """KV tokens the PD decode server preallocated (the prefill side keeps its own ``private``)."""
     keys: tuple = ()
     reserve: float = 0.0
     first_token: float | None = None
@@ -737,7 +739,7 @@ class ClusterSim:
                 rank.prealloc.popleft()
                 rank.pending += 1
                 rank.pending_tokens += tokens
-                req.private = tokens
+                req.decode_reserved = tokens
                 if req.resume or not self.prefill:
                     rank.ready.append(req)
                     self._kick(instance)
@@ -844,7 +846,8 @@ class ClusterSim:
         while rank.ready and rank.n < spec.max_running_per_rank:
             req = rank.ready.popleft()
             rank.pending -= 1
-            rank.pending_tokens -= req.private
+            rank.pending_tokens -= req.decode_reserved
+            req.private = req.decode_reserved
             if req.first_token is None:
                 req.first_token = self.now
                 req.generated = max(req.generated, 1.0)
