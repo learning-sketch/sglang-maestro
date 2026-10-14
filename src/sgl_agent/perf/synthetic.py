@@ -609,7 +609,7 @@ def generate_synthetic_traces(
                 "distributedInfo": {
                     "backend": hardware.software.collective_library,
                     "rank": state.rank,
-                    "world_size": num_ranks,
+                    "world_size": parallel.num_gpus,
                 },
                 "traceEvents": sorted(state.events, key=lambda event: event["ts"]),
             }

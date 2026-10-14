@@ -19,7 +19,7 @@ import gzip
 import json
 import re
 from collections import defaultdict, deque
-from dataclasses import dataclass, field
+from dataclasses import dataclass, field, fields
 from pathlib import Path
 from typing import Any
 
@@ -79,6 +79,21 @@ class TraceDialect:
             "cuMemcpyHtoDAsync_v2",
         }
     )
+
+    @classmethod
+    def from_dict(cls, payload: dict[str, Any]) -> TraceDialect:
+        """Replace the listed fields (each a list of names); unlisted fields keep the CUDA defaults."""
+        known = {item.name for item in fields(cls)}
+        unknown = sorted(set(payload) - known)
+        if unknown:
+            raise ValueError(f"unknown trace dialect fields {unknown}; known: {sorted(known)}")
+        overrides: dict[str, frozenset[str]] = {}
+        for key, value in payload.items():
+            names = [value] if isinstance(value, str) else value
+            if not isinstance(names, (list, tuple, set, frozenset)) or not names:
+                raise ValueError(f"trace dialect field {key!r} must be a non-empty list of names")
+            overrides[key] = frozenset(str(name) for name in names)
+        return cls(**overrides)
 
 
 @dataclass(slots=True)
@@ -160,6 +175,8 @@ class ParsedTrace:
     has_step_spans: bool = False
     synthetic: bool = False
     warnings: list[str] = field(default_factory=list)
+    world_size: int | None = None
+    """``distributedInfo.world_size`` written by the torch profiler (TP × PP in SGLang)."""
 
     @property
     def primary_rank(self) -> str:
@@ -358,14 +375,19 @@ def load_trace(
     runtime_totals: dict[str, int] = defaultdict(int)
     warnings: list[str] = []
     synthetic = False
+    world_sizes: set[int] = set()
     kernel_like = dialect.kernel_categories | dialect.memcpy_categories | dialect.memset_categories
 
     for file_index, path in enumerate(files):
         payload = load_trace_payload(path)
         synthetic = synthetic or bool(payload.get("synthetic"))
+        distributed = payload.get("distributedInfo")
+        if not isinstance(distributed, dict):
+            distributed = {}
+        if _as_int(distributed.get("world_size"), 0) > 0:
+            world_sizes.add(_as_int(distributed["world_size"]))
         file_rank = rank_from_filename(path)
         if file_rank is None:
-            distributed = payload.get("distributedInfo") or {}
             file_rank = f"TP{distributed['rank']}" if "rank" in distributed else f"file{file_index}"
         properties = payload.get("deviceProperties") or []
         if properties and isinstance(properties, list) and isinstance(properties[0], dict):
@@ -603,6 +625,10 @@ def load_trace(
             f"{unattributed} 个 kernel 的 correlation 找不到对应的 runtime 调用，"
             "可能是 trace 被截断或采集时没有开启 CPU activity。"
         )
+    if len(world_sizes) > 1:
+        warnings.append(
+            f"trace 文件的 distributedInfo.world_size 不一致（{sorted(world_sizes)}）：可能混入了不同部署的 profile。"
+        )
     kernels.sort(key=lambda item: (_rank_sort_key(item.rank), item.start_us))
     steps.sort(key=lambda item: (_rank_sort_key(item.rank), item.ordinal))
     return ParsedTrace(
@@ -616,6 +642,7 @@ def load_trace(
         has_step_spans=has_step_spans,
         synthetic=synthetic,
         warnings=warnings,
+        world_size=max(world_sizes) if world_sizes else None,
     )
 
 
