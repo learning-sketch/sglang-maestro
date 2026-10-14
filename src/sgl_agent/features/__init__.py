@@ -1,0 +1,25 @@
+"""Scenario 3: framework features (DP attention, CP, DCP, SP, HiCache, EP/DeepEP, TBO, EPLB, speculative)."""
+
+from sgl_agent.features.base import (
+    DecodePoint,
+    FeatureAdvice,
+    FeatureContext,
+    build_context,
+)
+from sgl_agent.features.parallelism import (
+    advise_dcp,
+    advise_dp_attention,
+    advise_layernorm_sp,
+    advise_prefill_cp,
+)
+
+__all__ = [
+    "DecodePoint",
+    "FeatureAdvice",
+    "FeatureContext",
+    "advise_dcp",
+    "advise_dp_attention",
+    "advise_layernorm_sp",
+    "advise_prefill_cp",
+    "build_context",
+]
