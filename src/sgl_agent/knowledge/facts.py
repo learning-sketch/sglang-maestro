@@ -159,6 +159,23 @@ PREFILL_CP_INTERLEAVE_ONLY_ARCHITECTURES = frozenset({"DeepseekV32ForCausalLM"})
 PREFILL_CP_ZIGZAG_ONLY_ARCHITECTURES = frozenset({"MiMoV2ForCausalLM", "MiMoV2FlashForCausalLM"})
 PREFILL_CP_HIP_ARCHITECTURES = frozenset({"DeepseekV4ForCausalLM"})
 NO_ATTN_CP_MODEL_TYPES = frozenset({"nemotron_h", "nemotron_h_puzzle"})
+PREFILL_CP_STRATEGY_BACKENDS = {"zigzag": ("fa3", "fa4", "trtllm_mha"), "interleave": ("dsa",)}
+"""Attention backends each CP strategy runs on (``get_supported_attention_backend``; fa3/fa4 are
+``flashattention_backend``). No other backend calls into the CP strategy."""
+PREFILL_CP_MIN_TOKENS_FACTOR = 2
+"""zigzag ``can_apply``: a batch uses CP only if every extend length is at least 2 x cp."""
+DCP_ATTENTION_BACKENDS = (
+    "flashmla",
+    "cutedsl_mla",
+    "trtllm_mla",
+    "tokenspeed_mla",
+    "flashinfer",
+    "triton",
+    "dsa",
+    "aiter",
+    "intel_xpu",
+)
+"""Attention backends that read ``attn_dcp_size`` (fa3 does not); FlashMLA rejects DCP + FP8 KV."""
 BREAKABLE_PREFILL_GRAPH_A2A_BACKENDS = ("none", "deepep", "megamoe", "flashinfer")
 """a2a backends the breakable prefill CUDA graph is validated with; DCP > 1, TBO and CP > 1
 (outside the supported prefill-CP path) also turn the prefill graph off."""
@@ -930,6 +947,31 @@ SOURCES: dict[str, str] = {
     ),
     "expert_distribution": (
         "python/sglang/srt/eplb/expert_distribution.py (--expert-distribution-recorder-mode)"
+    ),
+    "prefill_cp_backends": (
+        "python/sglang/srt/layers/cp/zigzag.py, interleave.py::get_supported_attention_backend "
+        "(CP attention in flashattention_backend.py, trtllm_mha_backend.py, dsa_backend.py)"
+    ),
+    "prefill_cp_can_apply": (
+        "python/sglang/srt/layers/cp/zigzag.py::can_apply (every extend length >= 2 x cp, "
+        "EXTEND/MIXED only)"
+    ),
+    "dcp_kv_heads": (
+        "python/sglang/srt/configs/model_config.py::get_num_kv_heads (heads shard over tp // dcp), "
+        "python/sglang/srt/arg_groups/attention_hook.py::_check_xpu_dcp (every rank of a DCP "
+        "group must hold the same KV heads)"
+    ),
+    "dcp_attention_backends": (
+        "python/sglang/srt/layers/attention/{flashmla,cutedsl_mla,trtllm_mla,tokenspeed_mla,"
+        "flashinfer,flashinfer_mla,triton,dsa,aiter,xpu}_backend.py (attn_dcp_size)"
+    ),
+    "load_balance_default": (
+        "python/sglang/srt/arg_groups/serving_hook.py::handle_load_balance_method (auto: "
+        "round_robin, follow_bootstrap_room on PD prefill)"
+    ),
+    "dflash_rules": (
+        "python/sglang/srt/arg_groups/speculative_hook.py::_handle_dflash (draft model required, "
+        "no attention DP except NPU, pp_size 1, steps/topk forced to 1)"
     ),
 }
 
