@@ -212,6 +212,14 @@ class Workload:
         return self.num_prompts
 
     @property
+    def effective_request_rate(self) -> float | None:
+        """Requests per second the server receives (a multi-turn session sends ``num_turns``)."""
+        if self.request_rate is None:
+            return None
+        turns = self.shared_prefix.num_turns if self.shared_prefix else 1
+        return self.request_rate * turns
+
+    @property
     def mean_output_len(self) -> float:
         return mean_length(self.output_len, self.range_ratio)
 
