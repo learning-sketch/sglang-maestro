@@ -64,6 +64,13 @@ class AnalysisContext:
     def expectation(self, group: GroupSummary) -> GroupExpectation | None:
         return self.expectations.get(id(group))
 
+    def representative_step_id(self, group: GroupSummary) -> int:
+        """Step id whose span is closest to the group median."""
+        target = group.step_us
+        return min(
+            group.step_ids, key=lambda step_id: abs(self.metrics_by_step[step_id].span_us - target)
+        )
+
     @property
     def sm_major(self) -> int | None:
         capability = self.hardware.software.compute_capability if self.hardware else None

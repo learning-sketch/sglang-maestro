@@ -21,6 +21,12 @@ FUSED_MOE_SUM_ALLREDUCE_MIN_TOP_K = 3
 TORCH_COMPILE_MAX_BS_DEFAULT = 32
 """``--torch-compile-max-bs`` default: torch.compile only covers decode batches up to this size."""
 
+FUSED_QK_NORM_ROPE_HEAD_DIMS = (64, 128, 256)
+"""Head dims the JIT fused QK-norm + RoPE kernel supports (BF16 only, no MRoPE)."""
+
+FUSED_INPLACE_QKNORM_HEAD_DIMS = (64, 128, 256, 512, 1024)
+"""Head dims the JIT in-place QK-norm kernel (q and k in one launch) supports."""
+
 DEFAULT_DECODE_GRAPH_BACKEND = "full"
 DEFAULT_PREFILL_GRAPH_BACKEND_CUDA = "breakable"
 
@@ -36,6 +42,16 @@ SOURCES: dict[str, str] = {
         "python/sglang/srt/model_executor/runner/decode_cuda_graph_runner.py::can_run_graph"
     ),
     "fused_add_rmsnorm": "python/sglang/srt/layers/layernorm.py::RMSNorm.forward_cuda",
+    "rmsnorm_native_fallback": (
+        "python/sglang/srt/layers/layernorm.py::RMSNorm.forward_cuda (batch-invariant mode with "
+        "a residual, or variance_size_override -> forward_native)"
+    ),
+    "batch_invariant_mode": (
+        "python/sglang/srt/model_executor/model_runner.py::maybe_enable_batch_invariant_mode "
+        "(--enable-deterministic-inference)"
+    ),
+    "npu_add_rmsnorm": "python/sglang/srt/layers/layernorm.py::RMSNorm.forward_npu",
+    "layer_boundary": "python/sglang/srt/layers/layer_boundary/residual/add_norm.py",
     "silu_and_mul": "python/sglang/srt/layers/activation.py::SiluAndMul",
     "allreduce_fusion": (
         "python/sglang/srt/layers/layer_boundary/residual/add_norm.py::flashinfer_ar_fusion_applies"
@@ -49,6 +65,17 @@ SOURCES: dict[str, str] = {
     "allreduce_fusion_boundary": (
         "python/sglang/srt/layers/layer_boundary/fusions/allreduce.py::fused_ffn_input"
     ),
+    "allreduce_fusion_deterministic": (
+        "python/sglang/srt/arg_groups/model_hook.py::handle_model_specific_adjustments "
+        "(--enable-deterministic-inference -> enforce-disable)"
+    ),
+    "allreduce_fusion_unavailable": (
+        "python/sglang/srt/layers/flashinfer_comm_fusion.py (allreduce_fusion API is not "
+        "available -> standard implementation)"
+    ),
+    "allreduce_fusion_norm": (
+        "python/sglang/srt/layers/layernorm.py::RMSNorm.forward_with_allreduce_fusion"
+    ),
     "norm_quant_fusion": (
         "python/sglang/srt/layers/layer_boundary/residual/add_norm.py::_norm_quant_kernel"
     ),
@@ -56,7 +83,19 @@ SOURCES: dict[str, str] = {
     "act_quant_fusion": (
         "python/sglang/kernels/ops/moe/ep_moe_kernels.py::silu_and_mul_masked_post_quant_fwd"
     ),
+    "group_quant_fused_silu": (
+        "python/sglang/kernels/ops/quantization/per_token_group_quant.py::per_token_group_quant "
+        "(fuse_silu_and_mul=True)"
+    ),
+    "deep_gemm_masked_act_quant": (
+        "python/sglang/srt/layers/moe/moe_runner/deep_gemm.py (masked layout: "
+        "per_token_group_quant(fuse_silu_and_mul=True))"
+    ),
     "qk_norm": "python/sglang/srt/models/utils.py::apply_qk_norm",
+    "fused_inplace_qknorm": "python/sglang/kernels/ops/layernorm/norm.py::can_use_fused_inplace_qknorm",
+    "fused_qk_norm_rope_kernel": (
+        "python/sglang/kernels/ops/attention/fused_qknorm_rope.py::can_use_fused_qk_norm_rope"
+    ),
     "fused_qk_norm_rope": "python/sglang/srt/arg_groups/fields/exec_.py (--enable-fused-qk-norm-rope)",
     "fused_qk_norm_rope_model": "python/sglang/srt/models/qwen3_moe.py (use_fused_qk_norm_rope)",
     "fused_set_kv_buffer": "python/sglang/srt/models/utils.py::enable_fused_set_kv_buffer",

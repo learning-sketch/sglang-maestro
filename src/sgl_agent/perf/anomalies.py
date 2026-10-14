@@ -112,14 +112,6 @@ def _attention_work(step: StepSpan) -> float | None:
     return work if work > 0 else None
 
 
-def _representative_step(context: AnalysisContext, group: GroupSummary) -> int:
-    """Step id whose span is closest to the group median."""
-    target = group.step_us
-    return min(
-        group.step_ids, key=lambda step_id: abs(context.metrics_by_step[step_id].span_us - target)
-    )
-
-
 def _category_of(context: AnalysisContext, step_id: int, index: int) -> str:
     return context.kernels_by_step[step_id][index].category
 
@@ -622,6 +614,21 @@ def compare_ranks(context: AnalysisContext) -> tuple[list[dict], list[Finding]]:
 
 
 # ---------------------------------------------------------------- launch / host bound
+def is_graph_candidate_eager(group: GroupSummary) -> bool:
+    """An eager group SGLang could run as a CUDA graph: decode, or a small launch-bound prefill."""
+    if group.graph_fraction is None or group.graph_fraction >= EAGER_GRAPH_FRACTION:
+        return False
+    if group.kernels_per_step < EAGER_MIN_KERNELS:
+        return False
+    small_prefill = (
+        group.stage == "EXTEND"
+        and group.extend_tokens is not None
+        and group.extend_tokens <= PREFILL_GRAPH_MAX_TOKENS
+        and group.idle_ratio >= 0.2
+    )
+    return group.is_decode_like or small_prefill
+
+
 def detect_eager_steps(context: AnalysisContext) -> tuple[list[Finding], set[int]]:
     findings: list[Finding] = []
     handled: set[int] = set()
@@ -633,17 +640,7 @@ def detect_eager_steps(context: AnalysisContext) -> tuple[list[Finding], set[int
         if group.is_decode_like and group.graph_fraction is not None and group.graph_fraction >= 0.9
     ]
     for group in context.primary_groups():
-        if group.graph_fraction is None or group.graph_fraction >= EAGER_GRAPH_FRACTION:
-            continue
-        if group.kernels_per_step < EAGER_MIN_KERNELS:
-            continue
-        small_prefill = (
-            group.stage == "EXTEND"
-            and group.extend_tokens is not None
-            and group.extend_tokens <= PREFILL_GRAPH_MAX_TOKENS
-            and group.idle_ratio >= 0.2
-        )
-        if not group.is_decode_like and not small_prefill:
+        if not is_graph_candidate_eager(group):
             continue
         graph_estimate = group.busy_us + group.kernels_per_step * gap_us
         gain = max(group.step_us - graph_estimate, 0.0)
@@ -751,7 +748,7 @@ def detect_host_sync(context: AnalysisContext) -> tuple[list[Finding], set[int]]
         if share < HOST_SYNC_MIN_SHARE / 2:
             continue
         handled.add(id(group))
-        producers = _sync_producers(context, _representative_step(context, group))
+        producers = _sync_producers(context, context.representative_step_id(group))
         evidence = [
             f"{group.label}：每步 {group.sync_calls_per_step:.0f} 次同步类 runtime 调用"
             f"（cudaStreamSynchronize/cudaMemcpy 等）、{group.memcpy_calls_per_step:.0f} 次 memcpy；"
