@@ -888,7 +888,7 @@ def _platform_compile_decorator(decorator: ast.expr) -> ast.Call | None:
 
 
 def _platform_compile_sites_in(
-    statements: list[ast.stmt], qualified_prefix: str, location_prefix: str
+    statements: list[ast.stmt], qualified_prefix: str, location_prefix: str, scope: str = "module"
 ) -> Iterator[dict[str, Any]]:
     for statement in statements:
         if isinstance(statement, (ast.FunctionDef, ast.AsyncFunctionDef)):
@@ -902,16 +902,42 @@ def _platform_compile_sites_in(
                 yield {
                     "function": qualified,
                     "location": f"{location_prefix}:{decorator.lineno}",
+                    "scope": scope,
                     "dynamic": None if dynamic is _UNRESOLVED else dynamic,
                     "disabled_when": (
                         ast.unparse(keywords["disable"]) if "disable" in keywords else None
                     ),
                 }
-            yield from _platform_compile_sites_in(statement.body, qualified, location_prefix)
+            yield from _platform_compile_sites_in(
+                statement.body, qualified, location_prefix, "function"
+            )
         elif isinstance(statement, ast.ClassDef):
             yield from _platform_compile_sites_in(
-                statement.body, f"{qualified_prefix}.{statement.name}", location_prefix
+                statement.body, f"{qualified_prefix}.{statement.name}", location_prefix, "class"
             )
+
+
+def _loaded_names(names: set[str], python_root: Path, modules: list[ParsedModule]) -> set[str]:
+    """Which of ``names`` are read (``Name``/``Attribute`` loads) anywhere in the runtime modules."""
+    found: set[str] = set()
+    for relative, tree in modules:
+        text = (python_root / relative).read_text(encoding="utf-8")
+        candidates = {name for name in names - found if name in text}
+        if not candidates:
+            continue
+        for node in ast.walk(tree):
+            if isinstance(node, ast.Name) and isinstance(node.ctx, ast.Load):
+                if node.id in candidates:
+                    found.add(node.id)
+            elif (
+                isinstance(node, ast.Attribute)
+                and isinstance(node.ctx, ast.Load)
+                and node.attr in candidates
+            ):
+                found.add(node.attr)
+        if found >= names:
+            break
+    return found
 
 
 _OOT_GUARD_FUNCTIONS = {
@@ -964,9 +990,13 @@ def extract_platform_compile_sites(
 
     On an out-of-tree platform that backend is ``current_platform.get_compile_backend()``, so these
     sites run through the platform's torch.compile backend even when ``--enable-torch-compile`` is off.
+    ``scope`` is where the function is defined (module, class or function body); ``referenced``
+    says whether a module-level function is read anywhere in the runtime (``False`` means dead
+    code that never compiles) and is ``None`` for methods and nested functions.
     """
+    runtime_modules = modules if modules is not None else parse_runtime_modules(python_root)
     sites: list[dict[str, Any]] = []
-    for relative, tree in modules if modules is not None else parse_runtime_modules(python_root):
+    for relative, tree in runtime_modules:
         if "get_compiler_backend" not in (python_root / relative).read_text(encoding="utf-8"):
             continue
         sites.extend(
@@ -975,6 +1005,14 @@ def extract_platform_compile_sites(
                 _module_qualname(python_root / relative, python_root),
                 f"python/{relative.as_posix()}",
             )
+        )
+    module_level = {
+        site["function"].rsplit(".", 1)[-1] for site in sites if site["scope"] == "module"
+    }
+    loaded = _loaded_names(module_level, python_root, runtime_modules) if module_level else set()
+    for site in sites:
+        site["referenced"] = (
+            site["function"].rsplit(".", 1)[-1] in loaded if site["scope"] == "module" else None
         )
     return sorted(sites, key=lambda site: _location_sort_key(site["location"]))
 
