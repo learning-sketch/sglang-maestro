@@ -200,6 +200,21 @@ HICACHE_HOST_RESERVE_BYTES = 10 * 1024**3
 HICACHE_ALLOCATION_SLACK = 0.05
 """Auto-sizing: host pool = min(ratio, fraction x (host free - 10 GiB) / ranks per host x 0.95 /
 device KV bytes) x device KV bytes; an explicit ratio or size turns auto-sizing off."""
+HICACHE_SELECTIVE_WRITE_THRESHOLD = 2
+"""``write_through`` backs a radix node up to host on its first insertion, ``write_through_selective``
+only once it has been hit twice; ``write_back`` copies on eviction."""
+HICACHE_TRANSFER_PLATFORMS = {"mha": ("cuda", "rocm", "npu"), "mla": ("cuda", "rocm", "xpu", "npu")}
+"""Platforms whose host-pool transfer functions are imported (``sgl_kernel.kvcacheio`` on CUDA/HIP,
+plus XPU for the MLA pool; ``sgl_kernel_npu.kvcacheio`` on NPU); elsewhere both the kernel and the
+direct I/O paths reference undefined names."""
+
+DEEPEP_LOW_LATENCY_TOKENS_DEFAULT = 128
+DEEPEP_LOW_LATENCY_TOKENS_LIMIT = 1024
+"""``SGLANG_DEEPEP_NUM_MAX_DISPATCH_TOKENS_PER_RANK`` default and the assert on it; it sizes the
+low-latency RDMA buffer, so each rank's decode tokens (draft tokens included) must fit."""
+TBO_TOKEN_DISTRIBUTION_THRESHOLD = 0.48
+"""``--tbo-token-distribution-threshold``: an EXTEND batch whose sequence split leaves one half with
+less than this share of tokens is split inside a sequence (two-chunk overlap); 0 disables that."""
 
 DISAGGREGATION_BOOTSTRAP_PORT = 8998
 """``--disaggregation-bootstrap-port`` default; the router's ``--prefill URL PORT`` must match."""
@@ -968,6 +983,59 @@ SOURCES: dict[str, str] = {
     "load_balance_default": (
         "python/sglang/srt/arg_groups/serving_hook.py::handle_load_balance_method (auto: "
         "round_robin, follow_bootstrap_room on PD prefill)"
+    ),
+    "hicache_write_policy": (
+        "python/sglang/srt/mem_cache/unified_radix_cache.py (write_through_threshold: 1 for "
+        "write_through, 2 otherwise), python/sglang/srt/managers/cache_controller.py"
+    ),
+    "hicache_oot_transfer": (
+        "python/sglang/srt/mem_cache/pool_host/mha.py, mla.py (transfer_kv_* imported only under "
+        "is_cuda()/is_hip() (mla.py also is_xpu()) from sgl_kernel.kvcacheio and is_npu() from "
+        "sgl_kernel_npu)"
+    ),
+    "hicache_host_alloc": (
+        "python/sglang/srt/mem_cache/pool_host/common.py::ALLOC_MEMORY_FUNCS (npu/musa/xpu -> "
+        "alloc_with_pin_memory; any other device type -> alloc_with_host_register, which calls "
+        "torch.cuda.cudart().cudaHostRegister)"
+    ),
+    "hicache_layout_rewrite": (
+        "python/sglang/srt/arg_groups/hicache_hook.py::resolve_layout_io_compatibility (page_first "
+        "+ direct -> page_first_direct; page_first_direct + kernel -> direct)"
+    ),
+    "hicache_cache_hit_log": (
+        "python/sglang/srt/managers/scheduler_components/metrics_reporter.py (#cached-token, "
+        "cache hit rate)"
+    ),
+    "router_dp_aware": (
+        "sgl-model-gateway/bindings/python/src/sglang_router/router_args.py (--dp-aware), "
+        "python/sglang/srt/managers/data_parallel_controller.py (routed_dp_rank)"
+    ),
+    "deepep_sm_warning": (
+        "python/sglang/srt/layers/moe/token_dispatcher/deepep.py (normal/auto mode without TBO "
+        "warns when DeepEPConfig.num_sms < SMs // 2; --deepep-config normal_dispatch.num_sms)"
+    ),
+    "deepep_low_latency_cap": (
+        "python/sglang/srt/layers/moe/token_dispatcher/deepep.py "
+        "(num_max_dispatch_tokens_per_rank <= 1024)"
+    ),
+    "tbo_prefill_sms": (
+        "python/sglang/srt/batch_overlap/operations_strategy.py::_compute_moe_deepseek_blog_prefill "
+        "(deep_gemm_num_sms = SMs - DeepEPConfig.num_sms)"
+    ),
+    "tbo_two_chunk": (
+        "python/sglang/srt/batch_overlap/two_batch_overlap.py::_is_two_chunk_split_enabled"
+    ),
+    "tbo_decode_graph": (
+        "python/sglang/srt/model_executor/runner/decode_cuda_graph_runner.py (tbo_plugin capture "
+        "and replay)"
+    ),
+    "eplb_rules": (
+        "python/sglang/srt/arg_groups/parallel_hook.py::handle_eplb_and_dispatch (recorder mode "
+        "stat, dispatch static with a2a / dynamic without, ep_size > 1)"
+    ),
+    "eplb_divisibility": (
+        "python/sglang/srt/eplb/expert_location.py::ExpertLocationMetadata.num_local_physical_experts "
+        "((experts + redundant) % ep_size == 0)"
     ),
     "dflash_rules": (
         "python/sglang/srt/arg_groups/speculative_hook.py::_handle_dflash (draft model required, "
