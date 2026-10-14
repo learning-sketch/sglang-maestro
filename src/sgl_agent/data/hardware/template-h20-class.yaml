@@ -29,6 +29,9 @@ interconnect:
 software:
   platform: oot              # out-of-tree SGLang platform plugin (entry point group sglang.srt.platforms)
   torch_device_name: ExampleNPU
+  device_type: example       # torch.device type of the vendor extension (e.g. registered as PrivateUse1)
+  dispatch_key: example      # plugin's get_dispatch_key_name(); fused ops then look for forward_example
+  compile_backend: null      # plugin's get_compile_backend(); null = SGLang's default "inductor"
   compute_capability: null
   gemm_dtypes: [bf16, fp16, int8]
   kv_cache_dtypes: [bf16, fp16]
@@ -37,7 +40,7 @@ software:
   moe_runner_backends: []
   moe_a2a_backends: [none]
   fused_ops: [rmsnorm, fused_add_rmsnorm, silu_and_mul, rope, int8_gemm, sampling]
-  collective_library: vendor-ccl
+  collective_library: vendor-ccl   # torch.distributed backend name the vendor registers
   supports_triton: false
   graph_capture: true
   piecewise_graph: false

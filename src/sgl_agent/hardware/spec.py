@@ -60,6 +60,12 @@ class SoftwareStack:
 
     platform: str = "cuda"
     torch_device_name: str = ""
+    device_type: str | None = None
+    """``torch.device`` type of an out-of-tree device (the plugin's ``device_type`` attribute)."""
+    dispatch_key: str | None = None
+    """What the plugin's ``get_dispatch_key_name()`` returns; SGLang's default is ``native``."""
+    compile_backend: str | None = None
+    """What the plugin's ``get_compile_backend()`` returns; SGLang's default is ``inductor``."""
     compute_capability: str | None = None
     gemm_dtypes: tuple[str, ...] = ("bf16", "fp16")
     kv_cache_dtypes: tuple[str, ...] = ("bf16",)
