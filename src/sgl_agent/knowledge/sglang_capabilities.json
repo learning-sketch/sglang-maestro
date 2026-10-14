@@ -12774,5 +12774,54 @@
    "dynamic": true,
    "disabled_when": "_is_npu"
   }
+ ],
+ "oot_guards": [
+  {
+   "kind": "requires_hook",
+   "location": "python/sglang/srt/compilation/backend.py:58",
+   "subsystem": "piecewise compilation backend",
+   "hook": "get_piecewise_backend_cls()"
+  },
+  {
+   "kind": "rejects",
+   "location": "python/sglang/srt/mem_cache/kv_cache_configurator.py:387",
+   "subsystem": "logical-page KV sharding (--enable-kv-cache-sharding)"
+  },
+  {
+   "kind": "rejects",
+   "location": "python/sglang/srt/mem_cache/kv_cache_configurator.py:564",
+   "subsystem": "the unified memory pool (--enable-unified-memory)"
+  },
+  {
+   "kind": "rejects",
+   "location": "python/sglang/srt/mem_cache/kv_cache_configurator.py:1645",
+   "subsystem": "the block-scaled (fp4 / mxfp8) KV pool"
+  },
+  {
+   "kind": "rejects",
+   "location": "python/sglang/srt/mem_cache/kv_cache_configurator.py:1650",
+   "subsystem": "the DeepSeek-V4 KV pool"
+  },
+  {
+   "kind": "rejects",
+   "location": "python/sglang/srt/mem_cache/kv_cache_configurator.py:1719",
+   "subsystem": "the MiniMax sparse-index KV pool"
+  },
+  {
+   "kind": "rejects",
+   "location": "python/sglang/srt/mem_cache/kv_cache_configurator.py:2031",
+   "subsystem": "the HiSparse DSA KV pool"
+  },
+  {
+   "kind": "rejects",
+   "location": "python/sglang/srt/mem_cache/kv_cache_configurator.py:2041",
+   "subsystem": "the CP layer-split DSA KV pool"
+  },
+  {
+   "kind": "requires_hook",
+   "location": "python/sglang/srt/model_executor/model_runner_components/cuda_graph_setup.py:723",
+   "subsystem": "CUDA graph runner",
+   "hook": "get_graph_runner_cls()"
+  }
  ]
 }

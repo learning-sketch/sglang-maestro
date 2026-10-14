@@ -151,6 +151,11 @@ class SGLangKnowledge:
         """Functions decorated with ``torch.compile(backend=get_compiler_backend())`` at import time."""
         return list(self.raw.get("platform_compile_sites", []))
 
+    @property
+    def oot_guards(self) -> list[dict[str, Any]]:
+        """Calls that raise on out-of-tree platforms: missing hook overrides and unported subsystems."""
+        return list(self.raw.get("oot_guards", []))
+
     def validate_flags(self, flag_values: dict[str, Any]) -> list[str]:
         """Return human-readable problems for flags that do not exist, are deprecated or use bad choices."""
         problems: list[str] = []

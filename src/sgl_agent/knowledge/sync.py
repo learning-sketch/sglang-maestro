@@ -914,6 +914,49 @@ def _platform_compile_sites_in(
             )
 
 
+_OOT_GUARD_FUNCTIONS = {
+    "require_out_of_tree_impl": "requires_hook",
+    "reject_out_of_tree_path": "rejects",
+}
+
+
+def _keyword_text(call: ast.Call, name: str) -> str | None:
+    for keyword in call.keywords:
+        if keyword.arg == name:
+            value = _literal(keyword.value)
+            return value if isinstance(value, str) else ast.unparse(keyword.value)
+    return None
+
+
+def extract_oot_guards(
+    python_root: Path, modules: list[ParsedModule] | None = None
+) -> list[dict[str, Any]]:
+    """Calls that make an out-of-tree platform fail fast.
+
+    ``requires_hook``: ``require_out_of_tree_impl`` raises unless the platform overrides ``hook``.
+    ``rejects``: ``reject_out_of_tree_path`` raises because ``subsystem`` has no platform seam yet.
+    """
+    guards: list[dict[str, Any]] = []
+    for relative, tree in modules if modules is not None else parse_runtime_modules(python_root):
+        if "out_of_tree" not in (python_root / relative).read_text(encoding="utf-8"):
+            continue
+        for node in ast.walk(tree):
+            if not isinstance(node, ast.Call):
+                continue
+            kind = _OOT_GUARD_FUNCTIONS.get(_dotted_name(node.func).rsplit(".", 1)[-1])
+            if kind is None:
+                continue
+            guard = {
+                "kind": kind,
+                "location": f"python/{relative.as_posix()}:{node.lineno}",
+                "subsystem": _keyword_text(node, "subsystem"),
+            }
+            if kind == "requires_hook":
+                guard["hook"] = _keyword_text(node, "hook")
+            guards.append(guard)
+    return sorted(guards, key=lambda guard: _location_sort_key(guard["location"]))
+
+
 def extract_platform_compile_sites(
     python_root: Path, modules: list[ParsedModule] | None = None
 ) -> list[dict[str, Any]]:
@@ -1090,6 +1133,7 @@ def _build_snapshot(sglang_root: Path) -> dict[str, Any]:
         "fused_op_classes": extract_fused_op_classes(python_root, runtime_modules),
         "platform_interface": extract_platform_hooks(python_root, runtime_modules),
         "platform_compile_sites": extract_platform_compile_sites(python_root, runtime_modules),
+        "oot_guards": extract_oot_guards(python_root, runtime_modules),
     }
 
 
