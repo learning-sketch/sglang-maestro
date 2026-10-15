@@ -7,7 +7,7 @@ or break, which precision route fits in how many GPUs, and in which order to bri
 
 from __future__ import annotations
 
-from dataclasses import dataclass, field
+from dataclasses import asdict, dataclass, field
 from typing import Any
 
 from sgl_agent.adapt.bringup import BringupPlan, bringup_plan
@@ -64,6 +64,37 @@ class AdaptationReport:
     plan: BringupPlan
     guards: list[dict[str, Any]] = field(default_factory=list)
     findings: list[Finding] = field(default_factory=list)
+
+    def to_dict(self) -> dict[str, Any]:
+        return {
+            "model": self.model,
+            "hardware": self.hardware,
+            "knowledge_commit": self.knowledge_commit,
+            "support": asdict(self.support),
+            "profile": asdict(self.profile),
+            "parallel": self.parallel.describe(),
+            "hooks": [asdict(item) for item in self.checklist.requirements],
+            "hooks_missing_from_snapshot": self.checklist.missing_from_snapshot,
+            "operators": [
+                {**asdict(item), "status_label": item.status_label}
+                for item in self.inventory.requirements
+            ],
+            "operator_shares_note": self.inventory.shares_note,
+            "compile_sites": [asdict(item) for item in self.compile_sites],
+            "precision": asdict(self.precision),
+            "principles": [asdict(item) for item in self.plan.principles],
+            "steps": [
+                {**asdict(step), "commands": [command.to_dict() for command in step.commands]}
+                for step in self.plan.steps
+            ],
+            "guards": self.guards,
+            "findings": [finding.to_dict() for finding in self.findings],
+        }
+
+    def to_markdown(self, *, findings_limit: int | None = None) -> str:
+        from sgl_agent.adapt.report import render_adaptation
+
+        return render_adaptation(self, findings_limit=findings_limit)
 
 
 def _default_parallel(
