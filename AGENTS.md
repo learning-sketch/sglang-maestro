@@ -6,7 +6,7 @@
 
 ### 不编造 SGLang 的行为
 
-1. 代码依赖的每一条 SGLang 行为（参数、默认值、日志格式、HTTP 接口、调度规则、插件机制）都必须在 SGLang 源码里核对过。基准版本是内置快照 `src/sglang_maestro/knowledge/sglang_capabilities.json` 的 `sglang_commit`。用 `scripts/fetch_sglang.sh` 把该 commit 检出到本地（默认 `/tmp/sglang-src`），不要在脚本或代码里硬编码这个 hash。
+1. 代码依赖的每一条 SGLang 行为（参数、默认值、日志格式、HTTP 接口、调度规则、插件机制）都必须在 SGLang 源码里核对过。基准版本是内置快照 `src/sglang_maestro/knowledge/sglang_capabilities.json` 的 `sglang_commit`。用 `scripts/fetch_sglang.sh` 把该 commit 检出到本地（默认 `/tmp/sglang-src`），不要在脚本或代码里硬编码这个 hash。目录不存在时按 SHA 浅取，服务器不支持则回退到完整 fetch 并打印一行说明；目录已是 git 仓库且 commit 已在本地时直接 checkout，不联网，也不要加 `--depth`。仓库地址可用 `SGLANG_REPO_URL` 覆盖。
 2. 核对过的行为写进 `src/sglang_maestro/knowledge/facts.py`：数值写成带 docstring 的模块级常量；出处写进 `SOURCES`（key → `相对 SGLang 仓库根的路径::函数或类（必要说明）`），代码里用 `source(key)` 引用。报告里会显示成“源码依据”。
 3. 核对不了的（硬件数字、效率系数、外部库的行为）在报告里明确标成“假设”，不要写成事实。
 4. 不 import SGLang，不需要 GPU。分析全部离线完成。SGLang 源码只用来核对和静态解析（`knowledge/sync.py`）。
@@ -60,4 +60,4 @@ sglang-maestro run --model qwen3-32b --hardware h20 --workload chat --demo -o /t
 | `src/sglang_maestro/findings.py`、`markdown.py` | 结构化发现和 Markdown 报告片段 |
 | `src/sglang_maestro/target.py`、`data/` | 模型/硬件/负载的加载入口，以及内置数据 |
 | `tests/` | 场景、命令行和流水线测试；`conftest.py` 里有缩短部署仿真的 fixture |
-| `scripts/fetch_sglang.sh` | 按快照里的 commit 取得 SGLang 源码 |
+| `scripts/fetch_sglang.sh` | 按快照里的 commit 浅取 SGLang 源码；已有仓库且 commit 在本地则不联网 |

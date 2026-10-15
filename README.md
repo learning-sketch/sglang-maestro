@@ -100,7 +100,11 @@ pytest -m slow    # 快照可复现；需要 SGLANG_SRC 指向 SGLang 源码，�
 ruff check . && ruff format --check .
 ```
 
-`pytest -m slow` 会对 `SGLANG_SRC` 运行 `sglang-maestro sync-knowledge`，要求输出和内置的 `sglang_capabilities.json` 逐字节一致。源码用 `scripts/fetch_sglang.sh` 准备（默认克隆到 `/tmp/sglang-src`，并 checkout 到快照里的 `sglang_commit`；目录已存在时只 fetch + checkout）：
+`pytest -m slow` 会对 `SGLANG_SRC` 运行 `sglang-maestro sync-knowledge`，要求输出和内置的 `sglang_capabilities.json` 逐字节一致。源码用 `scripts/fetch_sglang.sh` 准备（默认目录 `/tmp/sglang-src`，checkout 快照里的 `sglang_commit`）：
+
+- 目录不存在时按该 SHA 浅取；服务器不支持时回退到完整 fetch，并打印一行说明。
+- 目录已是 git 仓库时，commit 已在本地就直接 checkout、不联网；不在才 fetch，且不加 `--depth`，避免把完整 clone 变成浅克隆。
+- 仓库地址可用环境变量 `SGLANG_REPO_URL` 覆盖，默认 `https://github.com/sgl-project/sglang`。
 
 ```bash
 scripts/fetch_sglang.sh /tmp/sglang-src
