@@ -520,7 +520,8 @@ def render_calibration(report: CalibrationReport) -> str:
                 "decode 系数正常但 TTFT 偏差大时，多半是排队（到达率或路由不均），看 #queue-req"
             )
     usage = [
-        "把 `--json` 输出存成文件，`sgl-agent features|deploy|roofline --calibration <文件>` 会用这些系数",
+        "把 `--json` 输出存成文件（或 `-o calibration.json`），"
+        "`sgl-agent features|deploy|trace|logs --calibration <文件>` 会用这些系数",
         "decode 样本只取两条 Decode 日志之间没有 prefill 的间隔；step 时间 = #running-req ÷ gen throughput",
         "prefill 样本是有排队时相邻两条 Prefill 日志的间隔，可能混入没打日志的 decode step（偏大）",
     ]
