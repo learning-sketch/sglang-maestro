@@ -22,6 +22,7 @@
 ### 测试
 
 - 默认测试要快。慢测试加 `@pytest.mark.slow`；`pytest` 默认带 `-m "not slow"`。
+- 决策基线在 `tests/baselines/`（`adapt.json`、`roofline.json`、`features.json`、`deploy.json`）。改动让基线变了，就用 `sglang-maestro sweep --write-baselines tests/baselines` 重新生成，并在 PR 描述里逐条解释每处变化为什么是对的；解释不了的变化就是回归。
 - 部署仿真用 `tests/conftest.py` 里的 `SMALL_DEPLOY` 和 `dense_chat`、`oot_moe` fixture 缩短时间。
 - 快照可复现：`SGLANG_SRC` 指向 SGLang 源码时，`pytest -m slow` 运行 `sglang-maestro sync-knowledge`，结果必须和内置 `sglang_capabilities.json` 逐字节一致。没设 `SGLANG_SRC` 时该测试 skip。不一致时修 `sync.py` 的输出确定性（例如文件遍历顺序），不要放宽比较。
 - 合成数据（`synth-trace`、`synth-log`、`run --demo`）只用于演示和测试，基于它的报告必须写明“不是实测”。
@@ -55,9 +56,10 @@ sglang-maestro run --model qwen3-32b --hardware h20 --workload chat --demo -o /t
 | `src/sglang_maestro/perf/` | 场景 2：roofline、trace 解析与检测器（异常/融合/重叠/多流/预取）、日志分析、校准 |
 | `src/sglang_maestro/features/` | 场景 3：各特性的 advisor 和组合 |
 | `src/sglang_maestro/deploy/` | 场景 5：实例模型、集群仿真、规模/副本/PD 搜索、放置与命令渲染 |
-| `src/sglang_maestro/pipeline.py`、`cli.py` | 一键流水线和命令行 |
+| `src/sglang_maestro/pipeline.py`、`cli.py`、`sweep.py` | 一键流水线、命令行，以及模型 × 硬件 × 负载的回归 sweep |
+| `tests/baselines/` | 场景 1、2、3、5 的决策基线（`sglang-maestro sweep --write-baselines` 生成） |
 | `src/sglang_maestro/commands.py` | 启动、router、压测命令的渲染和快照校验 |
 | `src/sglang_maestro/findings.py`、`markdown.py` | 结构化发现和 Markdown 报告片段 |
 | `src/sglang_maestro/target.py`、`data/` | 模型/硬件/负载的加载入口，以及内置数据 |
-| `tests/` | 场景、命令行和流水线测试；`conftest.py` 里有缩短部署仿真的 fixture |
+| `tests/` | 场景、命令行、流水线和基线测试；`conftest.py` 里有缩短部署仿真的 fixture |
 | `scripts/fetch_sglang.sh` | 按快照里的 commit 浅取 SGLang 源码；已有仓库且 commit 在本地则不联网 |
