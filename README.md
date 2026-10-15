@@ -95,8 +95,16 @@ sglang-maestro adapt --model deepseek-v3 --hardware ./my-chip.yaml
 ## 开发
 
 ```bash
-pytest            # 测试
+pytest            # 默认测试（不含 slow）
+pytest -m slow    # 快照可复现；需要 SGLANG_SRC 指向 SGLang 源码，未设置时该测试会 skip
 ruff check . && ruff format --check .
+```
+
+`pytest -m slow` 会对 `SGLANG_SRC` 运行 `sglang-maestro sync-knowledge`，要求输出和内置的 `sglang_capabilities.json` 逐字节一致。源码用 `scripts/fetch_sglang.sh` 准备（默认克隆到 `/tmp/sglang-src`，并 checkout 到快照里的 `sglang_commit`；目录已存在时只 fetch + checkout）：
+
+```bash
+scripts/fetch_sglang.sh /tmp/sglang-src
+SGLANG_SRC=/tmp/sglang-src pytest -m slow
 ```
 
 代码结构：

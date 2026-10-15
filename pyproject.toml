@@ -31,7 +31,10 @@ sglang_maestro = [
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
-addopts = "-q"
+addopts = "-q -m \"not slow\""
+markers = [
+    "slow: regenerates the SGLang capability snapshot; set SGLANG_SRC to the checkout",
+]
 
 [tool.ruff]
 line-length = 100
