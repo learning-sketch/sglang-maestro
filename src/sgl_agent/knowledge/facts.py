@@ -994,7 +994,8 @@ SOURCES: dict[str, str] = {
     ),
     "prefill_log_throughput": (
         "python/sglang/srt/managers/scheduler_components/metrics_reporter.py::report_prefill_stats "
-        "(input throughput = new tokens / time since the previous prefill log)"
+        "(input throughput = (#new-token + #replay-token) / time since the previous prefill log), "
+        "python/sglang/srt/arg_groups/fields/observability.py (--decode-log-interval, default 40)"
     ),
     "bench_random_lengths": (
         "python/sglang/benchmark/datasets/common.py::compute_random_lens (uniform integers in "

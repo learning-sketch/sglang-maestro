@@ -36,6 +36,9 @@ from sgl_agent.model.ops import BatchShape, Calibration, ExecutionConfig, StepCo
 from sgl_agent.model.parallel import ParallelConfig
 from sgl_agent.perf.metrics import Distribution
 
+SYNTHETIC_LOG_MARK = (
+    "# synthetic SGLang server log written by sgl-agent from its cost model; not a measurement"
+)
 LOG_PREFIX_PATTERN = re.compile(
     r"\[(?P<time>\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}(?:\.\d+)?)(?P<ranks>(?: [A-Z_]+\d+)*)\] "
 )
@@ -140,6 +143,8 @@ class ParsedLog:
     benchmarks: list[dict[str, float]] = field(default_factory=list)
     total_lines: int = 0
     recognized_lines: int = 0
+    synthetic: bool = False
+    """A file starts with ``SYNTHETIC_LOG_MARK`` (written by ``sgl-agent synth-log``)."""
 
 
 def _open_text(path: Path):
@@ -210,6 +215,9 @@ def parse_logs(paths: str | Path | list[str | Path]) -> ParsedLog:
             for line_number, raw_line in enumerate(handle, start=1):
                 parsed.total_lines += 1
                 line = raw_line.rstrip("\n")
+                if line_number == 1 and line == SYNTHETIC_LOG_MARK:
+                    parsed.synthetic = True
+                    continue
                 if bench is not None:
                     stripped = line.strip()
                     if stripped and set(stripped) == {"="}:
@@ -470,7 +478,7 @@ def decode_samples(parsed: ParsedLog) -> list[DecodeSample]:
     return samples
 
 
-def _attach_model_times(samples: list[DecodeSample], cost_model: StepCostModel) -> None:
+def attach_model_times(samples: list[DecodeSample], cost_model: StepCostModel) -> None:
     cache: dict[tuple[int, int, bool | None], float] = {}
     for sample in samples:
         key = (sample.running_requests, sample.kv_tokens, sample.graph)
@@ -777,6 +785,11 @@ def analyze_logs(
     parsed = logs if isinstance(logs, ParsedLog) else parse_logs(logs)
     knowledge = knowledge or load_knowledge()
     warnings: list[str] = []
+    if parsed.synthetic:
+        warnings.append(
+            "这是 sgl-agent 生成的合成日志：耗时来自成本模型乘以设定的偏差系数，只用于演示和回归测试，"
+            "不代表真实硬件表现。"
+        )
     if parsed.recognized_lines == 0:
         warnings.append(
             "没有识别到 SGLang 的日志行：确认传入的是 sglang.launch_server 的输出（含 Prefill/Decode batch 行）"
@@ -814,7 +827,7 @@ def analyze_logs(
         cost_model = StepCostModel(
             arch, hardware, parallel, execution or ExecutionConfig(), calibration or Calibration()
         )
-        _attach_model_times(samples, cost_model)
+        attach_model_times(samples, cost_model)
         cost_model_label = f"{arch.name} · {hardware.name} · {parallel.describe()}"
     elif samples and arch is None:
         warnings.append("没有提供 --model/--hardware/并行配置：不把 decode 吞吐与成本模型对比。")
