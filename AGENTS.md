@@ -31,7 +31,7 @@
 ```bash
 python3 -m venv .venv && source .venv/bin/activate
 pip install -e '.[dev]'
-pytest && ruff check . && ruff format --check .
+pytest && ruff check . && ruff format --check . && shellcheck scripts/*.sh
 scripts/fetch_sglang.sh
 SGLANG_SRC=/tmp/sglang-src pytest -m slow
 sglang-maestro run --model qwen3-32b --hardware h20 --workload chat --demo -o /tmp/demo
@@ -40,7 +40,7 @@ sglang-maestro run --model qwen3-32b --hardware h20 --workload chat --demo -o /t
 ### 交付
 
 - 从最新的 `main` 开新分支；每个逻辑改动一个提交，提交信息写清楚做了什么。
-- 推送前 rebase 到最新的 `main` 并解决冲突（常见冲突点是 `cli.py` 的 `build_parser` 和 `README.md`，保留双方的改动）。
+- 第一次推送前 rebase 到最新的 `main` 并解决冲突（常见冲突点是 `cli.py` 的 `build_parser` 和 `README.md`，保留双方的改动）。已经推送过的分支用 `git merge origin/main` 合入，不要强推：B、C、D、E 会和本分支并行，先合并的 PR 会让其他分支落后，强推会改写已经推送的历史。
 - 能开 PR 就开 PR。描述里写：改了什么、怎么验证的（命令和结果）、哪些是假设、还有什么没做。
 - 同步更新 README.md 里对应的用法。
 - 不改和任务无关的代码；发现的其它问题写在 PR 描述里，不要顺手改。
