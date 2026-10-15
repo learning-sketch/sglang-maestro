@@ -12,7 +12,12 @@ from typing import Any
 from sglang_maestro import __version__
 from sglang_maestro.adapt.analysis import analyze_adaptation
 from sglang_maestro.adapt.precision import PREFERENCES
-from sglang_maestro.deploy.plan import DeployOptions, plan_deployment
+from sglang_maestro.deploy.plan import (
+    CAPACITY_SAMPLES,
+    VERIFY_SAMPLES,
+    DeployOptions,
+    plan_deployment,
+)
 from sglang_maestro.features.report import FEATURE_KEYS, advise_features
 from sglang_maestro.hardware.spec import list_presets, load_hardware
 from sglang_maestro.knowledge import load_knowledge
@@ -32,6 +37,15 @@ from sglang_maestro.perf.synthetic import (
 )
 from sglang_maestro.perf.synthetic_log import synthetic_server_log, write_synthetic_log
 from sglang_maestro.pipeline import RunOptions, run_pipeline
+from sglang_maestro.sweep import (
+    BASELINE_CAPACITY_SAMPLES,
+    BASELINE_SEED,
+    BASELINE_VERIFY_SAMPLES,
+    split_csv,
+    sweep,
+    write_baselines,
+    write_sweep,
+)
 from sglang_maestro.target import Target, layout_from
 from sglang_maestro.workload import list_workloads
 
@@ -368,6 +382,59 @@ def cmd_run(args: argparse.Namespace) -> int:
     return 1 if any(stage.error for stage in result.stages) else 0
 
 
+def cmd_sweep(args: argparse.Namespace) -> int:
+    if not args.output and not args.write_baselines:
+        raise ValueError("需要 -o DIR，或 --write-baselines DIR")
+    capacity = args.capacity_samples
+    verify = args.verify_samples
+    seed = args.seed
+    if args.write_baselines:
+        capacity = BASELINE_CAPACITY_SAMPLES if capacity is None else capacity
+        verify = BASELINE_VERIFY_SAMPLES if verify is None else verify
+        seed = BASELINE_SEED if seed is None else seed
+        if (capacity, verify, seed) != (
+            BASELINE_CAPACITY_SAMPLES,
+            BASELINE_VERIFY_SAMPLES,
+            BASELINE_SEED,
+        ):
+            raise ValueError(
+                "写基线必须使用 "
+                f"capacity_samples={BASELINE_CAPACITY_SAMPLES}、"
+                f"verify_samples={BASELINE_VERIFY_SAMPLES}、seed={BASELINE_SEED}"
+            )
+    else:
+        capacity = CAPACITY_SAMPLES if capacity is None else capacity
+        verify = VERIFY_SAMPLES if verify is None else verify
+        seed = 1 if seed is None else seed
+    result = sweep(
+        split_csv(args.models),
+        split_csv(args.hardware),
+        split_csv(args.workloads),
+        capacity_samples=capacity,
+        verify_samples=verify,
+        seed=seed,
+        jobs=args.jobs,
+        check_monotonicity=True,
+    )
+    if args.output:
+        write_sweep(result, Path(args.output))
+        print(f"已写入 {args.output}/sweep.json 和 {args.output}/sweep.md")
+    if args.write_baselines:
+        write_baselines(result, Path(args.write_baselines))
+        print(f"已写入基线 {args.write_baselines}/{{adapt,roofline,features,deploy}}.json")
+    unexpected = result.unexpected_violations()
+    missing = result.missing_known()
+    print(
+        f"共 {len(result.cells)} 个组合，未登记违反 {len(unexpected)}，"
+        f"已登记违反 {len(result.violations()) - len(unexpected)}。"
+    )
+    for item in unexpected:
+        print(f"未登记：{item['combo']} {item['id']} {item['detail']}", file=sys.stderr)
+    for item in missing:
+        print(f"已登记但未出现：{item.combo} {item.id}", file=sys.stderr)
+    return 0 if result.ok else 1
+
+
 def cmd_sync_knowledge(args: argparse.Namespace) -> int:
     output = Path(args.output)
     snapshot = write_snapshot(Path(args.sglang_src), output)
@@ -475,6 +542,38 @@ def build_parser() -> argparse.ArgumentParser:
     _add_target(child, workload=True, layout=False)
     _add_deploy_options(child)
     _add_output(child)
+
+    child = command(
+        "sweep",
+        cmd_sweep,
+        "回归：跑内置模型 × 硬件 × 负载，检查不变量，并可写出决策基线",
+    )
+    child.add_argument("--models", help="逗号分隔，默认全部内置模型")
+    child.add_argument("--hardware", help="逗号分隔，默认全部内置硬件预设")
+    child.add_argument("--workloads", help="逗号分隔，默认全部内置负载")
+    child.add_argument(
+        "--capacity-samples",
+        type=int,
+        default=None,
+        help=f"默认与 deploy 相同（{CAPACITY_SAMPLES}）",
+    )
+    child.add_argument(
+        "--verify-samples",
+        type=int,
+        default=None,
+        help=f"默认与 deploy 相同（{VERIFY_SAMPLES}）",
+    )
+    child.add_argument("--seed", type=int, default=None, help="默认与 deploy 相同（1）")
+    child.add_argument("--jobs", type=int, default=1, help="并行进程数；结果不随进程数变化")
+    child.add_argument("-o", "--output", help="写入 DIR/sweep.json 和 DIR/sweep.md")
+    child.add_argument(
+        "--write-baselines",
+        metavar="DIR",
+        help=(
+            "按固定参数（capacity_samples=40、verify_samples=120、seed=1）"
+            "把决策基线写到 DIR/{adapt,roofline,features,deploy}.json"
+        ),
+    )
 
     child = command(
         "calibrate", cmd_calibrate, "用实测日志/压测结果校准成本模型，并对比部署方案的预测"
