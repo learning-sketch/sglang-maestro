@@ -960,6 +960,7 @@ def render_sweep(result: SweepResult) -> str:
             lines.append("bottlenecks：")
             lines.append(bullets(cell.bottlenecks) or "- （空）")
             lines.append("")
+    lines.append("")
     slowest = sorted(result.cells.items(), key=lambda item: item[1].seconds, reverse=True)[:5]
     lines.extend(
         [
