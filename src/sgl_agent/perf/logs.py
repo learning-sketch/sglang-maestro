@@ -391,6 +391,11 @@ class LogReport:
             "warnings": self.warnings,
         }
 
+    def to_markdown(self, *, findings_limit: int | None = None) -> str:
+        from sgl_agent.perf.report import render_logs
+
+        return render_logs(self, findings_limit=findings_limit)
+
 
 def _summary(values: list[float]) -> dict[str, float] | None:
     if not values:

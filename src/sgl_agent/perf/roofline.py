@@ -61,6 +61,11 @@ class RooflineReport:
     def to_dict(self) -> dict[str, Any]:
         return asdict(self)
 
+    def to_markdown(self) -> str:
+        from sgl_agent.perf.report import render_roofline
+
+        return render_roofline(self)
+
 
 def _rows(estimate: StepEstimate, limit: int) -> list[OpRow]:
     total = estimate.kernel_us or 1.0

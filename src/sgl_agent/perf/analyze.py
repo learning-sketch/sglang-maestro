@@ -82,6 +82,11 @@ class TraceReport:
             "profiling_tips": self.profiling_tips,
         }
 
+    def to_markdown(self, *, findings_limit: int | None = None) -> str:
+        from sgl_agent.perf.report import render_trace
+
+        return render_trace(self, findings_limit=findings_limit)
+
 
 def load_dialect(path: str | Path) -> TraceDialect:
     """Read a trace dialect override from a JSON or YAML file."""
