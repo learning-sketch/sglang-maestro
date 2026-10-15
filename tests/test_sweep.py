@@ -1,0 +1,301 @@
+"""Decision baselines for the bundled model × hardware × workload matrix.
+
+Scenarios 1–3 run on the full matrix. Scenario 5 runs a short subset here and the full
+matrix under ``pytest -m slow``. A mismatch names the combo, the field, and the old and new
+values (at most 80 lines).
+"""
+
+from __future__ import annotations
+
+import json
+from pathlib import Path
+
+import pytest
+
+from sglang_maestro.cli import main
+from sglang_maestro.sweep import (
+    BASELINE_CAPACITY_SAMPLES,
+    BASELINE_SEED,
+    BASELINE_VERIFY_SAMPLES,
+    DIFF_LINE_LIMIT,
+    KNOWN_VIOLATIONS,
+    SCENARIOS,
+    SweepCell,
+    SweepResult,
+    default_jobs,
+    fingerprint_diff,
+    no_plan_detail,
+    scenario_fingerprints,
+    sweep,
+)
+
+_BASELINES = Path(__file__).parent / "baselines"
+# Architect-timed on Python 3.12, one process, baseline sample counts. Keep this list
+# small: the default suite's added time has to stay within about 10 seconds.
+DEPLOY_SUBSET = (
+    "qwen3-235b-a22b/h20/chat",
+    "deepseek-v3/template-h20-class/rag-long-context",
+    "qwen3-235b-a22b/h20/shared-prefix-agent",
+    "qwen2.5-72b-instruct/h100-sxm/rag-long-context",
+    "qwen3-30b-a3b/h20/offline-batch",
+    "deepseek-v3/template-h20-class/offline-batch",
+    "qwen2.5-72b-instruct/h100-sxm/offline-batch",
+)
+_DETERMINISM = (
+    "qwen3-30b-a3b/h20/offline-batch",
+    "deepseek-v3/template-h20-class/offline-batch",
+)
+_OVER_BUDGET = "deepseek-v3/template-h20-class/rag-long-context"
+
+
+def _load(scenario: str) -> dict:
+    return json.loads((_BASELINES / f"{scenario}.json").read_text(encoding="utf-8"))
+
+
+def _baseline_options(**overrides: object) -> dict:
+    options = {
+        "capacity_samples": BASELINE_CAPACITY_SAMPLES,
+        "verify_samples": BASELINE_VERIFY_SAMPLES,
+        "seed": BASELINE_SEED,
+        "max_gpus": None,
+        "allow_pd": True,
+        "allow_mixed_chunk": True,
+    }
+    options.update(overrides)
+    return options
+
+
+def _cell(key: str, violations: list[dict[str, str]]) -> SweepCell:
+    return SweepCell(
+        key=key,
+        seconds=0.0,
+        fingerprints={},
+        violations=violations,
+        summary={},
+    )
+
+
+def _assert_matches(expected: dict, actual: dict) -> None:
+    diff = fingerprint_diff(expected, actual)
+    if diff:
+        raise AssertionError(diff)
+
+
+@pytest.fixture(scope="module")
+def light_matrix() -> SweepResult:
+    return sweep(scenarios=("adapt", "roofline", "features"), jobs=default_jobs())
+
+
+@pytest.fixture(scope="module")
+def deploy_subset() -> SweepResult:
+    return sweep(
+        combos=DEPLOY_SUBSET,
+        scenarios=("deploy",),
+        capacity_samples=BASELINE_CAPACITY_SAMPLES,
+        verify_samples=BASELINE_VERIFY_SAMPLES,
+        seed=BASELINE_SEED,
+        jobs=default_jobs(),
+    )
+
+
+@pytest.mark.parametrize("scenario", ("adapt", "roofline", "features"))
+def test_light_scenarios_match_baseline(light_matrix: SweepResult, scenario: str) -> None:
+    _assert_matches(_load(scenario), scenario_fingerprints(light_matrix, scenario))
+
+
+def test_deploy_subset_matches_baseline(deploy_subset: SweepResult) -> None:
+    expected = {key: _load("deploy")[key] for key in DEPLOY_SUBSET}
+    _assert_matches(expected, scenario_fingerprints(deploy_subset, "deploy"))
+    assert deploy_subset.ok
+    cell = deploy_subset.cells[_OVER_BUDGET]
+    assert cell.summary["over_budget"] is True
+    assert cell.summary["meets_slo"] is True
+    assert all(item["id"] != "budget" for item in cell.violations)
+
+
+def test_repeat_and_jobs_do_not_change_decisions() -> None:
+    kwargs = dict(
+        combos=_DETERMINISM,
+        capacity_samples=BASELINE_CAPACITY_SAMPLES,
+        verify_samples=BASELINE_VERIFY_SAMPLES,
+        seed=BASELINE_SEED,
+    )
+    first = sweep(**kwargs, jobs=1)
+    second = sweep(**kwargs, jobs=1)
+    pooled = sweep(**kwargs, jobs=2)
+    fingerprints = [
+        {scenario: scenario_fingerprints(result, scenario) for scenario in SCENARIOS}
+        for result in (first, second, pooled)
+    ]
+    assert fingerprints[0] == fingerprints[1] == fingerprints[2]
+
+
+def test_no_plan_contradiction_is_invariant_5() -> None:
+    impossible = ["单实例在任何到达率下都满足不了 SLO"]
+    queue = ["单请求的 prefill 和 decode step 都在 SLO 以内：瓶颈是排队"]
+    assert no_plan_detail([], [], []) == "没选出方案，但 notes 和 bottlenecks 都是空的"
+    assert "瓶颈是排队" in (no_plan_detail(["PD 说明"], queue, [impossible]) or "")
+    assert no_plan_detail(["有原因"], ["prompt 单独 prefill 就超过 TTFT"], [impossible]) is None
+    assert no_plan_detail(["有原因"], [], []) is None
+
+
+def test_registered_violation_does_not_fail_and_a_new_one_does() -> None:
+    known = KNOWN_VIOLATIONS[0]
+    registered = SweepResult(
+        cells={
+            known.combo: _cell(known.combo, [{"combo": known.combo, "id": known.id, "detail": "x"}])
+        },
+        options=_baseline_options(),
+    )
+    assert registered.ok
+    assert registered.missing_known() == []
+
+    extra = SweepResult(
+        cells={
+            known.combo: _cell(
+                known.combo, [{"combo": known.combo, "id": known.id, "detail": "x"}]
+            ),
+            "qwen3-32b/h20/chat": _cell(
+                "qwen3-32b/h20/chat",
+                [
+                    {
+                        "combo": "qwen3-32b/h20/chat",
+                        "id": "slo",
+                        "detail": "选出了方案，但 meets_slo 为假",
+                    }
+                ],
+            ),
+        },
+        options=_baseline_options(),
+    )
+    assert not extra.ok
+    assert extra.unexpected_violations()[0]["combo"] == "qwen3-32b/h20/chat"
+
+    gone = SweepResult(
+        cells={known.combo: _cell(known.combo, [])},
+        options=_baseline_options(),
+    )
+    assert not gone.ok
+    assert gone.missing_known() == [known]
+
+    # Default deploy samples are not the baseline, so a known violation that only
+    # shows up at 40/120 must not be required there.
+    default_samples = SweepResult(
+        cells={known.combo: _cell(known.combo, [])},
+        options=_baseline_options(capacity_samples=240, verify_samples=1200),
+    )
+    assert default_samples.ok
+    assert default_samples.missing_known() == []
+
+
+def test_fingerprint_diff_names_combo_field_and_truncates() -> None:
+    expected = {"m/h/w": {"chosen": {"num_gpus": 8}}}
+    actual = {"m/h/w": {"chosen": {"num_gpus": 16}}}
+    text = fingerprint_diff(expected, actual)
+    assert text.startswith("基线不一致：")
+    assert "m/h/w" in text
+    assert "chosen.num_gpus" in text
+    assert "旧值 8" in text and "新值 16" in text
+    wide_old = {f"c{i}": i for i in range(DIFF_LINE_LIMIT + 5)}
+    wide_new = {f"c{i}": i + 1 for i in range(DIFF_LINE_LIMIT + 5)}
+    truncated = fingerprint_diff(wide_old, wide_new)
+    body = truncated.splitlines()
+    assert body[0] == "基线不一致："
+    assert body[-1] == "... diff truncated"
+    assert len(body) == DIFF_LINE_LIMIT + 2
+
+
+def test_sweep_cli_writes_the_report(tmp_path: Path, capsys: pytest.CaptureFixture[str]) -> None:
+    output = tmp_path / "sweep"
+    status = main(
+        [
+            "sweep",
+            "--models",
+            "qwen3-30b-a3b",
+            "--hardware",
+            "h20",
+            "--workloads",
+            "offline-batch",
+            "--capacity-samples",
+            "40",
+            "--verify-samples",
+            "120",
+            "--seed",
+            "1",
+            "--jobs",
+            "1",
+            "-o",
+            str(output),
+        ]
+    )
+    captured = capsys.readouterr()
+    assert status == 0, captured.err
+    report = (output / "sweep.md").read_text(encoding="utf-8")
+    assert "qwen3-30b-a3b/h20/offline-batch" in report
+    assert "不是实测" in report
+    assert "不变量违反" in report
+    payload = json.loads((output / "sweep.json").read_text(encoding="utf-8"))
+    assert payload["options"]["jobs"] == 1
+    assert payload["unexpected_violations"] == []
+
+
+def test_sweep_cli_requires_an_output_and_baseline_samples(
+    tmp_path: Path, capsys: pytest.CaptureFixture[str]
+) -> None:
+    assert main(["sweep"]) == 2
+    assert "错误" in capsys.readouterr().err
+    capsys.readouterr()
+    assert (
+        main(
+            [
+                "sweep",
+                "--models",
+                "no-such-model",
+                "-o",
+                str(tmp_path / "out"),
+            ]
+        )
+        == 2
+    )
+    assert (
+        main(
+            [
+                "sweep",
+                "--capacity-samples",
+                "20",
+                "--write-baselines",
+                str(tmp_path / "baselines"),
+            ]
+        )
+        == 2
+    )
+    assert "40" in capsys.readouterr().err
+
+
+@pytest.mark.slow
+def test_deploy_baseline_full_matrix() -> None:
+    """All 90 deployment plans at the checked-in sample counts, one process pool."""
+    result = sweep(
+        scenarios=("deploy",),
+        capacity_samples=BASELINE_CAPACITY_SAMPLES,
+        verify_samples=BASELINE_VERIFY_SAMPLES,
+        seed=BASELINE_SEED,
+        jobs=default_jobs(),
+        check_monotonicity=True,
+    )
+    _assert_matches(_load("deploy"), scenario_fingerprints(result, "deploy"))
+    assert result.unexpected_violations() == []
+    assert result.missing_known() == []
+    known = KNOWN_VIOLATIONS[0]
+    matched = [
+        item
+        for item in result.violations()
+        if item["combo"] == known.combo and item["id"] == known.id
+    ]
+    assert matched, f"已登记的违反没有出现：{known.combo} {known.id}"
+    assert "瓶颈是排队" in matched[0]["detail"]
+    assert len(result.monotonicity) == 2
+    assert {row.key for row in result.monotonicity}.isdisjoint(
+        # Throughput workloads have no arrival rate to double.
+        {key for key in result.cells if key.endswith("/offline-batch")}
+    )

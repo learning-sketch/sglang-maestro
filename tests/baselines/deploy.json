@@ -1,0 +1,7540 @@
+{
+  "deepseek-v3/h100-sxm/chat": {
+    "budget_gpus": 64,
+    "candidates": [
+      {
+        "description": "3×TP16·DCP8 + NEXTN",
+        "feasible": true,
+        "meets_slo": true,
+        "num_gpus": 48
+      },
+      {
+        "description": "PD：1×prefill TP16·DPA4 + NEXTN + 1×decode TP16·DPA4 + NEXTN",
+        "feasible": true,
+        "meets_slo": true,
+        "num_gpus": 32
+      }
+    ],
+    "chosen": {
+      "description": "PD：1×prefill TP16·DPA4 + NEXTN + 1×decode TP16·DPA4 + NEXTN",
+      "disaggregated": true,
+      "meets_slo": true,
+      "num_gpus": 32,
+      "num_instances": 2,
+      "policy": "cache_aware",
+      "pools": [
+        {
+          "capacity": {
+            "limit": "overload",
+            "rate": 14.0
+          },
+          "count": 1,
+          "role": "decode"
+        },
+        {
+          "capacity": {
+            "limit": "overload",
+            "rate": 15.63
+          },
+          "count": 1,
+          "role": "prefill"
+        }
+      ],
+      "result": {
+        "goodput_rps": 6.037,
+        "slo_attainment": 1.0,
+        "tpot_ms": {
+          "p90": 12.7
+        },
+        "ttft_ms": {
+          "p90": 935.8
+        }
+      }
+    },
+    "commands": {
+      "decode": [
+        "python3",
+        "-m",
+        "sglang.launch_server",
+        "--model-path",
+        "deepseek-ai/DeepSeek-V3",
+        "--tp-size",
+        "16",
+        "--attn-dp-size",
+        "4",
+        "--load-balance-method",
+        "total_tokens",
+        "--speculative-algorithm",
+        "NEXTN",
+        "--speculative-num-steps",
+        "4",
+        "--speculative-eagle-topk",
+        "1",
+        "--speculative-num-draft-tokens",
+        "5",
+        "--max-running-requests",
+        "68",
+        "--trust-remote-code",
+        "--host",
+        "0.0.0.0",
+        "--port",
+        "30000",
+        "--disaggregation-mode",
+        "decode",
+        "--disaggregation-transfer-backend",
+        "mooncake",
+        "--nnodes",
+        "2",
+        "--node-rank",
+        "0",
+        "--dist-init-addr",
+        "<node2_ip>:5000"
+      ],
+      "prefill": [
+        "python3",
+        "-m",
+        "sglang.launch_server",
+        "--model-path",
+        "deepseek-ai/DeepSeek-V3",
+        "--tp-size",
+        "16",
+        "--attn-dp-size",
+        "4",
+        "--load-balance-method",
+        "total_tokens",
+        "--max-running-requests",
+        "68",
+        "--trust-remote-code",
+        "--speculative-algorithm",
+        "NEXTN",
+        "--speculative-num-steps",
+        "4",
+        "--speculative-eagle-topk",
+        "1",
+        "--speculative-num-draft-tokens",
+        "5",
+        "--host",
+        "0.0.0.0",
+        "--port",
+        "30000",
+        "--disaggregation-mode",
+        "prefill",
+        "--disaggregation-transfer-backend",
+        "mooncake",
+        "--disaggregation-bootstrap-port",
+        "8998",
+        "--nnodes",
+        "2",
+        "--node-rank",
+        "0",
+        "--dist-init-addr",
+        "<node0_ip>:5000"
+      ]
+    },
+    "mode": "rate"
+  },
+  "deepseek-v3/h100-sxm/code": {
+    "budget_gpus": 64,
+    "candidates": [
+      {
+        "description": "2×TP16·DCP8 + NEXTN",
+        "feasible": true,
+        "meets_slo": true,
+        "num_gpus": 32
+      }
+    ],
+    "chosen": {
+      "description": "2×TP16·DCP8 + NEXTN",
+      "disaggregated": false,
+      "meets_slo": true,
+      "num_gpus": 32,
+      "num_instances": 2,
+      "policy": "cache_aware",
+      "pools": [
+        {
+          "capacity": {
+            "limit": "ttft",
+            "rate": 1.352
+          },
+          "count": 2,
+          "role": "colocated"
+        }
+      ],
+      "result": {
+        "goodput_rps": 1.665,
+        "slo_attainment": 1.0,
+        "tpot_ms": {
+          "p90": 17.64
+        },
+        "ttft_ms": {
+          "p90": 715.8
+        }
+      }
+    },
+    "commands": {
+      "colocated": [
+        "python3",
+        "-m",
+        "sglang.launch_server",
+        "--model-path",
+        "deepseek-ai/DeepSeek-V3",
+        "--tp-size",
+        "16",
+        "--dcp-size",
+        "8",
+        "--attention-backend",
+        "flashmla",
+        "--page-size",
+        "64",
+        "--speculative-algorithm",
+        "NEXTN",
+        "--speculative-num-steps",
+        "4",
+        "--speculative-eagle-topk",
+        "1",
+        "--speculative-num-draft-tokens",
+        "5",
+        "--trust-remote-code",
+        "--host",
+        "0.0.0.0",
+        "--port",
+        "30000",
+        "--nnodes",
+        "2",
+        "--node-rank",
+        "0",
+        "--dist-init-addr",
+        "<node0_ip>:5000"
+      ]
+    },
+    "mode": "rate"
+  },
+  "deepseek-v3/h100-sxm/offline-batch": {
+    "budget_gpus": 16,
+    "candidates": [
+      {
+        "description": "1×TP16·DPA4·DCP4",
+        "feasible": true,
+        "meets_slo": true,
+        "num_gpus": 16
+      }
+    ],
+    "chosen": {
+      "description": "1×TP16·DPA4·DCP4",
+      "disaggregated": false,
+      "meets_slo": true,
+      "num_gpus": 16,
+      "num_instances": 1,
+      "policy": "cache_aware",
+      "pools": [
+        {
+          "capacity": null,
+          "count": 1,
+          "role": "colocated"
+        }
+      ],
+      "result": {
+        "goodput_rps": 3.753,
+        "slo_attainment": 1.0,
+        "tpot_ms": {
+          "p90": 34.6
+        },
+        "ttft_ms": {
+          "p90": 5306.0
+        }
+      }
+    },
+    "commands": {
+      "colocated": [
+        "python3",
+        "-m",
+        "sglang.launch_server",
+        "--model-path",
+        "deepseek-ai/DeepSeek-V3",
+        "--tp-size",
+        "16",
+        "--attn-dp-size",
+        "4",
+        "--dcp-size",
+        "4",
+        "--load-balance-method",
+        "total_tokens",
+        "--attention-backend",
+        "flashmla",
+        "--page-size",
+        "64",
+        "--trust-remote-code",
+        "--host",
+        "0.0.0.0",
+        "--port",
+        "30000",
+        "--nnodes",
+        "2",
+        "--node-rank",
+        "0",
+        "--dist-init-addr",
+        "<node0_ip>:5000"
+      ]
+    },
+    "mode": "throughput"
+  },
+  "deepseek-v3/h100-sxm/rag-long-context": {
+    "budget_gpus": 64,
+    "candidates": [
+      {
+        "description": "4×TP16·DCP16 + NEXTN",
+        "feasible": true,
+        "meets_slo": true,
+        "num_gpus": 64
+      },
+      {
+        "description": "PD：3×prefill TP16 + NEXTN + 1×decode TP16·DCP16 + NEXTN",
+        "feasible": true,
+        "meets_slo": true,
+        "num_gpus": 64
+      }
+    ],
+    "chosen": {
+      "description": "4×TP16·DCP16 + NEXTN",
+      "disaggregated": false,
+      "meets_slo": true,
+      "num_gpus": 64,
+      "num_instances": 4,
+      "policy": "cache_aware",
+      "pools": [
+        {
+          "capacity": {
+            "limit": "tpot",
+            "rate": 0.1428
+          },
+          "count": 4,
+          "role": "colocated"
+        }
+      ],
+      "result": {
+        "goodput_rps": 0.508,
+        "slo_attainment": 1.0,
+        "tpot_ms": {
+          "p90": 6.283
+        },
+        "ttft_ms": {
+          "p90": 2476.0
+        }
+      }
+    },
+    "commands": {
+      "colocated": [
+        "python3",
+        "-m",
+        "sglang.launch_server",
+        "--model-path",
+        "deepseek-ai/DeepSeek-V3",
+        "--tp-size",
+        "16",
+        "--dcp-size",
+        "16",
+        "--attention-backend",
+        "flashmla",
+        "--page-size",
+        "64",
+        "--speculative-algorithm",
+        "NEXTN",
+        "--speculative-num-steps",
+        "3",
+        "--speculative-eagle-topk",
+        "1",
+        "--speculative-num-draft-tokens",
+        "4",
+        "--trust-remote-code",
+        "--host",
+        "0.0.0.0",
+        "--port",
+        "30000",
+        "--nnodes",
+        "2",
+        "--node-rank",
+        "0",
+        "--dist-init-addr",
+        "<node0_ip>:5000"
+      ]
+    },
+    "mode": "rate"
+  },
+  "deepseek-v3/h100-sxm/reasoning": {
+    "budget_gpus": 64,
+    "candidates": [
+      {
+        "description": "2×TP16·DCP8",
+        "feasible": true,
+        "meets_slo": true,
+        "num_gpus": 32
+      }
+    ],
+    "chosen": {
+      "description": "2×TP16·DCP8",
+      "disaggregated": false,
+      "meets_slo": true,
+      "num_gpus": 32,
+      "num_instances": 2,
+      "policy": "cache_aware",
+      "pools": [
+        {
+          "capacity": {
+            "limit": "tpot",
+            "rate": 0.3795
+          },
+          "count": 2,
+          "role": "colocated"
+        }
+      ],
+      "result": {
+        "goodput_rps": 0.2492,
+        "slo_attainment": 1.0,
+        "tpot_ms": {
+          "p90": 23.14
+        },
+        "ttft_ms": {
+          "p90": 154.0
+        }
+      }
+    },
+    "commands": {
+      "colocated": [
+        "python3",
+        "-m",
+        "sglang.launch_server",
+        "--model-path",
+        "deepseek-ai/DeepSeek-V3",
+        "--tp-size",
+        "16",
+        "--dcp-size",
+        "8",
+        "--attention-backend",
+        "flashmla",
+        "--page-size",
+        "64",
+        "--trust-remote-code",
+        "--host",
+        "0.0.0.0",
+        "--port",
+        "30000",
+        "--nnodes",
+        "2",
+        "--node-rank",
+        "0",
+        "--dist-init-addr",
+        "<node0_ip>:5000"
+      ]
+    },
+    "mode": "rate"
+  },
+  "deepseek-v3/h100-sxm/shared-prefix-agent": {
+    "budget_gpus": 64,
+    "candidates": [
+      {
+        "description": "2×TP16·DCP8 + NEXTN",
+        "feasible": true,
+        "meets_slo": true,
+        "num_gpus": 32
+      }
+    ],
+    "chosen": {
+      "description": "2×TP16·DCP8 + NEXTN",
+      "disaggregated": false,
+      "meets_slo": true,
+      "num_gpus": 32,
+      "num_instances": 2,
+      "policy": "cache_aware",
+      "pools": [
+        {
+          "capacity": {
+            "limit": "ttft",
+            "rate": 2.881
+          },
+          "count": 2,
+          "role": "colocated"
+        }
+      ],
+      "result": {
+        "goodput_rps": 8.933,
+        "slo_attainment": 0.9722,
+        "tpot_ms": {
+          "p90": 25.24
+        },
+        "ttft_ms": {
+          "p90": 667.5
+        }
+      }
+    },
+    "commands": {
+      "colocated": [
+        "python3",
+        "-m",
+        "sglang.launch_server",
+        "--model-path",
+        "deepseek-ai/DeepSeek-V3",
+        "--tp-size",
+        "16",
+        "--dcp-size",
+        "8",
+        "--attention-backend",
+        "flashmla",
+        "--page-size",
+        "64",
+        "--speculative-algorithm",
+        "NEXTN",
+        "--speculative-num-steps",
+        "2",
+        "--speculative-eagle-topk",
+        "1",
+        "--speculative-num-draft-tokens",
+        "3",
+        "--max-running-requests",
+        "119",
+        "--trust-remote-code",
+        "--host",
+        "0.0.0.0",
+        "--port",
+        "30000",
+        "--nnodes",
+        "2",
+        "--node-rank",
+        "0",
+        "--dist-init-addr",
+        "<node0_ip>:5000"
+      ]
+    },
+    "mode": "rate"
+  },
+  "deepseek-v3/h20/chat": {
+    "budget_gpus": 64,
+    "candidates": [
+      {
+        "description": "4×TP8·DCP8",
+        "feasible": true,
+        "meets_slo": true,
+        "num_gpus": 32
+      },
+      {
+        "description": "4×TP16·DCP2 + NEXTN",
+        "feasible": true,
+        "meets_slo": true,
+        "num_gpus": 64
+      },
+      {
+        "description": "PD：3×prefill TP8 + 1×decode TP8·DCP8",
+        "feasible": true,
+        "meets_slo": true,
+        "num_gpus": 32
+      }
+    ],
+    "chosen": {
+      "description": "4×TP8·DCP8",
+      "disaggregated": false,
+      "meets_slo": true,
+      "num_gpus": 32,
+      "num_instances": 4,
+      "policy": "cache_aware",
+      "pools": [
+        {
+          "capacity": {
+            "limit": "tpot",
+            "rate": 2.141
+          },
+          "count": 4,
+          "role": "colocated"
+        }
+      ],
+      "result": {
+        "goodput_rps": 5.917,
+        "slo_attainment": 1.0,
+        "tpot_ms": {
+          "p90": 26.53
+        },
+        "ttft_ms": {
+          "p90": 383.7
+        }
+      }
+    },
+    "commands": {
+      "colocated": [
+        "python3",
+        "-m",
+        "sglang.launch_server",
+        "--model-path",
+        "deepseek-ai/DeepSeek-V3",
+        "--tp-size",
+        "8",
+        "--dcp-size",
+        "8",
+        "--chunked-prefill-size",
+        "4096",
+        "--attention-backend",
+        "flashmla",
+        "--page-size",
+        "64",
+        "--trust-remote-code",
+        "--host",
+        "0.0.0.0",
+        "--port",
+        "30000"
+      ]
+    },
+    "mode": "rate"
+  },
+  "deepseek-v3/h20/code": {
+    "budget_gpus": 64,
+    "candidates": [
+      {
+        "description": "4×TP8·DCP8 + NEXTN",
+        "feasible": true,
+        "meets_slo": true,
+        "num_gpus": 32
+      },
+      {
+        "description": "3×TP16·DCP4 + NEXTN",
+        "feasible": true,
+        "meets_slo": true,
+        "num_gpus": 48
+      },
+      {
+        "description": "PD：2×prefill TP8 + NEXTN + 1×decode TP16·DPA8 + NEXTN",
+        "feasible": true,
+        "meets_slo": true,
+        "num_gpus": 32
+      }
+    ],
+    "chosen": {
+      "description": "4×TP8·DCP8 + NEXTN",
+      "disaggregated": false,
+      "meets_slo": true,
+      "num_gpus": 32,
+      "num_instances": 4,
+      "policy": "cache_aware",
+      "pools": [
+        {
+          "capacity": {
+            "limit": "tpot",
+            "rate": 0.5506
+          },
+          "count": 4,
+          "role": "colocated"
+        }
+      ],
+      "result": {
+        "goodput_rps": 1.639,
+        "slo_attainment": 1.0,
+        "tpot_ms": {
+          "p90": 15.1
+        },
+        "ttft_ms": {
+          "p90": 851.5
+        }
+      }
+    },
+    "commands": {
+      "colocated": [
+        "python3",
+        "-m",
+        "sglang.launch_server",
+        "--model-path",
+        "deepseek-ai/DeepSeek-V3",
+        "--tp-size",
+        "8",
+        "--dcp-size",
+        "8",
+        "--chunked-prefill-size",
+        "4096",
+        "--attention-backend",
+        "flashmla",
+        "--page-size",
+        "64",
+        "--speculative-algorithm",
+        "NEXTN",
+        "--speculative-num-steps",
+        "3",
+        "--speculative-eagle-topk",
+        "1",
+        "--speculative-num-draft-tokens",
+        "4",
+        "--trust-remote-code",
+        "--host",
+        "0.0.0.0",
+        "--port",
+        "30000"
+      ]
+    },
+    "mode": "rate"
+  },
+  "deepseek-v3/h20/offline-batch": {
+    "budget_gpus": 8,
+    "candidates": [
+      {
+        "description": "1×TP8·DCP8",
+        "feasible": true,
+        "meets_slo": true,
+        "num_gpus": 8
+      }
+    ],
+    "chosen": {
+      "description": "1×TP8·DCP8",
+      "disaggregated": false,
+      "meets_slo": true,
+      "num_gpus": 8,
+      "num_instances": 1,
+      "policy": "cache_aware",
+      "pools": [
+        {
+          "capacity": null,
+          "count": 1,
+          "role": "colocated"
+        }
+      ],
+      "result": {
+        "goodput_rps": 2.267,
+        "slo_attainment": 1.0,
+        "tpot_ms": {
+          "p90": 61.17
+        },
+        "ttft_ms": {
+          "p90": 12680.0
+        }
+      }
+    },
+    "commands": {
+      "colocated": [
+        "python3",
+        "-m",
+        "sglang.launch_server",
+        "--model-path",
+        "deepseek-ai/DeepSeek-V3",
+        "--tp-size",
+        "8",
+        "--dcp-size",
+        "8",
+        "--chunked-prefill-size",
+        "4096",
+        "--attention-backend",
+        "flashmla",
+        "--page-size",
+        "64",
+        "--trust-remote-code",
+        "--host",
+        "0.0.0.0",
+        "--port",
+        "30000"
+      ]
+    },
+    "mode": "throughput"
+  },
+  "deepseek-v3/h20/rag-long-context": {
+    "budget_gpus": 64,
+    "candidates": [
+      {
+        "description": "93×TP8·DCP8",
+        "feasible": true,
+        "meets_slo": true,
+        "num_gpus": 744
+      },
+      {
+        "description": "5×TP16·CP2 + NEXTN",
+        "feasible": true,
+        "meets_slo": true,
+        "num_gpus": 80
+      },
+      {
+        "description": "PD：20×prefill TP16 + 1×decode TP8·DCP8",
+        "feasible": true,
+        "meets_slo": true,
+        "num_gpus": 328
+      }
+    ],
+    "chosen": {
+      "description": "5×TP16·CP2 + NEXTN",
+      "disaggregated": false,
+      "meets_slo": true,
+      "num_gpus": 80,
+      "num_instances": 5,
+      "policy": "cache_aware",
+      "pools": [
+        {
+          "capacity": {
+            "limit": "tpot",
+            "rate": 0.101
+          },
+          "count": 5,
+          "role": "colocated"
+        }
+      ],
+      "result": {
+        "goodput_rps": 0.5059,
+        "slo_attainment": 1.0,
+        "tpot_ms": {
+          "p90": 5.345
+        },
+        "ttft_ms": {
+          "p90": 3594.0
+        }
+      }
+    },
+    "commands": {
+      "colocated": [
+        "python3",
+        "-m",
+        "sglang.launch_server",
+        "--model-path",
+        "deepseek-ai/DeepSeek-V3",
+        "--tp-size",
+        "16",
+        "--attn-cp-size",
+        "2",
+        "--enable-prefill-cp",
+        "--cp-strategy",
+        "zigzag",
+        "--speculative-algorithm",
+        "NEXTN",
+        "--speculative-num-steps",
+        "2",
+        "--speculative-eagle-topk",
+        "1",
+        "--speculative-num-draft-tokens",
+        "3",
+        "--trust-remote-code",
+        "--host",
+        "0.0.0.0",
+        "--port",
+        "30000",
+        "--nnodes",
+        "2",
+        "--node-rank",
+        "0",
+        "--dist-init-addr",
+        "<node0_ip>:5000"
+      ]
+    },
+    "mode": "rate"
+  },
+  "deepseek-v3/h20/reasoning": {
+    "budget_gpus": 64,
+    "candidates": [
+      {
+        "description": "4×TP8·DCP8 + NEXTN",
+        "feasible": true,
+        "meets_slo": true,
+        "num_gpus": 32
+      },
+      {
+        "description": "3×TP16·DPA8",
+        "feasible": true,
+        "meets_slo": true,
+        "num_gpus": 48
+      },
+      {
+        "description": "PD：1×prefill TP8 + 4×decode TP8·DCP8",
+        "feasible": true,
+        "meets_slo": true,
+        "num_gpus": 40
+      }
+    ],
+    "chosen": {
+      "description": "4×TP8·DCP8 + NEXTN",
+      "disaggregated": false,
+      "meets_slo": true,
+      "num_gpus": 32,
+      "num_instances": 4,
+      "policy": "cache_aware",
+      "pools": [
+        {
+          "capacity": {
+            "limit": "overload",
+            "rate": 0.1639
+          },
+          "count": 4,
+          "role": "colocated"
+        }
+      ],
+      "result": {
+        "goodput_rps": 0.295,
+        "slo_attainment": 1.0,
+        "tpot_ms": {
+          "p90": 16.42
+        },
+        "ttft_ms": {
+          "p90": 160.1
+        }
+      }
+    },
+    "commands": {
+      "colocated": [
+        "python3",
+        "-m",
+        "sglang.launch_server",
+        "--model-path",
+        "deepseek-ai/DeepSeek-V3",
+        "--tp-size",
+        "8",
+        "--dcp-size",
+        "8",
+        "--chunked-prefill-size",
+        "4096",
+        "--attention-backend",
+        "flashmla",
+        "--page-size",
+        "64",
+        "--speculative-algorithm",
+        "NEXTN",
+        "--speculative-num-steps",
+        "2",
+        "--speculative-eagle-topk",
+        "1",
+        "--speculative-num-draft-tokens",
+        "3",
+        "--trust-remote-code",
+        "--host",
+        "0.0.0.0",
+        "--port",
+        "30000"
+      ]
+    },
+    "mode": "rate"
+  },
+  "deepseek-v3/h20/shared-prefix-agent": {
+    "budget_gpus": 64,
+    "candidates": [
+      {
+        "description": "5×TP8·DCP8",
+        "feasible": true,
+        "meets_slo": true,
+        "num_gpus": 40
+      },
+      {
+        "description": "3×TP16·DCP4 + NEXTN",
+        "feasible": true,
+        "meets_slo": true,
+        "num_gpus": 48
+      },
+      {
+        "description": "PD：5×prefill TP8 + 1×decode TP16·DPA8",
+        "feasible": true,
+        "meets_slo": true,
+        "num_gpus": 56
+      }
+    ],
+    "chosen": {
+      "description": "5×TP8·DCP8",
+      "disaggregated": false,
+      "meets_slo": true,
+      "num_gpus": 40,
+      "num_instances": 5,
+      "policy": "cache_aware",
+      "pools": [
+        {
+          "capacity": {
+            "limit": "tpot",
+            "rate": 0.97
+          },
+          "count": 5,
+          "role": "colocated"
+        }
+      ],
+      "result": {
+        "goodput_rps": 8.294,
+        "slo_attainment": 0.9917,
+        "tpot_ms": {
+          "p90": 32.14
+        },
+        "ttft_ms": {
+          "p90": 362.8
+        }
+      }
+    },
+    "commands": {
+      "colocated": [
+        "python3",
+        "-m",
+        "sglang.launch_server",
+        "--model-path",
+        "deepseek-ai/DeepSeek-V3",
+        "--tp-size",
+        "8",
+        "--dcp-size",
+        "8",
+        "--chunked-prefill-size",
+        "4096",
+        "--attention-backend",
+        "flashmla",
+        "--page-size",
+        "64",
+        "--trust-remote-code",
+        "--host",
+        "0.0.0.0",
+        "--port",
+        "30000"
+      ]
+    },
+    "mode": "rate"
+  },
+  "deepseek-v3/template-h20-class/chat": {
+    "budget_gpus": 64,
+    "candidates": [
+      {
+        "description": "7×TP16·DCP2 + NEXTN",
+        "feasible": true,
+        "meets_slo": true,
+        "num_gpus": 112
+      },
+      {
+        "description": "PD：7×prefill TP16 + NEXTN + 1×decode TP16·DPA4·DCP2 + NEXTN",
+        "feasible": true,
+        "meets_slo": true,
+        "num_gpus": 128
+      }
+    ],
+    "chosen": {
+      "description": "7×TP16·DCP2 + NEXTN",
+      "disaggregated": false,
+      "meets_slo": true,
+      "num_gpus": 112,
+      "num_instances": 7,
+      "policy": "cache_aware",
+      "pools": [
+        {
+          "capacity": {
+            "limit": "overload",
+            "rate": 1.249
+          },
+          "count": 7,
+          "role": "colocated"
+        }
+      ],
+      "result": {
+        "goodput_rps": 6.551,
+        "slo_attainment": 1.0,
+        "tpot_ms": {
+          "p90": 16.82
+        },
+        "ttft_ms": {
+          "p90": 615.9
+        }
+      }
+    },
+    "commands": {
+      "colocated": [
+        "python3",
+        "-m",
+        "sglang.launch_server",
+        "--model-path",
+        "deepseek-ai/DeepSeek-V3",
+        "--device",
+        "example",
+        "--tp-size",
+        "16",
+        "--dcp-size",
+        "2",
+        "--speculative-algorithm",
+        "NEXTN",
+        "--speculative-num-steps",
+        "3",
+        "--speculative-eagle-topk",
+        "1",
+        "--speculative-num-draft-tokens",
+        "4",
+        "--trust-remote-code",
+        "--host",
+        "0.0.0.0",
+        "--port",
+        "30000",
+        "--nnodes",
+        "2",
+        "--node-rank",
+        "0",
+        "--dist-init-addr",
+        "<node0_ip>:5000"
+      ]
+    },
+    "mode": "rate"
+  },
+  "deepseek-v3/template-h20-class/code": {
+    "budget_gpus": 64,
+    "candidates": [
+      {
+        "description": "5×TP16·DCP4 + NEXTN",
+        "feasible": true,
+        "meets_slo": true,
+        "num_gpus": 80
+      },
+      {
+        "description": "PD：4×prefill TP16 + 2×decode TP16·DPA4·DCP4",
+        "feasible": true,
+        "meets_slo": true,
+        "num_gpus": 96
+      }
+    ],
+    "chosen": {
+      "description": "5×TP16·DCP4 + NEXTN",
+      "disaggregated": false,
+      "meets_slo": true,
+      "num_gpus": 80,
+      "num_instances": 5,
+      "policy": "cache_aware",
+      "pools": [
+        {
+          "capacity": {
+            "limit": "tpot",
+            "rate": 0.44
+          },
+          "count": 5,
+          "role": "colocated"
+        }
+      ],
+      "result": {
+        "goodput_rps": 1.643,
+        "slo_attainment": 1.0,
+        "tpot_ms": {
+          "p90": 14.65
+        },
+        "ttft_ms": {
+          "p90": 1406.0
+        }
+      }
+    },
+    "commands": {
+      "colocated": [
+        "python3",
+        "-m",
+        "sglang.launch_server",
+        "--model-path",
+        "deepseek-ai/DeepSeek-V3",
+        "--device",
+        "example",
+        "--tp-size",
+        "16",
+        "--dcp-size",
+        "4",
+        "--speculative-algorithm",
+        "NEXTN",
+        "--speculative-num-steps",
+        "4",
+        "--speculative-eagle-topk",
+        "1",
+        "--speculative-num-draft-tokens",
+        "5",
+        "--trust-remote-code",
+        "--host",
+        "0.0.0.0",
+        "--port",
+        "30000",
+        "--nnodes",
+        "2",
+        "--node-rank",
+        "0",
+        "--dist-init-addr",
+        "<node0_ip>:5000"
+      ]
+    },
+    "mode": "rate"
+  },
+  "deepseek-v3/template-h20-class/offline-batch": {
+    "budget_gpus": 16,
+    "candidates": [
+      {
+        "description": "1×TP16·DPA8·DCP2",
+        "feasible": true,
+        "meets_slo": true,
+        "num_gpus": 16
+      }
+    ],
+    "chosen": {
+      "description": "1×TP16·DPA8·DCP2",
+      "disaggregated": false,
+      "meets_slo": true,
+      "num_gpus": 16,
+      "num_instances": 1,
+      "policy": "cache_aware",
+      "pools": [
+        {
+          "capacity": null,
+          "count": 1,
+          "role": "colocated"
+        }
+      ],
+      "result": {
+        "goodput_rps": 2.401,
+        "slo_attainment": 1.0,
+        "tpot_ms": {
+          "p90": 53.64
+        },
+        "ttft_ms": {
+          "p90": 14730.0
+        }
+      }
+    },
+    "commands": {
+      "colocated": [
+        "python3",
+        "-m",
+        "sglang.launch_server",
+        "--model-path",
+        "deepseek-ai/DeepSeek-V3",
+        "--device",
+        "example",
+        "--tp-size",
+        "16",
+        "--attn-dp-size",
+        "8",
+        "--dcp-size",
+        "2",
+        "--load-balance-method",
+        "total_tokens",
+        "--trust-remote-code",
+        "--host",
+        "0.0.0.0",
+        "--port",
+        "30000",
+        "--nnodes",
+        "2",
+        "--node-rank",
+        "0",
+        "--dist-init-addr",
+        "<node0_ip>:5000"
+      ]
+    },
+    "mode": "throughput"
+  },
+  "deepseek-v3/template-h20-class/rag-long-context": {
+    "budget_gpus": 64,
+    "candidates": [
+      {
+        "description": "42×TP16·CP2 + NEXTN",
+        "feasible": true,
+        "meets_slo": true,
+        "num_gpus": 672
+      },
+      {
+        "description": "PD：98×prefill TP16 + NEXTN + 1×decode TP16·DCP8 + NEXTN",
+        "feasible": true,
+        "meets_slo": true,
+        "num_gpus": 1584
+      }
+    ],
+    "chosen": {
+      "description": "42×TP16·CP2 + NEXTN",
+      "disaggregated": false,
+      "meets_slo": true,
+      "num_gpus": 672,
+      "num_instances": 42,
+      "policy": "cache_aware",
+      "pools": [
+        {
+          "capacity": {
+            "limit": "ttft",
+            "rate": 0.01201
+          },
+          "count": 42,
+          "role": "colocated"
+        }
+      ],
+      "result": {
+        "goodput_rps": 0.5016,
+        "slo_attainment": 1.0,
+        "tpot_ms": {
+          "p90": 7.286
+        },
+        "ttft_ms": {
+          "p90": 5185.0
+        }
+      }
+    },
+    "commands": {
+      "colocated": [
+        "python3",
+        "-m",
+        "sglang.launch_server",
+        "--model-path",
+        "deepseek-ai/DeepSeek-V3",
+        "--device",
+        "example",
+        "--tp-size",
+        "16",
+        "--attn-cp-size",
+        "2",
+        "--enable-prefill-cp",
+        "--cp-strategy",
+        "zigzag",
+        "--speculative-algorithm",
+        "NEXTN",
+        "--speculative-num-steps",
+        "2",
+        "--speculative-eagle-topk",
+        "1",
+        "--speculative-num-draft-tokens",
+        "3",
+        "--trust-remote-code",
+        "--host",
+        "0.0.0.0",
+        "--port",
+        "30000",
+        "--nnodes",
+        "2",
+        "--node-rank",
+        "0",
+        "--dist-init-addr",
+        "<node0_ip>:5000"
+      ]
+    },
+    "mode": "rate"
+  },
+  "deepseek-v3/template-h20-class/reasoning": {
+    "budget_gpus": 64,
+    "candidates": [
+      {
+        "description": "3×TP16·DPA4·DCP4 + NEXTN",
+        "feasible": true,
+        "meets_slo": true,
+        "num_gpus": 48
+      },
+      {
+        "description": "PD：1×prefill TP16·DPA4 + 3×decode TP16·DPA4·DCP4",
+        "feasible": true,
+        "meets_slo": true,
+        "num_gpus": 64
+      }
+    ],
+    "chosen": {
+      "description": "3×TP16·DPA4·DCP4 + NEXTN",
+      "disaggregated": false,
+      "meets_slo": true,
+      "num_gpus": 48,
+      "num_instances": 3,
+      "policy": "cache_aware",
+      "pools": [
+        {
+          "capacity": {
+            "limit": "overload",
+            "rate": 0.1698
+          },
+          "count": 3,
+          "role": "colocated"
+        }
+      ],
+      "result": {
+        "goodput_rps": 0.255,
+        "slo_attainment": 1.0,
+        "tpot_ms": {
+          "p90": 17.96
+        },
+        "ttft_ms": {
+          "p90": 660.8
+        }
+      }
+    },
+    "commands": {
+      "colocated": [
+        "python3",
+        "-m",
+        "sglang.launch_server",
+        "--model-path",
+        "deepseek-ai/DeepSeek-V3",
+        "--device",
+        "example",
+        "--tp-size",
+        "16",
+        "--attn-dp-size",
+        "4",
+        "--dcp-size",
+        "4",
+        "--load-balance-method",
+        "total_tokens",
+        "--speculative-algorithm",
+        "NEXTN",
+        "--speculative-num-steps",
+        "3",
+        "--speculative-eagle-topk",
+        "1",
+        "--speculative-num-draft-tokens",
+        "4",
+        "--trust-remote-code",
+        "--host",
+        "0.0.0.0",
+        "--port",
+        "30000",
+        "--nnodes",
+        "2",
+        "--node-rank",
+        "0",
+        "--dist-init-addr",
+        "<node0_ip>:5000"
+      ]
+    },
+    "mode": "rate"
+  },
+  "deepseek-v3/template-h20-class/shared-prefix-agent": {
+    "budget_gpus": 64,
+    "candidates": [
+      {
+        "description": "5×TP16·CP2",
+        "feasible": true,
+        "meets_slo": true,
+        "num_gpus": 80
+      },
+      {
+        "description": "PD：8×prefill TP16 + 2×decode TP16·DCP8",
+        "feasible": true,
+        "meets_slo": true,
+        "num_gpus": 160
+      }
+    ],
+    "chosen": {
+      "description": "5×TP16·CP2",
+      "disaggregated": false,
+      "meets_slo": true,
+      "num_gpus": 80,
+      "num_instances": 5,
+      "policy": "cache_aware",
+      "pools": [
+        {
+          "capacity": {
+            "limit": "tpot",
+            "rate": 0.9606
+          },
+          "count": 5,
+          "role": "colocated"
+        }
+      ],
+      "result": {
+        "goodput_rps": 7.998,
+        "slo_attainment": 0.9778,
+        "tpot_ms": {
+          "p90": 33.12
+        },
+        "ttft_ms": {
+          "p90": 455.0
+        }
+      }
+    },
+    "commands": {
+      "colocated": [
+        "python3",
+        "-m",
+        "sglang.launch_server",
+        "--model-path",
+        "deepseek-ai/DeepSeek-V3",
+        "--device",
+        "example",
+        "--tp-size",
+        "16",
+        "--attn-cp-size",
+        "2",
+        "--enable-prefill-cp",
+        "--cp-strategy",
+        "zigzag",
+        "--trust-remote-code",
+        "--host",
+        "0.0.0.0",
+        "--port",
+        "30000",
+        "--nnodes",
+        "2",
+        "--node-rank",
+        "0",
+        "--dist-init-addr",
+        "<node0_ip>:5000"
+      ]
+    },
+    "mode": "rate"
+  },
+  "qwen2.5-72b-instruct/h100-sxm/chat": {
+    "budget_gpus": 64,
+    "candidates": [
+      {
+        "description": "2×TP4 + EAGLE3",
+        "feasible": true,
+        "meets_slo": true,
+        "num_gpus": 8
+      },
+      {
+        "description": "2×TP8 + EAGLE3",
+        "feasible": true,
+        "meets_slo": true,
+        "num_gpus": 16
+      },
+      {
+        "description": "3×TP16·DPA4 + EAGLE3",
+        "feasible": true,
+        "meets_slo": false,
+        "num_gpus": 48
+      }
+    ],
+    "chosen": {
+      "description": "2×TP4 + EAGLE3",
+      "disaggregated": false,
+      "meets_slo": true,
+      "num_gpus": 8,
+      "num_instances": 2,
+      "policy": "cache_aware",
+      "pools": [
+        {
+          "capacity": {
+            "limit": "overload",
+            "rate": 4.218
+          },
+          "count": 2,
+          "role": "colocated"
+        }
+      ],
+      "result": {
+        "goodput_rps": 6.5,
+        "slo_attainment": 1.0,
+        "tpot_ms": {
+          "p90": 33.58
+        },
+        "ttft_ms": {
+          "p90": 711.3
+        }
+      }
+    },
+    "commands": {
+      "colocated": [
+        "python3",
+        "-m",
+        "sglang.launch_server",
+        "--model-path",
+        "Qwen/Qwen2.5-72B-Instruct",
+        "--tp-size",
+        "4",
+        "--speculative-algorithm",
+        "EAGLE3",
+        "--speculative-num-steps",
+        "5",
+        "--speculative-eagle-topk",
+        "1",
+        "--speculative-num-draft-tokens",
+        "6",
+        "--speculative-draft-model-path",
+        "<eagle3-draft-model>",
+        "--host",
+        "0.0.0.0",
+        "--port",
+        "30000"
+      ]
+    },
+    "mode": "rate"
+  },
+  "qwen2.5-72b-instruct/h100-sxm/code": {
+    "budget_gpus": 64,
+    "candidates": [
+      {
+        "description": "2×TP4 + EAGLE3",
+        "feasible": true,
+        "meets_slo": true,
+        "num_gpus": 8
+      },
+      {
+        "description": "1×TP8 + EAGLE3",
+        "feasible": true,
+        "meets_slo": true,
+        "num_gpus": 8
+      },
+      {
+        "description": "2×TP16·DPA2·CP2 + EAGLE3",
+        "feasible": true,
+        "meets_slo": false,
+        "num_gpus": 32
+      }
+    ],
+    "chosen": {
+      "description": "1×TP8 + EAGLE3",
+      "disaggregated": false,
+      "meets_slo": true,
+      "num_gpus": 8,
+      "num_instances": 1,
+      "policy": "cache_aware",
+      "pools": [
+        {
+          "capacity": {
+            "limit": "overload",
+            "rate": 2.532
+          },
+          "count": 1,
+          "role": "colocated"
+        }
+      ],
+      "result": {
+        "goodput_rps": 1.827,
+        "slo_attainment": 1.0,
+        "tpot_ms": {
+          "p90": 12.19
+        },
+        "ttft_ms": {
+          "p90": 763.2
+        }
+      }
+    },
+    "commands": {
+      "colocated": [
+        "python3",
+        "-m",
+        "sglang.launch_server",
+        "--model-path",
+        "Qwen/Qwen2.5-72B-Instruct",
+        "--tp-size",
+        "8",
+        "--speculative-algorithm",
+        "EAGLE3",
+        "--speculative-num-steps",
+        "5",
+        "--speculative-eagle-topk",
+        "1",
+        "--speculative-num-draft-tokens",
+        "6",
+        "--speculative-draft-model-path",
+        "<eagle3-draft-model>",
+        "--host",
+        "0.0.0.0",
+        "--port",
+        "30000"
+      ]
+    },
+    "mode": "rate"
+  },
+  "qwen2.5-72b-instruct/h100-sxm/offline-batch": {
+    "budget_gpus": 8,
+    "candidates": [
+      {
+        "description": "2×TP4",
+        "feasible": true,
+        "meets_slo": true,
+        "num_gpus": 8
+      },
+      {
+        "description": "1×TP8·DPA2",
+        "feasible": true,
+        "meets_slo": true,
+        "num_gpus": 8
+      }
+    ],
+    "chosen": {
+      "description": "1×TP8·DPA2",
+      "disaggregated": false,
+      "meets_slo": true,
+      "num_gpus": 8,
+      "num_instances": 1,
+      "policy": "cache_aware",
+      "pools": [
+        {
+          "capacity": null,
+          "count": 1,
+          "role": "colocated"
+        }
+      ],
+      "result": {
+        "goodput_rps": 5.122,
+        "slo_attainment": 1.0,
+        "tpot_ms": {
+          "p90": 25.34
+        },
+        "ttft_ms": {
+          "p90": 6552.0
+        }
+      }
+    },
+    "commands": {
+      "colocated": [
+        "python3",
+        "-m",
+        "sglang.launch_server",
+        "--model-path",
+        "Qwen/Qwen2.5-72B-Instruct",
+        "--tp-size",
+        "8",
+        "--attn-dp-size",
+        "2",
+        "--load-balance-method",
+        "total_tokens",
+        "--host",
+        "0.0.0.0",
+        "--port",
+        "30000"
+      ]
+    },
+    "mode": "throughput"
+  },
+  "qwen2.5-72b-instruct/h100-sxm/rag-long-context": {
+    "budget_gpus": 64,
+    "candidates": [
+      {
+        "description": "4×TP4 + EAGLE3",
+        "feasible": true,
+        "meets_slo": true,
+        "num_gpus": 16
+      },
+      {
+        "description": "3×TP8 + EAGLE3",
+        "feasible": true,
+        "meets_slo": true,
+        "num_gpus": 24
+      },
+      {
+        "description": "3×TP16·DPA2 + EAGLE3",
+        "feasible": true,
+        "meets_slo": false,
+        "num_gpus": 48
+      },
+      {
+        "description": "PD：3×prefill TP4 + EAGLE3 + 1×decode TP8 + EAGLE3",
+        "feasible": true,
+        "meets_slo": true,
+        "num_gpus": 20
+      }
+    ],
+    "chosen": {
+      "description": "4×TP4 + EAGLE3",
+      "disaggregated": false,
+      "meets_slo": true,
+      "num_gpus": 16,
+      "num_instances": 4,
+      "policy": "cache_aware",
+      "pools": [
+        {
+          "capacity": {
+            "limit": "tpot",
+            "rate": 0.1316
+          },
+          "count": 4,
+          "role": "colocated"
+        }
+      ],
+      "result": {
+        "goodput_rps": 0.5022,
+        "slo_attainment": 1.0,
+        "tpot_ms": {
+          "p90": 16.63
+        },
+        "ttft_ms": {
+          "p90": 2801.0
+        }
+      }
+    },
+    "commands": {
+      "colocated": [
+        "python3",
+        "-m",
+        "sglang.launch_server",
+        "--model-path",
+        "Qwen/Qwen2.5-72B-Instruct",
+        "--tp-size",
+        "4",
+        "--speculative-algorithm",
+        "EAGLE3",
+        "--speculative-num-steps",
+        "5",
+        "--speculative-eagle-topk",
+        "1",
+        "--speculative-num-draft-tokens",
+        "6",
+        "--speculative-draft-model-path",
+        "<eagle3-draft-model>",
+        "--host",
+        "0.0.0.0",
+        "--port",
+        "30000"
+      ]
+    },
+    "mode": "rate"
+  },
+  "qwen2.5-72b-instruct/h100-sxm/reasoning": {
+    "budget_gpus": 64,
+    "candidates": [
+      {
+        "description": "2×TP4 + EAGLE3",
+        "feasible": true,
+        "meets_slo": true,
+        "num_gpus": 8
+      },
+      {
+        "description": "1×TP8 + EAGLE3",
+        "feasible": true,
+        "meets_slo": true,
+        "num_gpus": 8
+      },
+      {
+        "description": "1×TP16·DPA2 + EAGLE3",
+        "feasible": true,
+        "meets_slo": false,
+        "num_gpus": 16
+      }
+    ],
+    "chosen": {
+      "description": "1×TP8 + EAGLE3",
+      "disaggregated": false,
+      "meets_slo": true,
+      "num_gpus": 8,
+      "num_instances": 1,
+      "policy": "cache_aware",
+      "pools": [
+        {
+          "capacity": {
+            "limit": "overload",
+            "rate": 0.8047
+          },
+          "count": 1,
+          "role": "colocated"
+        }
+      ],
+      "result": {
+        "goodput_rps": 0.3739,
+        "slo_attainment": 1.0,
+        "tpot_ms": {
+          "p90": 7.656
+        },
+        "ttft_ms": {
+          "p90": 98.04
+        }
+      }
+    },
+    "commands": {
+      "colocated": [
+        "python3",
+        "-m",
+        "sglang.launch_server",
+        "--model-path",
+        "Qwen/Qwen2.5-72B-Instruct",
+        "--tp-size",
+        "8",
+        "--speculative-algorithm",
+        "EAGLE3",
+        "--speculative-num-steps",
+        "2",
+        "--speculative-eagle-topk",
+        "1",
+        "--speculative-num-draft-tokens",
+        "3",
+        "--speculative-draft-model-path",
+        "<eagle3-draft-model>",
+        "--max-running-requests",
+        "132",
+        "--host",
+        "0.0.0.0",
+        "--port",
+        "30000"
+      ]
+    },
+    "mode": "rate"
+  },
+  "qwen2.5-72b-instruct/h100-sxm/shared-prefix-agent": {
+    "budget_gpus": 64,
+    "candidates": [
+      {
+        "description": "2×TP4 + EAGLE3",
+        "feasible": true,
+        "meets_slo": true,
+        "num_gpus": 8
+      },
+      {
+        "description": "2×TP8 + EAGLE3",
+        "feasible": true,
+        "meets_slo": true,
+        "num_gpus": 16
+      },
+      {
+        "description": "2×TP16·DPA2·CP2 + EAGLE3",
+        "feasible": true,
+        "meets_slo": false,
+        "num_gpus": 32
+      }
+    ],
+    "chosen": {
+      "description": "2×TP4 + EAGLE3",
+      "disaggregated": false,
+      "meets_slo": true,
+      "num_gpus": 8,
+      "num_instances": 2,
+      "policy": "cache_aware",
+      "pools": [
+        {
+          "capacity": {
+            "limit": "ttft",
+            "rate": 2.345
+          },
+          "count": 2,
+          "role": "colocated"
+        }
+      ],
+      "result": {
+        "goodput_rps": 10.07,
+        "slo_attainment": 0.9722,
+        "tpot_ms": {
+          "p90": 17.71
+        },
+        "ttft_ms": {
+          "p90": 736.0
+        }
+      }
+    },
+    "commands": {
+      "colocated": [
+        "python3",
+        "-m",
+        "sglang.launch_server",
+        "--model-path",
+        "Qwen/Qwen2.5-72B-Instruct",
+        "--tp-size",
+        "4",
+        "--speculative-algorithm",
+        "EAGLE3",
+        "--speculative-num-steps",
+        "5",
+        "--speculative-eagle-topk",
+        "1",
+        "--speculative-num-draft-tokens",
+        "6",
+        "--speculative-draft-model-path",
+        "<eagle3-draft-model>",
+        "--host",
+        "0.0.0.0",
+        "--port",
+        "30000"
+      ]
+    },
+    "mode": "rate"
+  },
+  "qwen2.5-72b-instruct/h20/chat": {
+    "budget_gpus": 64,
+    "candidates": [
+      {
+        "description": "0×TP2",
+        "feasible": false,
+        "meets_slo": false,
+        "num_gpus": 0
+      },
+      {
+        "description": "75×TP4",
+        "feasible": true,
+        "meets_slo": false,
+        "num_gpus": 300
+      },
+      {
+        "description": "10×TP8",
+        "feasible": true,
+        "meets_slo": true,
+        "num_gpus": 80
+      },
+      {
+        "description": "8×TP16·DCP2",
+        "feasible": true,
+        "meets_slo": true,
+        "num_gpus": 128
+      },
+      {
+        "description": "PD：10×prefill TP8 + 3×decode TP2",
+        "feasible": true,
+        "meets_slo": true,
+        "num_gpus": 86
+      }
+    ],
+    "chosen": {
+      "description": "10×TP8",
+      "disaggregated": false,
+      "meets_slo": true,
+      "num_gpus": 80,
+      "num_instances": 10,
+      "policy": "cache_aware",
+      "pools": [
+        {
+          "capacity": {
+            "limit": "ttft",
+            "rate": 0.8366
+          },
+          "count": 10,
+          "role": "colocated"
+        }
+      ],
+      "result": {
+        "goodput_rps": 6.266,
+        "slo_attainment": 1.0,
+        "tpot_ms": {
+          "p90": 16.43
+        },
+        "ttft_ms": {
+          "p90": 748.8
+        }
+      }
+    },
+    "commands": {
+      "colocated": [
+        "python3",
+        "-m",
+        "sglang.launch_server",
+        "--model-path",
+        "Qwen/Qwen2.5-72B-Instruct",
+        "--tp-size",
+        "8",
+        "--host",
+        "0.0.0.0",
+        "--port",
+        "30000"
+      ]
+    },
+    "mode": "rate"
+  },
+  "qwen2.5-72b-instruct/h20/code": {
+    "budget_gpus": 64,
+    "candidates": [
+      {
+        "description": "0×TP2 + EAGLE3",
+        "feasible": false,
+        "meets_slo": false,
+        "num_gpus": 0
+      },
+      {
+        "description": "0×TP4",
+        "feasible": false,
+        "meets_slo": false,
+        "num_gpus": 0
+      },
+      {
+        "description": "6×TP8",
+        "feasible": true,
+        "meets_slo": true,
+        "num_gpus": 48
+      },
+      {
+        "description": "3×TP16·CP2",
+        "feasible": true,
+        "meets_slo": true,
+        "num_gpus": 48
+      },
+      {
+        "description": "PD：6×prefill TP8 + 2×decode TP4",
+        "feasible": true,
+        "meets_slo": true,
+        "num_gpus": 56
+      }
+    ],
+    "chosen": {
+      "description": "3×TP16·CP2",
+      "disaggregated": false,
+      "meets_slo": true,
+      "num_gpus": 48,
+      "num_instances": 3,
+      "policy": "cache_aware",
+      "pools": [
+        {
+          "capacity": {
+            "limit": "overload",
+            "rate": 0.8268
+          },
+          "count": 3,
+          "role": "colocated"
+        }
+      ],
+      "result": {
+        "goodput_rps": 1.609,
+        "slo_attainment": 1.0,
+        "tpot_ms": {
+          "p90": 17.05
+        },
+        "ttft_ms": {
+          "p90": 1182.0
+        }
+      }
+    },
+    "commands": {
+      "colocated": [
+        "python3",
+        "-m",
+        "sglang.launch_server",
+        "--model-path",
+        "Qwen/Qwen2.5-72B-Instruct",
+        "--tp-size",
+        "16",
+        "--attn-cp-size",
+        "2",
+        "--enable-prefill-cp",
+        "--cp-strategy",
+        "zigzag",
+        "--host",
+        "0.0.0.0",
+        "--port",
+        "30000",
+        "--nnodes",
+        "2",
+        "--node-rank",
+        "0",
+        "--dist-init-addr",
+        "<node0_ip>:5000"
+      ]
+    },
+    "mode": "rate"
+  },
+  "qwen2.5-72b-instruct/h20/offline-batch": {
+    "budget_gpus": 8,
+    "candidates": [
+      {
+        "description": "4×TP2",
+        "feasible": true,
+        "meets_slo": true,
+        "num_gpus": 8
+      },
+      {
+        "description": "2×TP4",
+        "feasible": true,
+        "meets_slo": true,
+        "num_gpus": 8
+      },
+      {
+        "description": "1×TP8·DPA4",
+        "feasible": true,
+        "meets_slo": true,
+        "num_gpus": 8
+      }
+    ],
+    "chosen": {
+      "description": "2×TP4",
+      "disaggregated": false,
+      "meets_slo": true,
+      "num_gpus": 8,
+      "num_instances": 2,
+      "policy": "cache_aware",
+      "pools": [
+        {
+          "capacity": null,
+          "count": 2,
+          "role": "colocated"
+        }
+      ],
+      "result": {
+        "goodput_rps": 2.087,
+        "slo_attainment": 1.0,
+        "tpot_ms": {
+          "p90": 66.1
+        },
+        "ttft_ms": {
+          "p90": 32990.0
+        }
+      }
+    },
+    "commands": {
+      "colocated": [
+        "python3",
+        "-m",
+        "sglang.launch_server",
+        "--model-path",
+        "Qwen/Qwen2.5-72B-Instruct",
+        "--tp-size",
+        "4",
+        "--host",
+        "0.0.0.0",
+        "--port",
+        "30000"
+      ]
+    },
+    "mode": "throughput"
+  },
+  "qwen2.5-72b-instruct/h20/rag-long-context": {
+    "budget_gpus": 64,
+    "candidates": [
+      {
+        "description": "0×TP2 + EAGLE3",
+        "feasible": false,
+        "meets_slo": false,
+        "num_gpus": 0
+      },
+      {
+        "description": "0×TP4 + EAGLE3",
+        "feasible": false,
+        "meets_slo": false,
+        "num_gpus": 0
+      },
+      {
+        "description": "0×TP8 + EAGLE3",
+        "feasible": false,
+        "meets_slo": false,
+        "num_gpus": 0
+      },
+      {
+        "description": "16×TP16·CP2 + EAGLE3",
+        "feasible": true,
+        "meets_slo": true,
+        "num_gpus": 256
+      },
+      {
+        "description": "PD：15×prefill TP16·CP2 + EAGLE3 + 1×decode TP4 + EAGLE3",
+        "feasible": true,
+        "meets_slo": true,
+        "num_gpus": 244
+      }
+    ],
+    "chosen": {
+      "description": "16×TP16·CP2 + EAGLE3",
+      "disaggregated": false,
+      "meets_slo": true,
+      "num_gpus": 256,
+      "num_instances": 16,
+      "policy": "cache_aware",
+      "pools": [
+        {
+          "capacity": {
+            "limit": "ttft",
+            "rate": 0.03299
+          },
+          "count": 16,
+          "role": "colocated"
+        }
+      ],
+      "result": {
+        "goodput_rps": 0.5004,
+        "slo_attainment": 1.0,
+        "tpot_ms": {
+          "p90": 3.656
+        },
+        "ttft_ms": {
+          "p90": 4502.0
+        }
+      }
+    },
+    "commands": {
+      "colocated": [
+        "python3",
+        "-m",
+        "sglang.launch_server",
+        "--model-path",
+        "Qwen/Qwen2.5-72B-Instruct",
+        "--tp-size",
+        "16",
+        "--attn-cp-size",
+        "2",
+        "--enable-prefill-cp",
+        "--cp-strategy",
+        "zigzag",
+        "--speculative-algorithm",
+        "EAGLE3",
+        "--speculative-num-steps",
+        "4",
+        "--speculative-eagle-topk",
+        "1",
+        "--speculative-num-draft-tokens",
+        "5",
+        "--speculative-draft-model-path",
+        "<eagle3-draft-model>",
+        "--host",
+        "0.0.0.0",
+        "--port",
+        "30000",
+        "--nnodes",
+        "2",
+        "--node-rank",
+        "0",
+        "--dist-init-addr",
+        "<node0_ip>:5000"
+      ]
+    },
+    "mode": "rate"
+  },
+  "qwen2.5-72b-instruct/h20/reasoning": {
+    "budget_gpus": 64,
+    "candidates": [
+      {
+        "description": "17×TP2 + EAGLE3",
+        "feasible": true,
+        "meets_slo": false,
+        "num_gpus": 34
+      },
+      {
+        "description": "3×TP4",
+        "feasible": true,
+        "meets_slo": true,
+        "num_gpus": 12
+      },
+      {
+        "description": "2×TP8 + mixed chunk 1024",
+        "feasible": true,
+        "meets_slo": true,
+        "num_gpus": 16
+      },
+      {
+        "description": "2×TP16·DPA4",
+        "feasible": true,
+        "meets_slo": false,
+        "num_gpus": 32
+      },
+      {
+        "description": "PD：1×prefill TP16·DPA4 + 3×decode TP4",
+        "feasible": true,
+        "meets_slo": true,
+        "num_gpus": 28
+      }
+    ],
+    "chosen": {
+      "description": "3×TP4",
+      "disaggregated": false,
+      "meets_slo": true,
+      "num_gpus": 12,
+      "num_instances": 3,
+      "policy": "cache_aware",
+      "pools": [
+        {
+          "capacity": {
+            "limit": "tpot",
+            "rate": 0.1845
+          },
+          "count": 3,
+          "role": "colocated"
+        }
+      ],
+      "result": {
+        "goodput_rps": 0.2381,
+        "slo_attainment": 1.0,
+        "tpot_ms": {
+          "p90": 19.93
+        },
+        "ttft_ms": {
+          "p90": 693.5
+        }
+      }
+    },
+    "commands": {
+      "colocated": [
+        "python3",
+        "-m",
+        "sglang.launch_server",
+        "--model-path",
+        "Qwen/Qwen2.5-72B-Instruct",
+        "--tp-size",
+        "4",
+        "--host",
+        "0.0.0.0",
+        "--port",
+        "30000"
+      ]
+    },
+    "mode": "rate"
+  },
+  "qwen2.5-72b-instruct/h20/shared-prefix-agent": {
+    "budget_gpus": 64,
+    "candidates": [
+      {
+        "description": "0×TP2 + EAGLE3 + HiCache",
+        "feasible": false,
+        "meets_slo": false,
+        "num_gpus": 0
+      },
+      {
+        "description": "0×TP4",
+        "feasible": false,
+        "meets_slo": false,
+        "num_gpus": 0
+      },
+      {
+        "description": "0×TP8",
+        "feasible": false,
+        "meets_slo": false,
+        "num_gpus": 0
+      },
+      {
+        "description": "5×TP16·CP2 + EAGLE3",
+        "feasible": true,
+        "meets_slo": true,
+        "num_gpus": 80
+      },
+      {
+        "description": "PD：11×prefill TP16 + 1×decode TP8",
+        "feasible": true,
+        "meets_slo": true,
+        "num_gpus": 184
+      }
+    ],
+    "chosen": {
+      "description": "5×TP16·CP2 + EAGLE3",
+      "disaggregated": false,
+      "meets_slo": true,
+      "num_gpus": 80,
+      "num_instances": 5,
+      "policy": "cache_aware",
+      "pools": [
+        {
+          "capacity": {
+            "limit": "ttft",
+            "rate": 0.945
+          },
+          "count": 5,
+          "role": "colocated"
+        }
+      ],
+      "result": {
+        "goodput_rps": 11.19,
+        "slo_attainment": 0.9667,
+        "tpot_ms": {
+          "p90": 6.959
+        },
+        "ttft_ms": {
+          "p90": 708.8
+        }
+      }
+    },
+    "commands": {
+      "colocated": [
+        "python3",
+        "-m",
+        "sglang.launch_server",
+        "--model-path",
+        "Qwen/Qwen2.5-72B-Instruct",
+        "--tp-size",
+        "16",
+        "--attn-cp-size",
+        "2",
+        "--enable-prefill-cp",
+        "--cp-strategy",
+        "zigzag",
+        "--speculative-algorithm",
+        "EAGLE3",
+        "--speculative-num-steps",
+        "4",
+        "--speculative-eagle-topk",
+        "1",
+        "--speculative-num-draft-tokens",
+        "5",
+        "--speculative-draft-model-path",
+        "<eagle3-draft-model>",
+        "--host",
+        "0.0.0.0",
+        "--port",
+        "30000",
+        "--nnodes",
+        "2",
+        "--node-rank",
+        "0",
+        "--dist-init-addr",
+        "<node0_ip>:5000"
+      ]
+    },
+    "mode": "rate"
+  },
+  "qwen2.5-72b-instruct/template-h20-class/chat": {
+    "budget_gpus": 64,
+    "candidates": [
+      {
+        "description": "0×TP2 + EAGLE3",
+        "feasible": false,
+        "meets_slo": false,
+        "num_gpus": 0
+      },
+      {
+        "description": "107×TP4 + EAGLE3",
+        "feasible": true,
+        "meets_slo": false,
+        "num_gpus": 428
+      },
+      {
+        "description": "13×TP8",
+        "feasible": true,
+        "meets_slo": true,
+        "num_gpus": 104
+      },
+      {
+        "description": "10×TP16·DCP2",
+        "feasible": true,
+        "meets_slo": true,
+        "num_gpus": 160
+      },
+      {
+        "description": "PD：13×prefill TP8 + 2×decode TP4",
+        "feasible": true,
+        "meets_slo": true,
+        "num_gpus": 112
+      }
+    ],
+    "chosen": {
+      "description": "13×TP8",
+      "disaggregated": false,
+      "meets_slo": true,
+      "num_gpus": 104,
+      "num_instances": 13,
+      "policy": "cache_aware",
+      "pools": [
+        {
+          "capacity": {
+            "limit": "ttft",
+            "rate": 0.6323
+          },
+          "count": 13,
+          "role": "colocated"
+        }
+      ],
+      "result": {
+        "goodput_rps": 5.64,
+        "slo_attainment": 0.9833,
+        "tpot_ms": {
+          "p90": 19.96
+        },
+        "ttft_ms": {
+          "p90": 914.0
+        }
+      }
+    },
+    "commands": {
+      "colocated": [
+        "python3",
+        "-m",
+        "sglang.launch_server",
+        "--model-path",
+        "Qwen/Qwen2.5-72B-Instruct",
+        "--device",
+        "example",
+        "--tp-size",
+        "8",
+        "--host",
+        "0.0.0.0",
+        "--port",
+        "30000"
+      ]
+    },
+    "mode": "rate"
+  },
+  "qwen2.5-72b-instruct/template-h20-class/code": {
+    "budget_gpus": 64,
+    "candidates": [
+      {
+        "description": "0×TP2 + EAGLE3",
+        "feasible": false,
+        "meets_slo": false,
+        "num_gpus": 0
+      },
+      {
+        "description": "0×TP4",
+        "feasible": false,
+        "meets_slo": false,
+        "num_gpus": 0
+      },
+      {
+        "description": "9×TP8",
+        "feasible": true,
+        "meets_slo": true,
+        "num_gpus": 72
+      },
+      {
+        "description": "4×TP16·CP2 + EAGLE3",
+        "feasible": true,
+        "meets_slo": true,
+        "num_gpus": 64
+      },
+      {
+        "description": "PD：9×prefill TP8 + 2×decode TP4",
+        "feasible": true,
+        "meets_slo": true,
+        "num_gpus": 80
+      }
+    ],
+    "chosen": {
+      "description": "4×TP16·CP2 + EAGLE3",
+      "disaggregated": false,
+      "meets_slo": true,
+      "num_gpus": 64,
+      "num_instances": 4,
+      "policy": "cache_aware",
+      "pools": [
+        {
+          "capacity": {
+            "limit": "overload",
+            "rate": 0.6161
+          },
+          "count": 4,
+          "role": "colocated"
+        }
+      ],
+      "result": {
+        "goodput_rps": 1.812,
+        "slo_attainment": 1.0,
+        "tpot_ms": {
+          "p90": 8.84
+        },
+        "ttft_ms": {
+          "p90": 1255.0
+        }
+      }
+    },
+    "commands": {
+      "colocated": [
+        "python3",
+        "-m",
+        "sglang.launch_server",
+        "--model-path",
+        "Qwen/Qwen2.5-72B-Instruct",
+        "--device",
+        "example",
+        "--tp-size",
+        "16",
+        "--attn-cp-size",
+        "2",
+        "--enable-prefill-cp",
+        "--cp-strategy",
+        "zigzag",
+        "--speculative-algorithm",
+        "EAGLE3",
+        "--speculative-num-steps",
+        "5",
+        "--speculative-eagle-topk",
+        "1",
+        "--speculative-num-draft-tokens",
+        "6",
+        "--speculative-draft-model-path",
+        "<eagle3-draft-model>",
+        "--host",
+        "0.0.0.0",
+        "--port",
+        "30000",
+        "--nnodes",
+        "2",
+        "--node-rank",
+        "0",
+        "--dist-init-addr",
+        "<node0_ip>:5000"
+      ]
+    },
+    "mode": "rate"
+  },
+  "qwen2.5-72b-instruct/template-h20-class/offline-batch": {
+    "budget_gpus": 8,
+    "candidates": [
+      {
+        "description": "4×TP2",
+        "feasible": true,
+        "meets_slo": true,
+        "num_gpus": 8
+      },
+      {
+        "description": "2×TP4",
+        "feasible": true,
+        "meets_slo": true,
+        "num_gpus": 8
+      },
+      {
+        "description": "1×TP8·DPA4",
+        "feasible": true,
+        "meets_slo": true,
+        "num_gpus": 8
+      }
+    ],
+    "chosen": {
+      "description": "2×TP4",
+      "disaggregated": false,
+      "meets_slo": true,
+      "num_gpus": 8,
+      "num_instances": 2,
+      "policy": "cache_aware",
+      "pools": [
+        {
+          "capacity": null,
+          "count": 2,
+          "role": "colocated"
+        }
+      ],
+      "result": {
+        "goodput_rps": 1.75,
+        "slo_attainment": 1.0,
+        "tpot_ms": {
+          "p90": 78.71
+        },
+        "ttft_ms": {
+          "p90": 38180.0
+        }
+      }
+    },
+    "commands": {
+      "colocated": [
+        "python3",
+        "-m",
+        "sglang.launch_server",
+        "--model-path",
+        "Qwen/Qwen2.5-72B-Instruct",
+        "--device",
+        "example",
+        "--tp-size",
+        "4",
+        "--host",
+        "0.0.0.0",
+        "--port",
+        "30000"
+      ]
+    },
+    "mode": "throughput"
+  },
+  "qwen2.5-72b-instruct/template-h20-class/rag-long-context": {
+    "budget_gpus": 64,
+    "candidates": [
+      {
+        "description": "0×TP2 + EAGLE3",
+        "feasible": false,
+        "meets_slo": false,
+        "num_gpus": 0
+      },
+      {
+        "description": "0×TP4 + EAGLE3",
+        "feasible": false,
+        "meets_slo": false,
+        "num_gpus": 0
+      },
+      {
+        "description": "0×TP8 + EAGLE3",
+        "feasible": false,
+        "meets_slo": false,
+        "num_gpus": 0
+      },
+      {
+        "description": "54×TP16·CP2 + EAGLE3",
+        "feasible": true,
+        "meets_slo": true,
+        "num_gpus": 864
+      },
+      {
+        "description": "PD：52×prefill TP16·CP2 + EAGLE3 + 1×decode TP4 + EAGLE3",
+        "feasible": true,
+        "meets_slo": true,
+        "num_gpus": 836
+      }
+    ],
+    "chosen": {
+      "description": "54×TP16·CP2 + EAGLE3",
+      "disaggregated": false,
+      "meets_slo": true,
+      "num_gpus": 864,
+      "num_instances": 54,
+      "policy": "cache_aware",
+      "pools": [
+        {
+          "capacity": {
+            "limit": "ttft",
+            "rate": 0.009352
+          },
+          "count": 54,
+          "role": "colocated"
+        }
+      ],
+      "result": {
+        "goodput_rps": 0.4981,
+        "slo_attainment": 1.0,
+        "tpot_ms": {
+          "p90": 5.202
+        },
+        "ttft_ms": {
+          "p90": 5287.0
+        }
+      }
+    },
+    "commands": {
+      "colocated": [
+        "python3",
+        "-m",
+        "sglang.launch_server",
+        "--model-path",
+        "Qwen/Qwen2.5-72B-Instruct",
+        "--device",
+        "example",
+        "--tp-size",
+        "16",
+        "--attn-cp-size",
+        "2",
+        "--enable-prefill-cp",
+        "--cp-strategy",
+        "zigzag",
+        "--speculative-algorithm",
+        "EAGLE3",
+        "--speculative-num-steps",
+        "4",
+        "--speculative-eagle-topk",
+        "1",
+        "--speculative-num-draft-tokens",
+        "5",
+        "--speculative-draft-model-path",
+        "<eagle3-draft-model>",
+        "--host",
+        "0.0.0.0",
+        "--port",
+        "30000",
+        "--nnodes",
+        "2",
+        "--node-rank",
+        "0",
+        "--dist-init-addr",
+        "<node0_ip>:5000"
+      ]
+    },
+    "mode": "rate"
+  },
+  "qwen2.5-72b-instruct/template-h20-class/reasoning": {
+    "budget_gpus": 64,
+    "candidates": [
+      {
+        "description": "39×TP2 + EAGLE3",
+        "feasible": true,
+        "meets_slo": false,
+        "num_gpus": 78
+      },
+      {
+        "description": "4×TP4",
+        "feasible": true,
+        "meets_slo": true,
+        "num_gpus": 16
+      },
+      {
+        "description": "2×TP8",
+        "feasible": true,
+        "meets_slo": true,
+        "num_gpus": 16
+      },
+      {
+        "description": "2×TP16·DPA2 + mixed chunk 2048",
+        "feasible": true,
+        "meets_slo": false,
+        "num_gpus": 32
+      },
+      {
+        "description": "PD：1×prefill TP8 + 4×decode TP4",
+        "feasible": true,
+        "meets_slo": true,
+        "num_gpus": 24
+      }
+    ],
+    "chosen": {
+      "description": "2×TP8",
+      "disaggregated": false,
+      "meets_slo": true,
+      "num_gpus": 16,
+      "num_instances": 2,
+      "policy": "cache_aware",
+      "pools": [
+        {
+          "capacity": {
+            "limit": "tpot",
+            "rate": 0.263
+          },
+          "count": 2,
+          "role": "colocated"
+        }
+      ],
+      "result": {
+        "goodput_rps": 0.2558,
+        "slo_attainment": 1.0,
+        "tpot_ms": {
+          "p90": 17.89
+        },
+        "ttft_ms": {
+          "p90": 437.8
+        }
+      }
+    },
+    "commands": {
+      "colocated": [
+        "python3",
+        "-m",
+        "sglang.launch_server",
+        "--model-path",
+        "Qwen/Qwen2.5-72B-Instruct",
+        "--device",
+        "example",
+        "--tp-size",
+        "8",
+        "--host",
+        "0.0.0.0",
+        "--port",
+        "30000"
+      ]
+    },
+    "mode": "rate"
+  },
+  "qwen2.5-72b-instruct/template-h20-class/shared-prefix-agent": {
+    "budget_gpus": 64,
+    "candidates": [
+      {
+        "description": "0×TP2 + EAGLE3 + HiCache",
+        "feasible": false,
+        "meets_slo": false,
+        "num_gpus": 0
+      },
+      {
+        "description": "0×TP4",
+        "feasible": false,
+        "meets_slo": false,
+        "num_gpus": 0
+      },
+      {
+        "description": "0×TP8",
+        "feasible": false,
+        "meets_slo": false,
+        "num_gpus": 0
+      },
+      {
+        "description": "0×TP16·DPA2·CP2",
+        "feasible": false,
+        "meets_slo": false,
+        "num_gpus": 0
+      }
+    ],
+    "chosen": null,
+    "commands": {},
+    "mode": "rate"
+  },
+  "qwen3-235b-a22b/h100-sxm/chat": {
+    "budget_gpus": 64,
+    "candidates": [
+      {
+        "description": "2×TP8·DCP2 + EAGLE3",
+        "feasible": true,
+        "meets_slo": true,
+        "num_gpus": 16
+      },
+      {
+        "description": "2×TP16·DPA4·EP16(deepep) + EAGLE3",
+        "feasible": true,
+        "meets_slo": true,
+        "num_gpus": 32
+      }
+    ],
+    "chosen": {
+      "description": "2×TP8·DCP2 + EAGLE3",
+      "disaggregated": false,
+      "meets_slo": true,
+      "num_gpus": 16,
+      "num_instances": 2,
+      "policy": "cache_aware",
+      "pools": [
+        {
+          "capacity": {
+            "limit": "overload",
+            "rate": 7.243
+          },
+          "count": 2,
+          "role": "colocated"
+        }
+      ],
+      "result": {
+        "goodput_rps": 6.36,
+        "slo_attainment": 1.0,
+        "tpot_ms": {
+          "p90": 17.68
+        },
+        "ttft_ms": {
+          "p90": 161.7
+        }
+      }
+    },
+    "commands": {
+      "colocated": [
+        "python3",
+        "-m",
+        "sglang.launch_server",
+        "--model-path",
+        "Qwen/Qwen3-235B-A22B",
+        "--tp-size",
+        "8",
+        "--dcp-size",
+        "2",
+        "--attention-backend",
+        "flashinfer",
+        "--speculative-algorithm",
+        "EAGLE3",
+        "--speculative-num-steps",
+        "4",
+        "--speculative-eagle-topk",
+        "1",
+        "--speculative-num-draft-tokens",
+        "5",
+        "--speculative-draft-model-path",
+        "<eagle3-draft-model>",
+        "--max-running-requests",
+        "83",
+        "--host",
+        "0.0.0.0",
+        "--port",
+        "30000"
+      ]
+    },
+    "mode": "rate"
+  },
+  "qwen3-235b-a22b/h100-sxm/code": {
+    "budget_gpus": 64,
+    "candidates": [
+      {
+        "description": "1×TP8·DCP2 + EAGLE3",
+        "feasible": true,
+        "meets_slo": true,
+        "num_gpus": 8
+      },
+      {
+        "description": "2×TP16·DCP4 + EAGLE3",
+        "feasible": true,
+        "meets_slo": true,
+        "num_gpus": 32
+      }
+    ],
+    "chosen": {
+      "description": "1×TP8·DCP2 + EAGLE3",
+      "disaggregated": false,
+      "meets_slo": true,
+      "num_gpus": 8,
+      "num_instances": 1,
+      "policy": "cache_aware",
+      "pools": [
+        {
+          "capacity": {
+            "limit": "overload",
+            "rate": 2.538
+          },
+          "count": 1,
+          "role": "colocated"
+        }
+      ],
+      "result": {
+        "goodput_rps": 1.602,
+        "slo_attainment": 1.0,
+        "tpot_ms": {
+          "p90": 16.3
+        },
+        "ttft_ms": {
+          "p90": 277.7
+        }
+      }
+    },
+    "commands": {
+      "colocated": [
+        "python3",
+        "-m",
+        "sglang.launch_server",
+        "--model-path",
+        "Qwen/Qwen3-235B-A22B",
+        "--tp-size",
+        "8",
+        "--dcp-size",
+        "2",
+        "--attention-backend",
+        "flashinfer",
+        "--speculative-algorithm",
+        "EAGLE3",
+        "--speculative-num-steps",
+        "5",
+        "--speculative-eagle-topk",
+        "1",
+        "--speculative-num-draft-tokens",
+        "6",
+        "--speculative-draft-model-path",
+        "<eagle3-draft-model>",
+        "--max-running-requests",
+        "74",
+        "--host",
+        "0.0.0.0",
+        "--port",
+        "30000"
+      ]
+    },
+    "mode": "rate"
+  },
+  "qwen3-235b-a22b/h100-sxm/offline-batch": {
+    "budget_gpus": 8,
+    "candidates": [
+      {
+        "description": "1×TP8·DCP2 + EAGLE3",
+        "feasible": true,
+        "meets_slo": true,
+        "num_gpus": 8
+      }
+    ],
+    "chosen": {
+      "description": "1×TP8·DCP2 + EAGLE3",
+      "disaggregated": false,
+      "meets_slo": true,
+      "num_gpus": 8,
+      "num_instances": 1,
+      "policy": "cache_aware",
+      "pools": [
+        {
+          "capacity": null,
+          "count": 1,
+          "role": "colocated"
+        }
+      ],
+      "result": {
+        "goodput_rps": 5.854,
+        "slo_attainment": 1.0,
+        "tpot_ms": {
+          "p90": 22.63
+        },
+        "ttft_ms": {
+          "p90": 4327.0
+        }
+      }
+    },
+    "commands": {
+      "colocated": [
+        "python3",
+        "-m",
+        "sglang.launch_server",
+        "--model-path",
+        "Qwen/Qwen3-235B-A22B",
+        "--tp-size",
+        "8",
+        "--dcp-size",
+        "2",
+        "--attention-backend",
+        "flashinfer",
+        "--speculative-algorithm",
+        "EAGLE3",
+        "--speculative-num-steps",
+        "3",
+        "--speculative-eagle-topk",
+        "1",
+        "--speculative-num-draft-tokens",
+        "4",
+        "--speculative-draft-model-path",
+        "<eagle3-draft-model>",
+        "--max-running-requests",
+        "224",
+        "--host",
+        "0.0.0.0",
+        "--port",
+        "30000"
+      ]
+    },
+    "mode": "throughput"
+  },
+  "qwen3-235b-a22b/h100-sxm/rag-long-context": {
+    "budget_gpus": 64,
+    "candidates": [
+      {
+        "description": "2×TP8·DCP2 + EAGLE3",
+        "feasible": true,
+        "meets_slo": true,
+        "num_gpus": 16
+      },
+      {
+        "description": "3×TP16·DCP4 + EAGLE3",
+        "feasible": true,
+        "meets_slo": true,
+        "num_gpus": 48
+      }
+    ],
+    "chosen": {
+      "description": "2×TP8·DCP2 + EAGLE3",
+      "disaggregated": false,
+      "meets_slo": true,
+      "num_gpus": 16,
+      "num_instances": 2,
+      "policy": "cache_aware",
+      "pools": [
+        {
+          "capacity": {
+            "limit": "tpot",
+            "rate": 0.4273
+          },
+          "count": 2,
+          "role": "colocated"
+        }
+      ],
+      "result": {
+        "goodput_rps": 0.5107,
+        "slo_attainment": 1.0,
+        "tpot_ms": {
+          "p90": 11.73
+        },
+        "ttft_ms": {
+          "p90": 1424.0
+        }
+      }
+    },
+    "commands": {
+      "colocated": [
+        "python3",
+        "-m",
+        "sglang.launch_server",
+        "--model-path",
+        "Qwen/Qwen3-235B-A22B",
+        "--tp-size",
+        "8",
+        "--dcp-size",
+        "2",
+        "--attention-backend",
+        "flashinfer",
+        "--speculative-algorithm",
+        "EAGLE3",
+        "--speculative-num-steps",
+        "4",
+        "--speculative-eagle-topk",
+        "1",
+        "--speculative-num-draft-tokens",
+        "5",
+        "--speculative-draft-model-path",
+        "<eagle3-draft-model>",
+        "--host",
+        "0.0.0.0",
+        "--port",
+        "30000"
+      ]
+    },
+    "mode": "rate"
+  },
+  "qwen3-235b-a22b/h100-sxm/reasoning": {
+    "budget_gpus": 64,
+    "candidates": [
+      {
+        "description": "2×TP8·DCP2 + EAGLE3",
+        "feasible": true,
+        "meets_slo": true,
+        "num_gpus": 16
+      },
+      {
+        "description": "1×TP16·DPA4 + EAGLE3",
+        "feasible": true,
+        "meets_slo": true,
+        "num_gpus": 16
+      }
+    ],
+    "chosen": {
+      "description": "2×TP8·DCP2 + EAGLE3",
+      "disaggregated": false,
+      "meets_slo": true,
+      "num_gpus": 16,
+      "num_instances": 2,
+      "policy": "cache_aware",
+      "pools": [
+        {
+          "capacity": {
+            "limit": "overload",
+            "rate": 0.4302
+          },
+          "count": 2,
+          "role": "colocated"
+        }
+      ],
+      "result": {
+        "goodput_rps": 0.3332,
+        "slo_attainment": 1.0,
+        "tpot_ms": {
+          "p90": 10.86
+        },
+        "ttft_ms": {
+          "p90": 88.66
+        }
+      }
+    },
+    "commands": {
+      "colocated": [
+        "python3",
+        "-m",
+        "sglang.launch_server",
+        "--model-path",
+        "Qwen/Qwen3-235B-A22B",
+        "--tp-size",
+        "8",
+        "--dcp-size",
+        "2",
+        "--attention-backend",
+        "flashinfer",
+        "--speculative-algorithm",
+        "EAGLE3",
+        "--speculative-num-steps",
+        "5",
+        "--speculative-eagle-topk",
+        "1",
+        "--speculative-num-draft-tokens",
+        "6",
+        "--speculative-draft-model-path",
+        "<eagle3-draft-model>",
+        "--max-running-requests",
+        "67",
+        "--host",
+        "0.0.0.0",
+        "--port",
+        "30000"
+      ]
+    },
+    "mode": "rate"
+  },
+  "qwen3-235b-a22b/h100-sxm/shared-prefix-agent": {
+    "budget_gpus": 64,
+    "candidates": [
+      {
+        "description": "2×TP8·DCP2 + EAGLE3",
+        "feasible": true,
+        "meets_slo": true,
+        "num_gpus": 16
+      },
+      {
+        "description": "2×TP16·DCP4 + EAGLE3",
+        "feasible": true,
+        "meets_slo": true,
+        "num_gpus": 32
+      }
+    ],
+    "chosen": {
+      "description": "2×TP8·DCP2 + EAGLE3",
+      "disaggregated": false,
+      "meets_slo": true,
+      "num_gpus": 16,
+      "num_instances": 2,
+      "policy": "cache_aware",
+      "pools": [
+        {
+          "capacity": {
+            "limit": "ttft",
+            "rate": 3.081
+          },
+          "count": 2,
+          "role": "colocated"
+        }
+      ],
+      "result": {
+        "goodput_rps": 9.957,
+        "slo_attainment": 1.0,
+        "tpot_ms": {
+          "p90": 17.03
+        },
+        "ttft_ms": {
+          "p90": 104.9
+        }
+      }
+    },
+    "commands": {
+      "colocated": [
+        "python3",
+        "-m",
+        "sglang.launch_server",
+        "--model-path",
+        "Qwen/Qwen3-235B-A22B",
+        "--tp-size",
+        "8",
+        "--dcp-size",
+        "2",
+        "--attention-backend",
+        "flashinfer",
+        "--speculative-algorithm",
+        "EAGLE3",
+        "--speculative-num-steps",
+        "5",
+        "--speculative-eagle-topk",
+        "1",
+        "--speculative-num-draft-tokens",
+        "6",
+        "--speculative-draft-model-path",
+        "<eagle3-draft-model>",
+        "--host",
+        "0.0.0.0",
+        "--port",
+        "30000"
+      ]
+    },
+    "mode": "rate"
+  },
+  "qwen3-235b-a22b/h20/chat": {
+    "budget_gpus": 64,
+    "candidates": [
+      {
+        "description": "4×TP8·DPA2 + EAGLE3",
+        "feasible": true,
+        "meets_slo": true,
+        "num_gpus": 32
+      },
+      {
+        "description": "4×TP16·DPA4·EP16(deepep) + EAGLE3",
+        "feasible": true,
+        "meets_slo": true,
+        "num_gpus": 64
+      },
+      {
+        "description": "PD：2×prefill TP8·DPA2 + EAGLE3 + 1×decode TP8·DPA2 + EAGLE3",
+        "feasible": true,
+        "meets_slo": true,
+        "num_gpus": 24
+      }
+    ],
+    "chosen": {
+      "description": "PD：2×prefill TP8·DPA2 + EAGLE3 + 1×decode TP8·DPA2 + EAGLE3",
+      "disaggregated": true,
+      "meets_slo": true,
+      "num_gpus": 24,
+      "num_instances": 3,
+      "policy": "cache_aware",
+      "pools": [
+        {
+          "capacity": {
+            "limit": "overload",
+            "rate": 15.18
+          },
+          "count": 1,
+          "role": "decode"
+        },
+        {
+          "capacity": {
+            "limit": "overload",
+            "rate": 4.252
+          },
+          "count": 2,
+          "role": "prefill"
+        }
+      ],
+      "result": {
+        "goodput_rps": 5.96,
+        "slo_attainment": 1.0,
+        "tpot_ms": {
+          "p90": 12.87
+        },
+        "ttft_ms": {
+          "p90": 1174.0
+        }
+      }
+    },
+    "commands": {
+      "decode": [
+        "python3",
+        "-m",
+        "sglang.launch_server",
+        "--model-path",
+        "Qwen/Qwen3-235B-A22B",
+        "--tp-size",
+        "8",
+        "--attn-dp-size",
+        "2",
+        "--load-balance-method",
+        "total_tokens",
+        "--speculative-algorithm",
+        "EAGLE3",
+        "--speculative-num-steps",
+        "3",
+        "--speculative-eagle-topk",
+        "1",
+        "--speculative-num-draft-tokens",
+        "4",
+        "--speculative-draft-model-path",
+        "<eagle3-draft-model>",
+        "--max-running-requests",
+        "74",
+        "--host",
+        "0.0.0.0",
+        "--port",
+        "30000",
+        "--disaggregation-mode",
+        "decode",
+        "--disaggregation-transfer-backend",
+        "mooncake"
+      ],
+      "prefill": [
+        "python3",
+        "-m",
+        "sglang.launch_server",
+        "--model-path",
+        "Qwen/Qwen3-235B-A22B",
+        "--tp-size",
+        "8",
+        "--attn-dp-size",
+        "2",
+        "--load-balance-method",
+        "total_tokens",
+        "--max-running-requests",
+        "74",
+        "--speculative-algorithm",
+        "EAGLE3",
+        "--speculative-num-steps",
+        "3",
+        "--speculative-eagle-topk",
+        "1",
+        "--speculative-num-draft-tokens",
+        "4",
+        "--speculative-draft-model-path",
+        "<eagle3-draft-model>",
+        "--host",
+        "0.0.0.0",
+        "--port",
+        "30000",
+        "--disaggregation-mode",
+        "prefill",
+        "--disaggregation-transfer-backend",
+        "mooncake",
+        "--disaggregation-bootstrap-port",
+        "8998"
+      ]
+    },
+    "mode": "rate"
+  },
+  "qwen3-235b-a22b/h20/code": {
+    "budget_gpus": 64,
+    "candidates": [
+      {
+        "description": "2×TP8·DCP2 + EAGLE3",
+        "feasible": true,
+        "meets_slo": true,
+        "num_gpus": 16
+      },
+      {
+        "description": "3×TP16·DPA4 + EAGLE3",
+        "feasible": true,
+        "meets_slo": true,
+        "num_gpus": 48
+      }
+    ],
+    "chosen": {
+      "description": "2×TP8·DCP2 + EAGLE3",
+      "disaggregated": false,
+      "meets_slo": true,
+      "num_gpus": 16,
+      "num_instances": 2,
+      "policy": "cache_aware",
+      "pools": [
+        {
+          "capacity": {
+            "limit": "tpot",
+            "rate": 1.279
+          },
+          "count": 2,
+          "role": "colocated"
+        }
+      ],
+      "result": {
+        "goodput_rps": 1.666,
+        "slo_attainment": 1.0,
+        "tpot_ms": {
+          "p90": 18.19
+        },
+        "ttft_ms": {
+          "p90": 945.0
+        }
+      }
+    },
+    "commands": {
+      "colocated": [
+        "python3",
+        "-m",
+        "sglang.launch_server",
+        "--model-path",
+        "Qwen/Qwen3-235B-A22B",
+        "--tp-size",
+        "8",
+        "--dcp-size",
+        "2",
+        "--attention-backend",
+        "flashinfer",
+        "--speculative-algorithm",
+        "EAGLE3",
+        "--speculative-num-steps",
+        "5",
+        "--speculative-eagle-topk",
+        "1",
+        "--speculative-num-draft-tokens",
+        "6",
+        "--speculative-draft-model-path",
+        "<eagle3-draft-model>",
+        "--host",
+        "0.0.0.0",
+        "--port",
+        "30000"
+      ]
+    },
+    "mode": "rate"
+  },
+  "qwen3-235b-a22b/h20/offline-batch": {
+    "budget_gpus": 8,
+    "candidates": [
+      {
+        "description": "1×TP8·DPA2",
+        "feasible": true,
+        "meets_slo": true,
+        "num_gpus": 8
+      }
+    ],
+    "chosen": {
+      "description": "1×TP8·DPA2",
+      "disaggregated": false,
+      "meets_slo": true,
+      "num_gpus": 8,
+      "num_instances": 1,
+      "policy": "cache_aware",
+      "pools": [
+        {
+          "capacity": null,
+          "count": 1,
+          "role": "colocated"
+        }
+      ],
+      "result": {
+        "goodput_rps": 2.997,
+        "slo_attainment": 1.0,
+        "tpot_ms": {
+          "p90": 43.72
+        },
+        "ttft_ms": {
+          "p90": 11210.0
+        }
+      }
+    },
+    "commands": {
+      "colocated": [
+        "python3",
+        "-m",
+        "sglang.launch_server",
+        "--model-path",
+        "Qwen/Qwen3-235B-A22B",
+        "--tp-size",
+        "8",
+        "--attn-dp-size",
+        "2",
+        "--load-balance-method",
+        "total_tokens",
+        "--host",
+        "0.0.0.0",
+        "--port",
+        "30000"
+      ]
+    },
+    "mode": "throughput"
+  },
+  "qwen3-235b-a22b/h20/rag-long-context": {
+    "budget_gpus": 64,
+    "candidates": [
+      {
+        "description": "11×TP8·DCP2 + EAGLE3",
+        "feasible": true,
+        "meets_slo": true,
+        "num_gpus": 88
+      },
+      {
+        "description": "5×TP16·DCP4 + EAGLE3",
+        "feasible": true,
+        "meets_slo": true,
+        "num_gpus": 80
+      },
+      {
+        "description": "PD：3×prefill TP16·CP2 + EAGLE3 + 1×decode TP8 + EAGLE3",
+        "feasible": true,
+        "meets_slo": true,
+        "num_gpus": 56
+      }
+    ],
+    "chosen": {
+      "description": "PD：3×prefill TP16·CP2 + EAGLE3 + 1×decode TP8 + EAGLE3",
+      "disaggregated": true,
+      "meets_slo": true,
+      "num_gpus": 56,
+      "num_instances": 4,
+      "policy": "cache_aware",
+      "pools": [
+        {
+          "capacity": {
+            "limit": "overload",
+            "rate": 6.765
+          },
+          "count": 1,
+          "role": "decode"
+        },
+        {
+          "capacity": {
+            "limit": "overload",
+            "rate": 0.2064
+          },
+          "count": 3,
+          "role": "prefill"
+        }
+      ],
+      "result": {
+        "goodput_rps": 0.508,
+        "slo_attainment": 1.0,
+        "tpot_ms": {
+          "p90": 6.226
+        },
+        "ttft_ms": {
+          "p90": 2692.0
+        }
+      }
+    },
+    "commands": {
+      "decode": [
+        "python3",
+        "-m",
+        "sglang.launch_server",
+        "--model-path",
+        "Qwen/Qwen3-235B-A22B",
+        "--tp-size",
+        "8",
+        "--attention-backend",
+        "flashinfer",
+        "--speculative-algorithm",
+        "EAGLE3",
+        "--speculative-num-steps",
+        "3",
+        "--speculative-eagle-topk",
+        "1",
+        "--speculative-num-draft-tokens",
+        "4",
+        "--speculative-draft-model-path",
+        "<eagle3-draft-model>",
+        "--host",
+        "0.0.0.0",
+        "--port",
+        "30000",
+        "--disaggregation-mode",
+        "decode",
+        "--disaggregation-transfer-backend",
+        "mooncake"
+      ],
+      "prefill": [
+        "python3",
+        "-m",
+        "sglang.launch_server",
+        "--model-path",
+        "Qwen/Qwen3-235B-A22B",
+        "--tp-size",
+        "16",
+        "--attn-cp-size",
+        "2",
+        "--enable-prefill-cp",
+        "--cp-strategy",
+        "zigzag",
+        "--speculative-algorithm",
+        "EAGLE3",
+        "--speculative-num-steps",
+        "3",
+        "--speculative-eagle-topk",
+        "1",
+        "--speculative-num-draft-tokens",
+        "4",
+        "--speculative-draft-model-path",
+        "<eagle3-draft-model>",
+        "--host",
+        "0.0.0.0",
+        "--port",
+        "30000",
+        "--disaggregation-mode",
+        "prefill",
+        "--disaggregation-transfer-backend",
+        "mooncake",
+        "--disaggregation-bootstrap-port",
+        "8998",
+        "--nnodes",
+        "2",
+        "--node-rank",
+        "0",
+        "--dist-init-addr",
+        "<node0_ip>:5000"
+      ]
+    },
+    "mode": "rate"
+  },
+  "qwen3-235b-a22b/h20/reasoning": {
+    "budget_gpus": 64,
+    "candidates": [
+      {
+        "description": "1×TP8·DCP2 + EAGLE3",
+        "feasible": true,
+        "meets_slo": true,
+        "num_gpus": 8
+      },
+      {
+        "description": "2×TP16·DPA4 + EAGLE3",
+        "feasible": true,
+        "meets_slo": true,
+        "num_gpus": 32
+      }
+    ],
+    "chosen": {
+      "description": "1×TP8·DCP2 + EAGLE3",
+      "disaggregated": false,
+      "meets_slo": true,
+      "num_gpus": 8,
+      "num_instances": 1,
+      "policy": "cache_aware",
+      "pools": [
+        {
+          "capacity": {
+            "limit": "overload",
+            "rate": 0.5908
+          },
+          "count": 1,
+          "role": "colocated"
+        }
+      ],
+      "result": {
+        "goodput_rps": 0.28,
+        "slo_attainment": 1.0,
+        "tpot_ms": {
+          "p90": 17.52
+        },
+        "ttft_ms": {
+          "p90": 155.7
+        }
+      }
+    },
+    "commands": {
+      "colocated": [
+        "python3",
+        "-m",
+        "sglang.launch_server",
+        "--model-path",
+        "Qwen/Qwen3-235B-A22B",
+        "--tp-size",
+        "8",
+        "--dcp-size",
+        "2",
+        "--attention-backend",
+        "flashinfer",
+        "--speculative-algorithm",
+        "EAGLE3",
+        "--speculative-num-steps",
+        "2",
+        "--speculative-eagle-topk",
+        "1",
+        "--speculative-num-draft-tokens",
+        "3",
+        "--speculative-draft-model-path",
+        "<eagle3-draft-model>",
+        "--max-running-requests",
+        "177",
+        "--host",
+        "0.0.0.0",
+        "--port",
+        "30000"
+      ]
+    },
+    "mode": "rate"
+  },
+  "qwen3-235b-a22b/h20/shared-prefix-agent": {
+    "budget_gpus": 64,
+    "candidates": [
+      {
+        "description": "2×TP8·DCP2 + EAGLE3",
+        "feasible": true,
+        "meets_slo": true,
+        "num_gpus": 16
+      },
+      {
+        "description": "2×TP16·CP2 + EAGLE3",
+        "feasible": true,
+        "meets_slo": true,
+        "num_gpus": 32
+      }
+    ],
+    "chosen": {
+      "description": "2×TP8·DCP2 + EAGLE3",
+      "disaggregated": false,
+      "meets_slo": true,
+      "num_gpus": 16,
+      "num_instances": 2,
+      "policy": "cache_aware",
+      "pools": [
+        {
+          "capacity": {
+            "limit": "ttft",
+            "rate": 2.345
+          },
+          "count": 2,
+          "role": "colocated"
+        }
+      ],
+      "result": {
+        "goodput_rps": 8.714,
+        "slo_attainment": 0.95,
+        "tpot_ms": {
+          "p90": 29.4
+        },
+        "ttft_ms": {
+          "p90": 1001.0
+        }
+      }
+    },
+    "commands": {
+      "colocated": [
+        "python3",
+        "-m",
+        "sglang.launch_server",
+        "--model-path",
+        "Qwen/Qwen3-235B-A22B",
+        "--tp-size",
+        "8",
+        "--dcp-size",
+        "2",
+        "--attention-backend",
+        "flashinfer",
+        "--speculative-algorithm",
+        "EAGLE3",
+        "--speculative-num-steps",
+        "2",
+        "--speculative-eagle-topk",
+        "1",
+        "--speculative-num-draft-tokens",
+        "3",
+        "--speculative-draft-model-path",
+        "<eagle3-draft-model>",
+        "--max-running-requests",
+        "123",
+        "--host",
+        "0.0.0.0",
+        "--port",
+        "30000"
+      ]
+    },
+    "mode": "rate"
+  },
+  "qwen3-235b-a22b/template-h20-class/chat": {
+    "budget_gpus": 64,
+    "candidates": [
+      {
+        "description": "3×TP8·DCP2 + EAGLE3",
+        "feasible": true,
+        "meets_slo": true,
+        "num_gpus": 24
+      },
+      {
+        "description": "5×TP16·DPA4 + EAGLE3",
+        "feasible": true,
+        "meets_slo": true,
+        "num_gpus": 80
+      },
+      {
+        "description": "PD：3×prefill TP8 + EAGLE3 + 1×decode TP8 + EAGLE3",
+        "feasible": true,
+        "meets_slo": true,
+        "num_gpus": 32
+      }
+    ],
+    "chosen": {
+      "description": "3×TP8·DCP2 + EAGLE3",
+      "disaggregated": false,
+      "meets_slo": true,
+      "num_gpus": 24,
+      "num_instances": 3,
+      "policy": "cache_aware",
+      "pools": [
+        {
+          "capacity": {
+            "limit": "tpot",
+            "rate": 2.752
+          },
+          "count": 3,
+          "role": "colocated"
+        }
+      ],
+      "result": {
+        "goodput_rps": 5.923,
+        "slo_attainment": 1.0,
+        "tpot_ms": {
+          "p90": 34.1
+        },
+        "ttft_ms": {
+          "p90": 650.8
+        }
+      }
+    },
+    "commands": {
+      "colocated": [
+        "python3",
+        "-m",
+        "sglang.launch_server",
+        "--model-path",
+        "Qwen/Qwen3-235B-A22B",
+        "--device",
+        "example",
+        "--tp-size",
+        "8",
+        "--dcp-size",
+        "2",
+        "--speculative-algorithm",
+        "EAGLE3",
+        "--speculative-num-steps",
+        "5",
+        "--speculative-eagle-topk",
+        "1",
+        "--speculative-num-draft-tokens",
+        "6",
+        "--speculative-draft-model-path",
+        "<eagle3-draft-model>",
+        "--host",
+        "0.0.0.0",
+        "--port",
+        "30000"
+      ]
+    },
+    "mode": "rate"
+  },
+  "qwen3-235b-a22b/template-h20-class/code": {
+    "budget_gpus": 64,
+    "candidates": [
+      {
+        "description": "3×TP8·DCP2 + EAGLE3",
+        "feasible": true,
+        "meets_slo": true,
+        "num_gpus": 24
+      },
+      {
+        "description": "3×TP16·DCP4 + EAGLE3",
+        "feasible": true,
+        "meets_slo": true,
+        "num_gpus": 48
+      },
+      {
+        "description": "PD：3×prefill TP8 + EAGLE3 + 1×decode TP8 + EAGLE3",
+        "feasible": true,
+        "meets_slo": true,
+        "num_gpus": 32
+      }
+    ],
+    "chosen": {
+      "description": "3×TP8·DCP2 + EAGLE3",
+      "disaggregated": false,
+      "meets_slo": true,
+      "num_gpus": 24,
+      "num_instances": 3,
+      "policy": "cache_aware",
+      "pools": [
+        {
+          "capacity": {
+            "limit": "tpot",
+            "rate": 0.9657
+          },
+          "count": 3,
+          "role": "colocated"
+        }
+      ],
+      "result": {
+        "goodput_rps": 1.598,
+        "slo_attainment": 1.0,
+        "tpot_ms": {
+          "p90": 17.81
+        },
+        "ttft_ms": {
+          "p90": 837.8
+        }
+      }
+    },
+    "commands": {
+      "colocated": [
+        "python3",
+        "-m",
+        "sglang.launch_server",
+        "--model-path",
+        "Qwen/Qwen3-235B-A22B",
+        "--device",
+        "example",
+        "--tp-size",
+        "8",
+        "--dcp-size",
+        "2",
+        "--speculative-algorithm",
+        "EAGLE3",
+        "--speculative-num-steps",
+        "5",
+        "--speculative-eagle-topk",
+        "1",
+        "--speculative-num-draft-tokens",
+        "6",
+        "--speculative-draft-model-path",
+        "<eagle3-draft-model>",
+        "--host",
+        "0.0.0.0",
+        "--port",
+        "30000"
+      ]
+    },
+    "mode": "rate"
+  },
+  "qwen3-235b-a22b/template-h20-class/offline-batch": {
+    "budget_gpus": 8,
+    "candidates": [
+      {
+        "description": "1×TP8·DPA2",
+        "feasible": true,
+        "meets_slo": true,
+        "num_gpus": 8
+      }
+    ],
+    "chosen": {
+      "description": "1×TP8·DPA2",
+      "disaggregated": false,
+      "meets_slo": true,
+      "num_gpus": 8,
+      "num_instances": 1,
+      "policy": "cache_aware",
+      "pools": [
+        {
+          "capacity": null,
+          "count": 1,
+          "role": "colocated"
+        }
+      ],
+      "result": {
+        "goodput_rps": 2.43,
+        "slo_attainment": 1.0,
+        "tpot_ms": {
+          "p90": 53.52
+        },
+        "ttft_ms": {
+          "p90": 13150.0
+        }
+      }
+    },
+    "commands": {
+      "colocated": [
+        "python3",
+        "-m",
+        "sglang.launch_server",
+        "--model-path",
+        "Qwen/Qwen3-235B-A22B",
+        "--device",
+        "example",
+        "--tp-size",
+        "8",
+        "--attn-dp-size",
+        "2",
+        "--load-balance-method",
+        "total_tokens",
+        "--host",
+        "0.0.0.0",
+        "--port",
+        "30000"
+      ]
+    },
+    "mode": "throughput"
+  },
+  "qwen3-235b-a22b/template-h20-class/rag-long-context": {
+    "budget_gpus": 64,
+    "candidates": [
+      {
+        "description": "40×TP8·DCP2 + EAGLE3",
+        "feasible": true,
+        "meets_slo": true,
+        "num_gpus": 320
+      },
+      {
+        "description": "7×TP16·DCP4 + EAGLE3",
+        "feasible": true,
+        "meets_slo": true,
+        "num_gpus": 112
+      },
+      {
+        "description": "PD：3×prefill TP16·CP2 + EAGLE3 + 1×decode TP8 + EAGLE3",
+        "feasible": true,
+        "meets_slo": true,
+        "num_gpus": 56
+      }
+    ],
+    "chosen": {
+      "description": "PD：3×prefill TP16·CP2 + EAGLE3 + 1×decode TP8 + EAGLE3",
+      "disaggregated": true,
+      "meets_slo": true,
+      "num_gpus": 56,
+      "num_instances": 4,
+      "policy": "cache_aware",
+      "pools": [
+        {
+          "capacity": {
+            "limit": "overload",
+            "rate": 4.749
+          },
+          "count": 1,
+          "role": "decode"
+        },
+        {
+          "capacity": {
+            "limit": "ttft",
+            "rate": 0.1676
+          },
+          "count": 3,
+          "role": "prefill"
+        }
+      ],
+      "result": {
+        "goodput_rps": 0.5061,
+        "slo_attainment": 1.0,
+        "tpot_ms": {
+          "p90": 9.041
+        },
+        "ttft_ms": {
+          "p90": 3264.0
+        }
+      }
+    },
+    "commands": {
+      "decode": [
+        "python3",
+        "-m",
+        "sglang.launch_server",
+        "--model-path",
+        "Qwen/Qwen3-235B-A22B",
+        "--device",
+        "example",
+        "--tp-size",
+        "8",
+        "--speculative-algorithm",
+        "EAGLE3",
+        "--speculative-num-steps",
+        "4",
+        "--speculative-eagle-topk",
+        "1",
+        "--speculative-num-draft-tokens",
+        "5",
+        "--speculative-draft-model-path",
+        "<eagle3-draft-model>",
+        "--host",
+        "0.0.0.0",
+        "--port",
+        "30000",
+        "--disaggregation-mode",
+        "decode",
+        "--disaggregation-transfer-backend",
+        "mooncake"
+      ],
+      "prefill": [
+        "python3",
+        "-m",
+        "sglang.launch_server",
+        "--model-path",
+        "Qwen/Qwen3-235B-A22B",
+        "--device",
+        "example",
+        "--tp-size",
+        "16",
+        "--attn-cp-size",
+        "2",
+        "--enable-prefill-cp",
+        "--cp-strategy",
+        "zigzag",
+        "--speculative-algorithm",
+        "EAGLE3",
+        "--speculative-num-steps",
+        "4",
+        "--speculative-eagle-topk",
+        "1",
+        "--speculative-num-draft-tokens",
+        "5",
+        "--speculative-draft-model-path",
+        "<eagle3-draft-model>",
+        "--host",
+        "0.0.0.0",
+        "--port",
+        "30000",
+        "--disaggregation-mode",
+        "prefill",
+        "--disaggregation-transfer-backend",
+        "mooncake",
+        "--disaggregation-bootstrap-port",
+        "8998",
+        "--nnodes",
+        "2",
+        "--node-rank",
+        "0",
+        "--dist-init-addr",
+        "<node0_ip>:5000"
+      ]
+    },
+    "mode": "rate"
+  },
+  "qwen3-235b-a22b/template-h20-class/reasoning": {
+    "budget_gpus": 64,
+    "candidates": [
+      {
+        "description": "2×TP8·DCP2 + EAGLE3",
+        "feasible": true,
+        "meets_slo": true,
+        "num_gpus": 16
+      },
+      {
+        "description": "2×TP16·DPA4 + EAGLE3",
+        "feasible": true,
+        "meets_slo": true,
+        "num_gpus": 32
+      }
+    ],
+    "chosen": {
+      "description": "2×TP8·DCP2 + EAGLE3",
+      "disaggregated": false,
+      "meets_slo": true,
+      "num_gpus": 16,
+      "num_instances": 2,
+      "policy": "cache_aware",
+      "pools": [
+        {
+          "capacity": {
+            "limit": "ttft",
+            "rate": 0.4007
+          },
+          "count": 2,
+          "role": "colocated"
+        }
+      ],
+      "result": {
+        "goodput_rps": 0.2682,
+        "slo_attainment": 1.0,
+        "tpot_ms": {
+          "p90": 17.87
+        },
+        "ttft_ms": {
+          "p90": 186.1
+        }
+      }
+    },
+    "commands": {
+      "colocated": [
+        "python3",
+        "-m",
+        "sglang.launch_server",
+        "--model-path",
+        "Qwen/Qwen3-235B-A22B",
+        "--device",
+        "example",
+        "--tp-size",
+        "8",
+        "--dcp-size",
+        "2",
+        "--speculative-algorithm",
+        "EAGLE3",
+        "--speculative-num-steps",
+        "2",
+        "--speculative-eagle-topk",
+        "1",
+        "--speculative-num-draft-tokens",
+        "3",
+        "--speculative-draft-model-path",
+        "<eagle3-draft-model>",
+        "--max-running-requests",
+        "134",
+        "--host",
+        "0.0.0.0",
+        "--port",
+        "30000"
+      ]
+    },
+    "mode": "rate"
+  },
+  "qwen3-235b-a22b/template-h20-class/shared-prefix-agent": {
+    "budget_gpus": 64,
+    "candidates": [
+      {
+        "description": "3×TP8·DCP2 + EAGLE3",
+        "feasible": true,
+        "meets_slo": true,
+        "num_gpus": 24
+      },
+      {
+        "description": "3×TP16·CP2 + EAGLE3",
+        "feasible": true,
+        "meets_slo": true,
+        "num_gpus": 48
+      },
+      {
+        "description": "PD：5×prefill TP8 + EAGLE3 + 2×decode TP8 + EAGLE3",
+        "feasible": true,
+        "meets_slo": true,
+        "num_gpus": 56
+      }
+    ],
+    "chosen": {
+      "description": "3×TP8·DCP2 + EAGLE3",
+      "disaggregated": false,
+      "meets_slo": true,
+      "num_gpus": 24,
+      "num_instances": 3,
+      "policy": "cache_aware",
+      "pools": [
+        {
+          "capacity": {
+            "limit": "ttft",
+            "rate": 1.579
+          },
+          "count": 3,
+          "role": "colocated"
+        }
+      ],
+      "result": {
+        "goodput_rps": 8.15,
+        "slo_attainment": 0.9417,
+        "tpot_ms": {
+          "p90": 29.69
+        },
+        "ttft_ms": {
+          "p90": 889.6
+        }
+      }
+    },
+    "commands": {
+      "colocated": [
+        "python3",
+        "-m",
+        "sglang.launch_server",
+        "--model-path",
+        "Qwen/Qwen3-235B-A22B",
+        "--device",
+        "example",
+        "--tp-size",
+        "8",
+        "--dcp-size",
+        "2",
+        "--speculative-algorithm",
+        "EAGLE3",
+        "--speculative-num-steps",
+        "2",
+        "--speculative-eagle-topk",
+        "1",
+        "--speculative-num-draft-tokens",
+        "3",
+        "--speculative-draft-model-path",
+        "<eagle3-draft-model>",
+        "--max-running-requests",
+        "95",
+        "--host",
+        "0.0.0.0",
+        "--port",
+        "30000"
+      ]
+    },
+    "mode": "rate"
+  },
+  "qwen3-30b-a3b/h100-sxm/chat": {
+    "budget_gpus": 64,
+    "candidates": [
+      {
+        "description": "2×TP1 + EAGLE3",
+        "feasible": true,
+        "meets_slo": true,
+        "num_gpus": 2
+      },
+      {
+        "description": "1×TP2·DPA2·EP2 + EAGLE3",
+        "feasible": true,
+        "meets_slo": true,
+        "num_gpus": 2
+      },
+      {
+        "description": "1×TP4·DPA4·EP4 + EAGLE3",
+        "feasible": true,
+        "meets_slo": false,
+        "num_gpus": 4
+      },
+      {
+        "description": "1×TP8·DPA8·EP8(deepep) + EAGLE3",
+        "feasible": true,
+        "meets_slo": false,
+        "num_gpus": 8
+      }
+    ],
+    "chosen": {
+      "description": "1×TP2·DPA2·EP2 + EAGLE3",
+      "disaggregated": false,
+      "meets_slo": true,
+      "num_gpus": 2,
+      "num_instances": 1,
+      "policy": "cache_aware",
+      "pools": [
+        {
+          "capacity": {
+            "limit": "overload",
+            "rate": 14.54
+          },
+          "count": 1,
+          "role": "colocated"
+        }
+      ],
+      "result": {
+        "goodput_rps": 7.143,
+        "slo_attainment": 1.0,
+        "tpot_ms": {
+          "p90": 9.181
+        },
+        "ttft_ms": {
+          "p90": 77.22
+        }
+      }
+    },
+    "commands": {
+      "colocated": [
+        "python3",
+        "-m",
+        "sglang.launch_server",
+        "--model-path",
+        "Qwen/Qwen3-30B-A3B",
+        "--tp-size",
+        "2",
+        "--attn-dp-size",
+        "2",
+        "--ep-size",
+        "2",
+        "--load-balance-method",
+        "total_tokens",
+        "--speculative-algorithm",
+        "EAGLE3",
+        "--speculative-num-steps",
+        "5",
+        "--speculative-eagle-topk",
+        "1",
+        "--speculative-num-draft-tokens",
+        "6",
+        "--speculative-draft-model-path",
+        "<eagle3-draft-model>",
+        "--host",
+        "0.0.0.0",
+        "--port",
+        "30000"
+      ]
+    },
+    "mode": "rate"
+  },
+  "qwen3-30b-a3b/h100-sxm/code": {
+    "budget_gpus": 64,
+    "candidates": [
+      {
+        "description": "3×TP1 + EAGLE3",
+        "feasible": true,
+        "meets_slo": true,
+        "num_gpus": 3
+      },
+      {
+        "description": "1×TP2 + EAGLE3",
+        "feasible": true,
+        "meets_slo": true,
+        "num_gpus": 2
+      },
+      {
+        "description": "1×TP4·DPA2 + EAGLE3",
+        "feasible": true,
+        "meets_slo": false,
+        "num_gpus": 4
+      },
+      {
+        "description": "1×TP8·DPA4 + EAGLE3",
+        "feasible": true,
+        "meets_slo": false,
+        "num_gpus": 8
+      }
+    ],
+    "chosen": {
+      "description": "1×TP2 + EAGLE3",
+      "disaggregated": false,
+      "meets_slo": true,
+      "num_gpus": 2,
+      "num_instances": 1,
+      "policy": "cache_aware",
+      "pools": [
+        {
+          "capacity": {
+            "limit": "overload",
+            "rate": 4.347
+          },
+          "count": 1,
+          "role": "colocated"
+        }
+      ],
+      "result": {
+        "goodput_rps": 1.832,
+        "slo_attainment": 1.0,
+        "tpot_ms": {
+          "p90": 6.894
+        },
+        "ttft_ms": {
+          "p90": 93.76
+        }
+      }
+    },
+    "commands": {
+      "colocated": [
+        "python3",
+        "-m",
+        "sglang.launch_server",
+        "--model-path",
+        "Qwen/Qwen3-30B-A3B",
+        "--tp-size",
+        "2",
+        "--speculative-algorithm",
+        "EAGLE3",
+        "--speculative-num-steps",
+        "5",
+        "--speculative-eagle-topk",
+        "1",
+        "--speculative-num-draft-tokens",
+        "6",
+        "--speculative-draft-model-path",
+        "<eagle3-draft-model>",
+        "--max-running-requests",
+        "50",
+        "--host",
+        "0.0.0.0",
+        "--port",
+        "30000"
+      ]
+    },
+    "mode": "rate"
+  },
+  "qwen3-30b-a3b/h100-sxm/offline-batch": {
+    "budget_gpus": 8,
+    "candidates": [
+      {
+        "description": "8×TP1 + EAGLE3",
+        "feasible": true,
+        "meets_slo": true,
+        "num_gpus": 8
+      },
+      {
+        "description": "4×TP2·DPA2·EP2 + EAGLE3",
+        "feasible": true,
+        "meets_slo": true,
+        "num_gpus": 8
+      },
+      {
+        "description": "2×TP4·DPA4·EP4 + EAGLE3",
+        "feasible": true,
+        "meets_slo": true,
+        "num_gpus": 8
+      },
+      {
+        "description": "1×TP8·DPA8·EP8(deepep) + EAGLE3",
+        "feasible": true,
+        "meets_slo": true,
+        "num_gpus": 8
+      }
+    ],
+    "chosen": {
+      "description": "1×TP8·DPA8·EP8(deepep) + EAGLE3",
+      "disaggregated": false,
+      "meets_slo": true,
+      "num_gpus": 8,
+      "num_instances": 1,
+      "policy": "cache_aware",
+      "pools": [
+        {
+          "capacity": null,
+          "count": 1,
+          "role": "colocated"
+        }
+      ],
+      "result": {
+        "goodput_rps": 25.31,
+        "slo_attainment": 1.0,
+        "tpot_ms": {
+          "p90": 4.92
+        },
+        "ttft_ms": {
+          "p90": 501.6
+        }
+      }
+    },
+    "commands": {
+      "colocated": [
+        "python3",
+        "-m",
+        "sglang.launch_server",
+        "--model-path",
+        "Qwen/Qwen3-30B-A3B",
+        "--tp-size",
+        "8",
+        "--attn-dp-size",
+        "8",
+        "--ep-size",
+        "8",
+        "--moe-a2a-backend",
+        "deepep",
+        "--load-balance-method",
+        "total_tokens",
+        "--speculative-algorithm",
+        "EAGLE3",
+        "--speculative-num-steps",
+        "2",
+        "--speculative-eagle-topk",
+        "1",
+        "--speculative-num-draft-tokens",
+        "3",
+        "--speculative-draft-model-path",
+        "<eagle3-draft-model>",
+        "--max-running-requests",
+        "1560",
+        "--host",
+        "0.0.0.0",
+        "--port",
+        "30000"
+      ]
+    },
+    "mode": "throughput"
+  },
+  "qwen3-30b-a3b/h100-sxm/rag-long-context": {
+    "budget_gpus": 64,
+    "candidates": [
+      {
+        "description": "2×TP1 + EAGLE3",
+        "feasible": true,
+        "meets_slo": true,
+        "num_gpus": 2
+      },
+      {
+        "description": "1×TP2 + EAGLE3",
+        "feasible": true,
+        "meets_slo": true,
+        "num_gpus": 2
+      },
+      {
+        "description": "1×TP4 + EAGLE3",
+        "feasible": true,
+        "meets_slo": false,
+        "num_gpus": 4
+      },
+      {
+        "description": "1×TP8·DCP2 + EAGLE3",
+        "feasible": true,
+        "meets_slo": false,
+        "num_gpus": 8
+      }
+    ],
+    "chosen": {
+      "description": "1×TP2 + EAGLE3",
+      "disaggregated": false,
+      "meets_slo": true,
+      "num_gpus": 2,
+      "num_instances": 1,
+      "policy": "cache_aware",
+      "pools": [
+        {
+          "capacity": {
+            "limit": "overload",
+            "rate": 0.9864
+          },
+          "count": 1,
+          "role": "colocated"
+        }
+      ],
+      "result": {
+        "goodput_rps": 0.5129,
+        "slo_attainment": 1.0,
+        "tpot_ms": {
+          "p90": 12.37
+        },
+        "ttft_ms": {
+          "p90": 941.4
+        }
+      }
+    },
+    "commands": {
+      "colocated": [
+        "python3",
+        "-m",
+        "sglang.launch_server",
+        "--model-path",
+        "Qwen/Qwen3-30B-A3B",
+        "--tp-size",
+        "2",
+        "--speculative-algorithm",
+        "EAGLE3",
+        "--speculative-num-steps",
+        "3",
+        "--speculative-eagle-topk",
+        "1",
+        "--speculative-num-draft-tokens",
+        "4",
+        "--speculative-draft-model-path",
+        "<eagle3-draft-model>",
+        "--host",
+        "0.0.0.0",
+        "--port",
+        "30000"
+      ]
+    },
+    "mode": "rate"
+  },
+  "qwen3-30b-a3b/h100-sxm/reasoning": {
+    "budget_gpus": 64,
+    "candidates": [
+      {
+        "description": "7×TP1 + EAGLE3",
+        "feasible": true,
+        "meets_slo": false,
+        "num_gpus": 7
+      },
+      {
+        "description": "1×TP2 + EAGLE3",
+        "feasible": true,
+        "meets_slo": true,
+        "num_gpus": 2
+      },
+      {
+        "description": "1×TP4·DPA2 + EAGLE3",
+        "feasible": true,
+        "meets_slo": true,
+        "num_gpus": 4
+      },
+      {
+        "description": "1×TP8·DPA4 + EAGLE3",
+        "feasible": true,
+        "meets_slo": false,
+        "num_gpus": 8
+      }
+    ],
+    "chosen": {
+      "description": "1×TP2 + EAGLE3",
+      "disaggregated": false,
+      "meets_slo": true,
+      "num_gpus": 2,
+      "num_instances": 1,
+      "policy": "cache_aware",
+      "pools": [
+        {
+          "capacity": {
+            "limit": "overload",
+            "rate": 0.877
+          },
+          "count": 1,
+          "role": "colocated"
+        }
+      ],
+      "result": {
+        "goodput_rps": 0.3847,
+        "slo_attainment": 1.0,
+        "tpot_ms": {
+          "p90": 7.11
+        },
+        "ttft_ms": {
+          "p90": 41.51
+        }
+      }
+    },
+    "commands": {
+      "colocated": [
+        "python3",
+        "-m",
+        "sglang.launch_server",
+        "--model-path",
+        "Qwen/Qwen3-30B-A3B",
+        "--tp-size",
+        "2",
+        "--speculative-algorithm",
+        "EAGLE3",
+        "--speculative-num-steps",
+        "5",
+        "--speculative-eagle-topk",
+        "1",
+        "--speculative-num-draft-tokens",
+        "6",
+        "--speculative-draft-model-path",
+        "<eagle3-draft-model>",
+        "--max-running-requests",
+        "125",
+        "--host",
+        "0.0.0.0",
+        "--port",
+        "30000"
+      ]
+    },
+    "mode": "rate"
+  },
+  "qwen3-30b-a3b/h100-sxm/shared-prefix-agent": {
+    "budget_gpus": 64,
+    "candidates": [
+      {
+        "description": "3×TP1 + EAGLE3 + HiCache",
+        "feasible": true,
+        "meets_slo": true,
+        "num_gpus": 3
+      },
+      {
+        "description": "1×TP2 + EAGLE3",
+        "feasible": true,
+        "meets_slo": true,
+        "num_gpus": 2
+      },
+      {
+        "description": "1×TP4 + EAGLE3",
+        "feasible": true,
+        "meets_slo": false,
+        "num_gpus": 4
+      },
+      {
+        "description": "1×TP8·DPA2 + EAGLE3",
+        "feasible": true,
+        "meets_slo": false,
+        "num_gpus": 8
+      }
+    ],
+    "chosen": {
+      "description": "1×TP2 + EAGLE3",
+      "disaggregated": false,
+      "meets_slo": true,
+      "num_gpus": 2,
+      "num_instances": 1,
+      "policy": "cache_aware",
+      "pools": [
+        {
+          "capacity": {
+            "limit": "overload",
+            "rate": 7.246
+          },
+          "count": 1,
+          "role": "colocated"
+        }
+      ],
+      "result": {
+        "goodput_rps": 11.05,
+        "slo_attainment": 1.0,
+        "tpot_ms": {
+          "p90": 12.07
+        },
+        "ttft_ms": {
+          "p90": 78.46
+        }
+      }
+    },
+    "commands": {
+      "colocated": [
+        "python3",
+        "-m",
+        "sglang.launch_server",
+        "--model-path",
+        "Qwen/Qwen3-30B-A3B",
+        "--tp-size",
+        "2",
+        "--speculative-algorithm",
+        "EAGLE3",
+        "--speculative-num-steps",
+        "5",
+        "--speculative-eagle-topk",
+        "1",
+        "--speculative-num-draft-tokens",
+        "6",
+        "--speculative-draft-model-path",
+        "<eagle3-draft-model>",
+        "--max-running-requests",
+        "88",
+        "--host",
+        "0.0.0.0",
+        "--port",
+        "30000"
+      ]
+    },
+    "mode": "rate"
+  },
+  "qwen3-30b-a3b/h20/chat": {
+    "budget_gpus": 64,
+    "candidates": [
+      {
+        "description": "2×TP1 + EAGLE3",
+        "feasible": true,
+        "meets_slo": true,
+        "num_gpus": 2
+      },
+      {
+        "description": "2×TP2·DPA2·EP2 + EAGLE3",
+        "feasible": true,
+        "meets_slo": true,
+        "num_gpus": 4
+      },
+      {
+        "description": "2×TP4·DPA4 + EAGLE3",
+        "feasible": true,
+        "meets_slo": false,
+        "num_gpus": 8
+      },
+      {
+        "description": "2×TP8·DPA8·EP8(deepep) + EAGLE3",
+        "feasible": true,
+        "meets_slo": false,
+        "num_gpus": 16
+      }
+    ],
+    "chosen": {
+      "description": "2×TP1 + EAGLE3",
+      "disaggregated": false,
+      "meets_slo": true,
+      "num_gpus": 2,
+      "num_instances": 2,
+      "policy": "cache_aware",
+      "pools": [
+        {
+          "capacity": {
+            "limit": "ttft",
+            "rate": 4.009
+          },
+          "count": 2,
+          "role": "colocated"
+        }
+      ],
+      "result": {
+        "goodput_rps": 6.325,
+        "slo_attainment": 1.0,
+        "tpot_ms": {
+          "p90": 38.59
+        },
+        "ttft_ms": {
+          "p90": 761.2
+        }
+      }
+    },
+    "commands": {
+      "colocated": [
+        "python3",
+        "-m",
+        "sglang.launch_server",
+        "--model-path",
+        "Qwen/Qwen3-30B-A3B",
+        "--tp-size",
+        "1",
+        "--speculative-algorithm",
+        "EAGLE3",
+        "--speculative-num-steps",
+        "5",
+        "--speculative-eagle-topk",
+        "1",
+        "--speculative-num-draft-tokens",
+        "6",
+        "--speculative-draft-model-path",
+        "<eagle3-draft-model>",
+        "--host",
+        "0.0.0.0",
+        "--port",
+        "30000"
+      ]
+    },
+    "mode": "rate"
+  },
+  "qwen3-30b-a3b/h20/code": {
+    "budget_gpus": 64,
+    "candidates": [
+      {
+        "description": "2×TP1 + EAGLE3",
+        "feasible": true,
+        "meets_slo": true,
+        "num_gpus": 2
+      },
+      {
+        "description": "1×TP2 + EAGLE3",
+        "feasible": true,
+        "meets_slo": true,
+        "num_gpus": 2
+      },
+      {
+        "description": "1×TP4·DPA4·EP4 + EAGLE3",
+        "feasible": true,
+        "meets_slo": false,
+        "num_gpus": 4
+      },
+      {
+        "description": "1×TP8·DPA8·EP8(deepep) + EAGLE3",
+        "feasible": true,
+        "meets_slo": false,
+        "num_gpus": 8
+      }
+    ],
+    "chosen": {
+      "description": "1×TP2 + EAGLE3",
+      "disaggregated": false,
+      "meets_slo": true,
+      "num_gpus": 2,
+      "num_instances": 1,
+      "policy": "cache_aware",
+      "pools": [
+        {
+          "capacity": {
+            "limit": "overload",
+            "rate": 2.421
+          },
+          "count": 1,
+          "role": "colocated"
+        }
+      ],
+      "result": {
+        "goodput_rps": 1.793,
+        "slo_attainment": 1.0,
+        "tpot_ms": {
+          "p90": 14.48
+        },
+        "ttft_ms": {
+          "p90": 715.9
+        }
+      }
+    },
+    "commands": {
+      "colocated": [
+        "python3",
+        "-m",
+        "sglang.launch_server",
+        "--model-path",
+        "Qwen/Qwen3-30B-A3B",
+        "--tp-size",
+        "2",
+        "--speculative-algorithm",
+        "EAGLE3",
+        "--speculative-num-steps",
+        "4",
+        "--speculative-eagle-topk",
+        "1",
+        "--speculative-num-draft-tokens",
+        "5",
+        "--speculative-draft-model-path",
+        "<eagle3-draft-model>",
+        "--host",
+        "0.0.0.0",
+        "--port",
+        "30000"
+      ]
+    },
+    "mode": "rate"
+  },
+  "qwen3-30b-a3b/h20/offline-batch": {
+    "budget_gpus": 8,
+    "candidates": [
+      {
+        "description": "8×TP1 + EAGLE3",
+        "feasible": true,
+        "meets_slo": true,
+        "num_gpus": 8
+      },
+      {
+        "description": "4×TP2·DPA2·EP2",
+        "feasible": true,
+        "meets_slo": true,
+        "num_gpus": 8
+      },
+      {
+        "description": "2×TP4·DPA4",
+        "feasible": true,
+        "meets_slo": true,
+        "num_gpus": 8
+      },
+      {
+        "description": "1×TP8·DPA8·EP8(deepep)",
+        "feasible": true,
+        "meets_slo": true,
+        "num_gpus": 8
+      }
+    ],
+    "chosen": {
+      "description": "1×TP8·DPA8·EP8(deepep)",
+      "disaggregated": false,
+      "meets_slo": true,
+      "num_gpus": 8,
+      "num_instances": 1,
+      "policy": "cache_aware",
+      "pools": [
+        {
+          "capacity": null,
+          "count": 1,
+          "role": "colocated"
+        }
+      ],
+      "result": {
+        "goodput_rps": 13.85,
+        "slo_attainment": 1.0,
+        "tpot_ms": {
+          "p90": 8.992
+        },
+        "ttft_ms": {
+          "p90": 1698.0
+        }
+      }
+    },
+    "commands": {
+      "colocated": [
+        "python3",
+        "-m",
+        "sglang.launch_server",
+        "--model-path",
+        "Qwen/Qwen3-30B-A3B",
+        "--tp-size",
+        "8",
+        "--attn-dp-size",
+        "8",
+        "--ep-size",
+        "8",
+        "--moe-a2a-backend",
+        "deepep",
+        "--load-balance-method",
+        "total_tokens",
+        "--host",
+        "0.0.0.0",
+        "--port",
+        "30000"
+      ]
+    },
+    "mode": "throughput"
+  },
+  "qwen3-30b-a3b/h20/rag-long-context": {
+    "budget_gpus": 64,
+    "candidates": [
+      {
+        "description": "99×TP1 + EAGLE3",
+        "feasible": true,
+        "meets_slo": false,
+        "num_gpus": 99
+      },
+      {
+        "description": "5×TP2 + EAGLE3",
+        "feasible": true,
+        "meets_slo": false,
+        "num_gpus": 10
+      },
+      {
+        "description": "2×TP4 + EAGLE3",
+        "feasible": true,
+        "meets_slo": true,
+        "num_gpus": 8
+      },
+      {
+        "description": "1×TP8·DCP2 + EAGLE3",
+        "feasible": true,
+        "meets_slo": true,
+        "num_gpus": 8
+      },
+      {
+        "description": "PD：2×prefill TP4 + EAGLE3 + 1×decode TP2 + EAGLE3",
+        "feasible": true,
+        "meets_slo": true,
+        "num_gpus": 10
+      }
+    ],
+    "chosen": {
+      "description": "1×TP8·DCP2 + EAGLE3",
+      "disaggregated": false,
+      "meets_slo": true,
+      "num_gpus": 8,
+      "num_instances": 1,
+      "policy": "cache_aware",
+      "pools": [
+        {
+          "capacity": {
+            "limit": "overload",
+            "rate": 0.5688
+          },
+          "count": 1,
+          "role": "colocated"
+        }
+      ],
+      "result": {
+        "goodput_rps": 0.5128,
+        "slo_attainment": 1.0,
+        "tpot_ms": {
+          "p90": 14.45
+        },
+        "ttft_ms": {
+          "p90": 1581.0
+        }
+      }
+    },
+    "commands": {
+      "colocated": [
+        "python3",
+        "-m",
+        "sglang.launch_server",
+        "--model-path",
+        "Qwen/Qwen3-30B-A3B",
+        "--tp-size",
+        "8",
+        "--dcp-size",
+        "2",
+        "--attention-backend",
+        "flashinfer",
+        "--speculative-algorithm",
+        "EAGLE3",
+        "--speculative-num-steps",
+        "5",
+        "--speculative-eagle-topk",
+        "1",
+        "--speculative-num-draft-tokens",
+        "6",
+        "--speculative-draft-model-path",
+        "<eagle3-draft-model>",
+        "--host",
+        "0.0.0.0",
+        "--port",
+        "30000"
+      ]
+    },
+    "mode": "rate"
+  },
+  "qwen3-30b-a3b/h20/reasoning": {
+    "budget_gpus": 64,
+    "candidates": [
+      {
+        "description": "2×TP1 + EAGLE3",
+        "feasible": true,
+        "meets_slo": true,
+        "num_gpus": 2
+      },
+      {
+        "description": "1×TP2 + EAGLE3",
+        "feasible": true,
+        "meets_slo": true,
+        "num_gpus": 2
+      },
+      {
+        "description": "1×TP4·DPA4·EP4 + EAGLE3",
+        "feasible": true,
+        "meets_slo": false,
+        "num_gpus": 4
+      },
+      {
+        "description": "1×TP8·DPA8·EP8(deepep) + EAGLE3",
+        "feasible": true,
+        "meets_slo": false,
+        "num_gpus": 8
+      }
+    ],
+    "chosen": {
+      "description": "1×TP2 + EAGLE3",
+      "disaggregated": false,
+      "meets_slo": true,
+      "num_gpus": 2,
+      "num_instances": 1,
+      "policy": "cache_aware",
+      "pools": [
+        {
+          "capacity": {
+            "limit": "overload",
+            "rate": 0.8368
+          },
+          "count": 1,
+          "role": "colocated"
+        }
+      ],
+      "result": {
+        "goodput_rps": 0.3693,
+        "slo_attainment": 1.0,
+        "tpot_ms": {
+          "p90": 8.871
+        },
+        "ttft_ms": {
+          "p90": 76.84
+        }
+      }
+    },
+    "commands": {
+      "colocated": [
+        "python3",
+        "-m",
+        "sglang.launch_server",
+        "--model-path",
+        "Qwen/Qwen3-30B-A3B",
+        "--tp-size",
+        "2",
+        "--speculative-algorithm",
+        "EAGLE3",
+        "--speculative-num-steps",
+        "2",
+        "--speculative-eagle-topk",
+        "1",
+        "--speculative-num-draft-tokens",
+        "3",
+        "--speculative-draft-model-path",
+        "<eagle3-draft-model>",
+        "--max-running-requests",
+        "150",
+        "--host",
+        "0.0.0.0",
+        "--port",
+        "30000"
+      ]
+    },
+    "mode": "rate"
+  },
+  "qwen3-30b-a3b/h20/shared-prefix-agent": {
+    "budget_gpus": 64,
+    "candidates": [
+      {
+        "description": "3×TP1 + EAGLE3",
+        "feasible": true,
+        "meets_slo": true,
+        "num_gpus": 3
+      },
+      {
+        "description": "2×TP2 + EAGLE3",
+        "feasible": true,
+        "meets_slo": true,
+        "num_gpus": 4
+      },
+      {
+        "description": "3×TP4·DPA4·EP4 + EAGLE3",
+        "feasible": true,
+        "meets_slo": false,
+        "num_gpus": 12
+      },
+      {
+        "description": "5×TP8·DPA8·EP8(deepep) + EAGLE3",
+        "feasible": true,
+        "meets_slo": false,
+        "num_gpus": 40
+      },
+      {
+        "description": "PD：2×prefill TP2 + EAGLE3 + 1×decode TP2 + EAGLE3",
+        "feasible": true,
+        "meets_slo": true,
+        "num_gpus": 6
+      }
+    ],
+    "chosen": {
+      "description": "3×TP1 + EAGLE3",
+      "disaggregated": false,
+      "meets_slo": true,
+      "num_gpus": 3,
+      "num_instances": 3,
+      "policy": "cache_aware",
+      "pools": [
+        {
+          "capacity": {
+            "limit": "ttft",
+            "rate": 1.724
+          },
+          "count": 3,
+          "role": "colocated"
+        }
+      ],
+      "result": {
+        "goodput_rps": 9.251,
+        "slo_attainment": 0.9528,
+        "tpot_ms": {
+          "p90": 22.17
+        },
+        "ttft_ms": {
+          "p90": 871.2
+        }
+      }
+    },
+    "commands": {
+      "colocated": [
+        "python3",
+        "-m",
+        "sglang.launch_server",
+        "--model-path",
+        "Qwen/Qwen3-30B-A3B",
+        "--tp-size",
+        "1",
+        "--speculative-algorithm",
+        "EAGLE3",
+        "--speculative-num-steps",
+        "3",
+        "--speculative-eagle-topk",
+        "1",
+        "--speculative-num-draft-tokens",
+        "4",
+        "--speculative-draft-model-path",
+        "<eagle3-draft-model>",
+        "--host",
+        "0.0.0.0",
+        "--port",
+        "30000"
+      ]
+    },
+    "mode": "rate"
+  },
+  "qwen3-30b-a3b/template-h20-class/chat": {
+    "budget_gpus": 64,
+    "candidates": [
+      {
+        "description": "3×TP1 + EAGLE3",
+        "feasible": true,
+        "meets_slo": true,
+        "num_gpus": 3
+      },
+      {
+        "description": "2×TP2·DPA2·EP2 + EAGLE3",
+        "feasible": true,
+        "meets_slo": true,
+        "num_gpus": 4
+      },
+      {
+        "description": "2×TP4·DPA4·EP4 + EAGLE3",
+        "feasible": true,
+        "meets_slo": false,
+        "num_gpus": 8
+      },
+      {
+        "description": "2×TP8·DPA8 + EAGLE3",
+        "feasible": true,
+        "meets_slo": false,
+        "num_gpus": 16
+      },
+      {
+        "description": "PD：1×prefill TP4·DPA4 + EAGLE3 + 1×decode TP1 + EAGLE3",
+        "feasible": true,
+        "meets_slo": true,
+        "num_gpus": 5
+      }
+    ],
+    "chosen": {
+      "description": "3×TP1 + EAGLE3",
+      "disaggregated": false,
+      "meets_slo": true,
+      "num_gpus": 3,
+      "num_instances": 3,
+      "policy": "cache_aware",
+      "pools": [
+        {
+          "capacity": {
+            "limit": "tpot",
+            "rate": 3.06
+          },
+          "count": 3,
+          "role": "colocated"
+        }
+      ],
+      "result": {
+        "goodput_rps": 6.319,
+        "slo_attainment": 1.0,
+        "tpot_ms": {
+          "p90": 26.97
+        },
+        "ttft_ms": {
+          "p90": 535.5
+        }
+      }
+    },
+    "commands": {
+      "colocated": [
+        "python3",
+        "-m",
+        "sglang.launch_server",
+        "--model-path",
+        "Qwen/Qwen3-30B-A3B",
+        "--device",
+        "example",
+        "--tp-size",
+        "1",
+        "--speculative-algorithm",
+        "EAGLE3",
+        "--speculative-num-steps",
+        "3",
+        "--speculative-eagle-topk",
+        "1",
+        "--speculative-num-draft-tokens",
+        "4",
+        "--speculative-draft-model-path",
+        "<eagle3-draft-model>",
+        "--max-running-requests",
+        "74",
+        "--host",
+        "0.0.0.0",
+        "--port",
+        "30000"
+      ]
+    },
+    "mode": "rate"
+  },
+  "qwen3-30b-a3b/template-h20-class/code": {
+    "budget_gpus": 64,
+    "candidates": [
+      {
+        "description": "3×TP1 + EAGLE3",
+        "feasible": true,
+        "meets_slo": true,
+        "num_gpus": 3
+      },
+      {
+        "description": "1×TP2 + EAGLE3",
+        "feasible": true,
+        "meets_slo": true,
+        "num_gpus": 2
+      },
+      {
+        "description": "2×TP4·DPA4·EP4 + EAGLE3",
+        "feasible": true,
+        "meets_slo": false,
+        "num_gpus": 8
+      },
+      {
+        "description": "2×TP8·DPA8 + EAGLE3",
+        "feasible": true,
+        "meets_slo": false,
+        "num_gpus": 16
+      }
+    ],
+    "chosen": {
+      "description": "1×TP2 + EAGLE3",
+      "disaggregated": false,
+      "meets_slo": true,
+      "num_gpus": 2,
+      "num_instances": 1,
+      "policy": "cache_aware",
+      "pools": [
+        {
+          "capacity": {
+            "limit": "overload",
+            "rate": 2.046
+          },
+          "count": 1,
+          "role": "colocated"
+        }
+      ],
+      "result": {
+        "goodput_rps": 1.677,
+        "slo_attainment": 1.0,
+        "tpot_ms": {
+          "p90": 21.63
+        },
+        "ttft_ms": {
+          "p90": 1037.0
+        }
+      }
+    },
+    "commands": {
+      "colocated": [
+        "python3",
+        "-m",
+        "sglang.launch_server",
+        "--model-path",
+        "Qwen/Qwen3-30B-A3B",
+        "--device",
+        "example",
+        "--tp-size",
+        "2",
+        "--speculative-algorithm",
+        "EAGLE3",
+        "--speculative-num-steps",
+        "3",
+        "--speculative-eagle-topk",
+        "1",
+        "--speculative-num-draft-tokens",
+        "4",
+        "--speculative-draft-model-path",
+        "<eagle3-draft-model>",
+        "--max-running-requests",
+        "55",
+        "--host",
+        "0.0.0.0",
+        "--port",
+        "30000"
+      ]
+    },
+    "mode": "rate"
+  },
+  "qwen3-30b-a3b/template-h20-class/offline-batch": {
+    "budget_gpus": 8,
+    "candidates": [
+      {
+        "description": "8×TP1 + EAGLE3",
+        "feasible": true,
+        "meets_slo": true,
+        "num_gpus": 8
+      },
+      {
+        "description": "4×TP2·DPA2·EP2",
+        "feasible": true,
+        "meets_slo": true,
+        "num_gpus": 8
+      },
+      {
+        "description": "2×TP4·DPA4",
+        "feasible": true,
+        "meets_slo": true,
+        "num_gpus": 8
+      },
+      {
+        "description": "1×TP8·DPA8",
+        "feasible": true,
+        "meets_slo": true,
+        "num_gpus": 8
+      }
+    ],
+    "chosen": {
+      "description": "1×TP8·DPA8",
+      "disaggregated": false,
+      "meets_slo": true,
+      "num_gpus": 8,
+      "num_instances": 1,
+      "policy": "cache_aware",
+      "pools": [
+        {
+          "capacity": null,
+          "count": 1,
+          "role": "colocated"
+        }
+      ],
+      "result": {
+        "goodput_rps": 9.677,
+        "slo_attainment": 1.0,
+        "tpot_ms": {
+          "p90": 12.78
+        },
+        "ttft_ms": {
+          "p90": 2197.0
+        }
+      }
+    },
+    "commands": {
+      "colocated": [
+        "python3",
+        "-m",
+        "sglang.launch_server",
+        "--model-path",
+        "Qwen/Qwen3-30B-A3B",
+        "--device",
+        "example",
+        "--tp-size",
+        "8",
+        "--attn-dp-size",
+        "8",
+        "--load-balance-method",
+        "total_tokens",
+        "--host",
+        "0.0.0.0",
+        "--port",
+        "30000"
+      ]
+    },
+    "mode": "throughput"
+  },
+  "qwen3-30b-a3b/template-h20-class/rag-long-context": {
+    "budget_gpus": 64,
+    "candidates": [
+      {
+        "description": "237×TP1 + EAGLE3",
+        "feasible": true,
+        "meets_slo": false,
+        "num_gpus": 237
+      },
+      {
+        "description": "6×TP2 + EAGLE3",
+        "feasible": true,
+        "meets_slo": true,
+        "num_gpus": 12
+      },
+      {
+        "description": "3×TP4 + EAGLE3",
+        "feasible": true,
+        "meets_slo": true,
+        "num_gpus": 12
+      },
+      {
+        "description": "2×TP8·DCP2 + EAGLE3",
+        "feasible": true,
+        "meets_slo": false,
+        "num_gpus": 16
+      },
+      {
+        "description": "PD：2×prefill TP4 + EAGLE3 + 1×decode TP2 + EAGLE3",
+        "feasible": true,
+        "meets_slo": true,
+        "num_gpus": 10
+      }
+    ],
+    "chosen": {
+      "description": "PD：2×prefill TP4 + EAGLE3 + 1×decode TP2 + EAGLE3",
+      "disaggregated": true,
+      "meets_slo": true,
+      "num_gpus": 10,
+      "num_instances": 3,
+      "policy": "cache_aware",
+      "pools": [
+        {
+          "capacity": {
+            "limit": "overload",
+            "rate": 9.809
+          },
+          "count": 1,
+          "role": "decode"
+        },
+        {
+          "capacity": {
+            "limit": "overload",
+            "rate": 0.2611
+          },
+          "count": 2,
+          "role": "prefill"
+        }
+      ],
+      "result": {
+        "goodput_rps": 0.5094,
+        "slo_attainment": 1.0,
+        "tpot_ms": {
+          "p90": 4.752
+        },
+        "ttft_ms": {
+          "p90": 2981.0
+        }
+      }
+    },
+    "commands": {
+      "decode": [
+        "python3",
+        "-m",
+        "sglang.launch_server",
+        "--model-path",
+        "Qwen/Qwen3-30B-A3B",
+        "--device",
+        "example",
+        "--tp-size",
+        "2",
+        "--speculative-algorithm",
+        "EAGLE3",
+        "--speculative-num-steps",
+        "3",
+        "--speculative-eagle-topk",
+        "1",
+        "--speculative-num-draft-tokens",
+        "4",
+        "--speculative-draft-model-path",
+        "<eagle3-draft-model>",
+        "--host",
+        "0.0.0.0",
+        "--port",
+        "30000",
+        "--disaggregation-mode",
+        "decode",
+        "--disaggregation-transfer-backend",
+        "mooncake"
+      ],
+      "prefill": [
+        "python3",
+        "-m",
+        "sglang.launch_server",
+        "--model-path",
+        "Qwen/Qwen3-30B-A3B",
+        "--device",
+        "example",
+        "--tp-size",
+        "4",
+        "--speculative-algorithm",
+        "EAGLE3",
+        "--speculative-num-steps",
+        "3",
+        "--speculative-eagle-topk",
+        "1",
+        "--speculative-num-draft-tokens",
+        "4",
+        "--speculative-draft-model-path",
+        "<eagle3-draft-model>",
+        "--host",
+        "0.0.0.0",
+        "--port",
+        "30000",
+        "--disaggregation-mode",
+        "prefill",
+        "--disaggregation-transfer-backend",
+        "mooncake",
+        "--disaggregation-bootstrap-port",
+        "8998"
+      ]
+    },
+    "mode": "rate"
+  },
+  "qwen3-30b-a3b/template-h20-class/reasoning": {
+    "budget_gpus": 64,
+    "candidates": [
+      {
+        "description": "3×TP1 + EAGLE3",
+        "feasible": true,
+        "meets_slo": true,
+        "num_gpus": 3
+      },
+      {
+        "description": "1×TP2 + EAGLE3",
+        "feasible": true,
+        "meets_slo": true,
+        "num_gpus": 2
+      },
+      {
+        "description": "1×TP4·DPA4·EP4 + EAGLE3",
+        "feasible": true,
+        "meets_slo": false,
+        "num_gpus": 4
+      },
+      {
+        "description": "1×TP8·DPA8 + EAGLE3",
+        "feasible": true,
+        "meets_slo": false,
+        "num_gpus": 8
+      }
+    ],
+    "chosen": {
+      "description": "1×TP2 + EAGLE3",
+      "disaggregated": false,
+      "meets_slo": true,
+      "num_gpus": 2,
+      "num_instances": 1,
+      "policy": "cache_aware",
+      "pools": [
+        {
+          "capacity": {
+            "limit": "ttft",
+            "rate": 0.6981
+          },
+          "count": 1,
+          "role": "colocated"
+        }
+      ],
+      "result": {
+        "goodput_rps": 0.3338,
+        "slo_attainment": 1.0,
+        "tpot_ms": {
+          "p90": 11.71
+        },
+        "ttft_ms": {
+          "p90": 93.98
+        }
+      }
+    },
+    "commands": {
+      "colocated": [
+        "python3",
+        "-m",
+        "sglang.launch_server",
+        "--model-path",
+        "Qwen/Qwen3-30B-A3B",
+        "--device",
+        "example",
+        "--tp-size",
+        "2",
+        "--speculative-algorithm",
+        "EAGLE3",
+        "--speculative-num-steps",
+        "2",
+        "--speculative-eagle-topk",
+        "1",
+        "--speculative-num-draft-tokens",
+        "3",
+        "--speculative-draft-model-path",
+        "<eagle3-draft-model>",
+        "--max-running-requests",
+        "158",
+        "--host",
+        "0.0.0.0",
+        "--port",
+        "30000"
+      ]
+    },
+    "mode": "rate"
+  },
+  "qwen3-30b-a3b/template-h20-class/shared-prefix-agent": {
+    "budget_gpus": 64,
+    "candidates": [
+      {
+        "description": "4×TP1 + EAGLE3 + HiCache",
+        "feasible": true,
+        "meets_slo": false,
+        "num_gpus": 4
+      },
+      {
+        "description": "2×TP2 + EAGLE3",
+        "feasible": true,
+        "meets_slo": true,
+        "num_gpus": 4
+      },
+      {
+        "description": "1×TP4 + EAGLE3",
+        "feasible": true,
+        "meets_slo": true,
+        "num_gpus": 4
+      },
+      {
+        "description": "2×TP8·DPA4 + EAGLE3",
+        "feasible": true,
+        "meets_slo": false,
+        "num_gpus": 16
+      },
+      {
+        "description": "PD：1×prefill TP4 + EAGLE3 + 1×decode TP2 + EAGLE3",
+        "feasible": true,
+        "meets_slo": true,
+        "num_gpus": 6
+      }
+    ],
+    "chosen": {
+      "description": "1×TP4 + EAGLE3",
+      "disaggregated": false,
+      "meets_slo": true,
+      "num_gpus": 4,
+      "num_instances": 1,
+      "policy": "cache_aware",
+      "pools": [
+        {
+          "capacity": {
+            "limit": "ttft",
+            "rate": 4.381
+          },
+          "count": 1,
+          "role": "colocated"
+        }
+      ],
+      "result": {
+        "goodput_rps": 11.3,
+        "slo_attainment": 1.0,
+        "tpot_ms": {
+          "p90": 13.29
+        },
+        "ttft_ms": {
+          "p90": 297.1
+        }
+      }
+    },
+    "commands": {
+      "colocated": [
+        "python3",
+        "-m",
+        "sglang.launch_server",
+        "--model-path",
+        "Qwen/Qwen3-30B-A3B",
+        "--device",
+        "example",
+        "--tp-size",
+        "4",
+        "--speculative-algorithm",
+        "EAGLE3",
+        "--speculative-num-steps",
+        "3",
+        "--speculative-eagle-topk",
+        "1",
+        "--speculative-num-draft-tokens",
+        "4",
+        "--speculative-draft-model-path",
+        "<eagle3-draft-model>",
+        "--host",
+        "0.0.0.0",
+        "--port",
+        "30000"
+      ]
+    },
+    "mode": "rate"
+  },
+  "qwen3-32b/h100-sxm/chat": {
+    "budget_gpus": 64,
+    "candidates": [
+      {
+        "description": "9×TP1 + EAGLE3",
+        "feasible": true,
+        "meets_slo": false,
+        "num_gpus": 9
+      },
+      {
+        "description": "2×TP2 + EAGLE3",
+        "feasible": true,
+        "meets_slo": true,
+        "num_gpus": 4
+      },
+      {
+        "description": "1×TP4 + EAGLE3",
+        "feasible": true,
+        "meets_slo": true,
+        "num_gpus": 4
+      },
+      {
+        "description": "1×TP8·DPA2 + EAGLE3",
+        "feasible": true,
+        "meets_slo": false,
+        "num_gpus": 8
+      },
+      {
+        "description": "PD：1×prefill TP8·DPA2 + EAGLE3 + 1×decode TP2 + EAGLE3",
+        "feasible": true,
+        "meets_slo": true,
+        "num_gpus": 10
+      }
+    ],
+    "chosen": {
+      "description": "2×TP2 + EAGLE3",
+      "disaggregated": false,
+      "meets_slo": true,
+      "num_gpus": 4,
+      "num_instances": 2,
+      "policy": "cache_aware",
+      "pools": [
+        {
+          "capacity": {
+            "limit": "ttft",
+            "rate": 5.152
+          },
+          "count": 2,
+          "role": "colocated"
+        }
+      ],
+      "result": {
+        "goodput_rps": 6.598,
+        "slo_attainment": 1.0,
+        "tpot_ms": {
+          "p90": 22.46
+        },
+        "ttft_ms": {
+          "p90": 453.5
+        }
+      }
+    },
+    "commands": {
+      "colocated": [
+        "python3",
+        "-m",
+        "sglang.launch_server",
+        "--model-path",
+        "Qwen/Qwen3-32B",
+        "--tp-size",
+        "2",
+        "--speculative-algorithm",
+        "EAGLE3",
+        "--speculative-num-steps",
+        "3",
+        "--speculative-eagle-topk",
+        "1",
+        "--speculative-num-draft-tokens",
+        "4",
+        "--speculative-draft-model-path",
+        "<eagle3-draft-model>",
+        "--max-running-requests",
+        "64",
+        "--host",
+        "0.0.0.0",
+        "--port",
+        "30000"
+      ]
+    },
+    "mode": "rate"
+  },
+  "qwen3-32b/h100-sxm/code": {
+    "budget_gpus": 64,
+    "candidates": [
+      {
+        "description": "20×TP1 + EAGLE3",
+        "feasible": true,
+        "meets_slo": false,
+        "num_gpus": 20
+      },
+      {
+        "description": "2×TP2 + EAGLE3",
+        "feasible": true,
+        "meets_slo": true,
+        "num_gpus": 4
+      },
+      {
+        "description": "1×TP4 + EAGLE3",
+        "feasible": true,
+        "meets_slo": true,
+        "num_gpus": 4
+      },
+      {
+        "description": "1×TP8 + EAGLE3",
+        "feasible": true,
+        "meets_slo": false,
+        "num_gpus": 8
+      },
+      {
+        "description": "PD：1×prefill TP8·CP2 + EAGLE3 + 1×decode TP2 + EAGLE3",
+        "feasible": true,
+        "meets_slo": true,
+        "num_gpus": 10
+      }
+    ],
+    "chosen": {
+      "description": "1×TP4 + EAGLE3",
+      "disaggregated": false,
+      "meets_slo": true,
+      "num_gpus": 4,
+      "num_instances": 1,
+      "policy": "cache_aware",
+      "pools": [
+        {
+          "capacity": {
+            "limit": "overload",
+            "rate": 3.005
+          },
+          "count": 1,
+          "role": "colocated"
+        }
+      ],
+      "result": {
+        "goodput_rps": 1.858,
+        "slo_attainment": 1.0,
+        "tpot_ms": {
+          "p90": 8.715
+        },
+        "ttft_ms": {
+          "p90": 431.0
+        }
+      }
+    },
+    "commands": {
+      "colocated": [
+        "python3",
+        "-m",
+        "sglang.launch_server",
+        "--model-path",
+        "Qwen/Qwen3-32B",
+        "--tp-size",
+        "4",
+        "--speculative-algorithm",
+        "EAGLE3",
+        "--speculative-num-steps",
+        "5",
+        "--speculative-eagle-topk",
+        "1",
+        "--speculative-num-draft-tokens",
+        "6",
+        "--speculative-draft-model-path",
+        "<eagle3-draft-model>",
+        "--host",
+        "0.0.0.0",
+        "--port",
+        "30000"
+      ]
+    },
+    "mode": "rate"
+  },
+  "qwen3-32b/h100-sxm/offline-batch": {
+    "budget_gpus": 8,
+    "candidates": [
+      {
+        "description": "8×TP1 + EAGLE3",
+        "feasible": true,
+        "meets_slo": true,
+        "num_gpus": 8
+      },
+      {
+        "description": "4×TP2 + EAGLE3",
+        "feasible": true,
+        "meets_slo": true,
+        "num_gpus": 8
+      },
+      {
+        "description": "2×TP4·DPA2 + EAGLE3",
+        "feasible": true,
+        "meets_slo": true,
+        "num_gpus": 8
+      },
+      {
+        "description": "1×TP8·DPA4",
+        "feasible": true,
+        "meets_slo": true,
+        "num_gpus": 8
+      }
+    ],
+    "chosen": {
+      "description": "2×TP4·DPA2 + EAGLE3",
+      "disaggregated": false,
+      "meets_slo": true,
+      "num_gpus": 8,
+      "num_instances": 2,
+      "policy": "cache_aware",
+      "pools": [
+        {
+          "capacity": null,
+          "count": 2,
+          "role": "colocated"
+        }
+      ],
+      "result": {
+        "goodput_rps": 11.8,
+        "slo_attainment": 1.0,
+        "tpot_ms": {
+          "p90": 10.75
+        },
+        "ttft_ms": {
+          "p90": 2784.0
+        }
+      }
+    },
+    "commands": {
+      "colocated": [
+        "python3",
+        "-m",
+        "sglang.launch_server",
+        "--model-path",
+        "Qwen/Qwen3-32B",
+        "--tp-size",
+        "4",
+        "--attn-dp-size",
+        "2",
+        "--load-balance-method",
+        "total_tokens",
+        "--speculative-algorithm",
+        "EAGLE3",
+        "--speculative-num-steps",
+        "2",
+        "--speculative-eagle-topk",
+        "1",
+        "--speculative-num-draft-tokens",
+        "3",
+        "--speculative-draft-model-path",
+        "<eagle3-draft-model>",
+        "--max-running-requests",
+        "358",
+        "--host",
+        "0.0.0.0",
+        "--port",
+        "30000"
+      ]
+    },
+    "mode": "throughput"
+  },
+  "qwen3-32b/h100-sxm/rag-long-context": {
+    "budget_gpus": 64,
+    "candidates": [
+      {
+        "description": "117×TP1 + EAGLE3",
+        "feasible": true,
+        "meets_slo": false,
+        "num_gpus": 117
+      },
+      {
+        "description": "4×TP2 + EAGLE3",
+        "feasible": true,
+        "meets_slo": false,
+        "num_gpus": 8
+      },
+      {
+        "description": "2×TP4 + EAGLE3",
+        "feasible": true,
+        "meets_slo": true,
+        "num_gpus": 8
+      },
+      {
+        "description": "1×TP8 + EAGLE3",
+        "feasible": true,
+        "meets_slo": true,
+        "num_gpus": 8
+      },
+      {
+        "description": "PD：3×prefill TP2 + EAGLE3 + 1×decode TP4 + EAGLE3",
+        "feasible": true,
+        "meets_slo": true,
+        "num_gpus": 10
+      }
+    ],
+    "chosen": {
+      "description": "1×TP8 + EAGLE3",
+      "disaggregated": false,
+      "meets_slo": true,
+      "num_gpus": 8,
+      "num_instances": 1,
+      "policy": "cache_aware",
+      "pools": [
+        {
+          "capacity": {
+            "limit": "overload",
+            "rate": 0.5798
+          },
+          "count": 1,
+          "role": "colocated"
+        }
+      ],
+      "result": {
+        "goodput_rps": 0.5124,
+        "slo_attainment": 1.0,
+        "tpot_ms": {
+          "p90": 16.47
+        },
+        "ttft_ms": {
+          "p90": 1585.0
+        }
+      }
+    },
+    "commands": {
+      "colocated": [
+        "python3",
+        "-m",
+        "sglang.launch_server",
+        "--model-path",
+        "Qwen/Qwen3-32B",
+        "--tp-size",
+        "8",
+        "--speculative-algorithm",
+        "EAGLE3",
+        "--speculative-num-steps",
+        "5",
+        "--speculative-eagle-topk",
+        "1",
+        "--speculative-num-draft-tokens",
+        "6",
+        "--speculative-draft-model-path",
+        "<eagle3-draft-model>",
+        "--host",
+        "0.0.0.0",
+        "--port",
+        "30000"
+      ]
+    },
+    "mode": "rate"
+  },
+  "qwen3-32b/h100-sxm/reasoning": {
+    "budget_gpus": 64,
+    "candidates": [
+      {
+        "description": "48×TP1 + EAGLE3",
+        "feasible": true,
+        "meets_slo": false,
+        "num_gpus": 48
+      },
+      {
+        "description": "2×TP2 + EAGLE3",
+        "feasible": true,
+        "meets_slo": true,
+        "num_gpus": 4
+      },
+      {
+        "description": "1×TP4 + EAGLE3",
+        "feasible": true,
+        "meets_slo": true,
+        "num_gpus": 4
+      },
+      {
+        "description": "1×TP8 + EAGLE3",
+        "feasible": true,
+        "meets_slo": false,
+        "num_gpus": 8
+      },
+      {
+        "description": "PD：1×prefill TP4 + EAGLE3 + 1×decode TP4 + EAGLE3",
+        "feasible": true,
+        "meets_slo": true,
+        "num_gpus": 8
+      }
+    ],
+    "chosen": {
+      "description": "1×TP4 + EAGLE3",
+      "disaggregated": false,
+      "meets_slo": true,
+      "num_gpus": 4,
+      "num_instances": 1,
+      "policy": "cache_aware",
+      "pools": [
+        {
+          "capacity": {
+            "limit": "overload",
+            "rate": 0.771
+          },
+          "count": 1,
+          "role": "colocated"
+        }
+      ],
+      "result": {
+        "goodput_rps": 0.3913,
+        "slo_attainment": 1.0,
+        "tpot_ms": {
+          "p90": 6.587
+        },
+        "ttft_ms": {
+          "p90": 74.33
+        }
+      }
+    },
+    "commands": {
+      "colocated": [
+        "python3",
+        "-m",
+        "sglang.launch_server",
+        "--model-path",
+        "Qwen/Qwen3-32B",
+        "--tp-size",
+        "4",
+        "--speculative-algorithm",
+        "EAGLE3",
+        "--speculative-num-steps",
+        "3",
+        "--speculative-eagle-topk",
+        "1",
+        "--speculative-num-draft-tokens",
+        "4",
+        "--speculative-draft-model-path",
+        "<eagle3-draft-model>",
+        "--max-running-requests",
+        "125",
+        "--host",
+        "0.0.0.0",
+        "--port",
+        "30000"
+      ]
+    },
+    "mode": "rate"
+  },
+  "qwen3-32b/h100-sxm/shared-prefix-agent": {
+    "budget_gpus": 64,
+    "candidates": [
+      {
+        "description": "22×TP1 + EAGLE3 + HiCache",
+        "feasible": true,
+        "meets_slo": false,
+        "num_gpus": 22
+      },
+      {
+        "description": "2×TP2 + EAGLE3",
+        "feasible": true,
+        "meets_slo": true,
+        "num_gpus": 4
+      },
+      {
+        "description": "1×TP4 + EAGLE3",
+        "feasible": true,
+        "meets_slo": true,
+        "num_gpus": 4
+      },
+      {
+        "description": "1×TP8·CP2 + EAGLE3",
+        "feasible": true,
+        "meets_slo": false,
+        "num_gpus": 8
+      },
+      {
+        "description": "PD：1×prefill TP8·CP2 + EAGLE3 + 1×decode TP4 + EAGLE3",
+        "feasible": true,
+        "meets_slo": true,
+        "num_gpus": 12
+      }
+    ],
+    "chosen": {
+      "description": "1×TP4 + EAGLE3",
+      "disaggregated": false,
+      "meets_slo": true,
+      "num_gpus": 4,
+      "num_instances": 1,
+      "policy": "cache_aware",
+      "pools": [
+        {
+          "capacity": {
+            "limit": "ttft",
+            "rate": 5.493
+          },
+          "count": 1,
+          "role": "colocated"
+        }
+      ],
+      "result": {
+        "goodput_rps": 10.89,
+        "slo_attainment": 1.0,
+        "tpot_ms": {
+          "p90": 17.25
+        },
+        "ttft_ms": {
+          "p90": 321.6
+        }
+      }
+    },
+    "commands": {
+      "colocated": [
+        "python3",
+        "-m",
+        "sglang.launch_server",
+        "--model-path",
+        "Qwen/Qwen3-32B",
+        "--tp-size",
+        "4",
+        "--speculative-algorithm",
+        "EAGLE3",
+        "--speculative-num-steps",
+        "3",
+        "--speculative-eagle-topk",
+        "1",
+        "--speculative-num-draft-tokens",
+        "4",
+        "--speculative-draft-model-path",
+        "<eagle3-draft-model>",
+        "--max-running-requests",
+        "88",
+        "--host",
+        "0.0.0.0",
+        "--port",
+        "30000"
+      ]
+    },
+    "mode": "rate"
+  },
+  "qwen3-32b/h20/chat": {
+    "budget_gpus": 64,
+    "candidates": [
+      {
+        "description": "0×TP1",
+        "feasible": false,
+        "meets_slo": false,
+        "num_gpus": 0
+      },
+      {
+        "description": "61×TP2",
+        "feasible": true,
+        "meets_slo": false,
+        "num_gpus": 122
+      },
+      {
+        "description": "9×TP4",
+        "feasible": true,
+        "meets_slo": true,
+        "num_gpus": 36
+      },
+      {
+        "description": "4×TP8 + EAGLE3",
+        "feasible": true,
+        "meets_slo": true,
+        "num_gpus": 32
+      },
+      {
+        "description": "PD：4×prefill TP8 + 1×decode TP4",
+        "feasible": true,
+        "meets_slo": true,
+        "num_gpus": 36
+      }
+    ],
+    "chosen": {
+      "description": "4×TP8 + EAGLE3",
+      "disaggregated": false,
+      "meets_slo": true,
+      "num_gpus": 32,
+      "num_instances": 4,
+      "policy": "cache_aware",
+      "pools": [
+        {
+          "capacity": {
+            "limit": "overload",
+            "rate": 2.391
+          },
+          "count": 4,
+          "role": "colocated"
+        }
+      ],
+      "result": {
+        "goodput_rps": 7.652,
+        "slo_attainment": 1.0,
+        "tpot_ms": {
+          "p90": 6.569
+        },
+        "ttft_ms": {
+          "p90": 416.1
+        }
+      }
+    },
+    "commands": {
+      "colocated": [
+        "python3",
+        "-m",
+        "sglang.launch_server",
+        "--model-path",
+        "Qwen/Qwen3-32B",
+        "--tp-size",
+        "8",
+        "--speculative-algorithm",
+        "EAGLE3",
+        "--speculative-num-steps",
+        "5",
+        "--speculative-eagle-topk",
+        "1",
+        "--speculative-num-draft-tokens",
+        "6",
+        "--speculative-draft-model-path",
+        "<eagle3-draft-model>",
+        "--host",
+        "0.0.0.0",
+        "--port",
+        "30000"
+      ]
+    },
+    "mode": "rate"
+  },
+  "qwen3-32b/h20/code": {
+    "budget_gpus": 64,
+    "candidates": [
+      {
+        "description": "0×TP1 + EAGLE3",
+        "feasible": false,
+        "meets_slo": false,
+        "num_gpus": 0
+      },
+      {
+        "description": "46×TP2",
+        "feasible": true,
+        "meets_slo": false,
+        "num_gpus": 92
+      },
+      {
+        "description": "5×TP4",
+        "feasible": true,
+        "meets_slo": true,
+        "num_gpus": 20
+      },
+      {
+        "description": "3×TP8 + EAGLE3",
+        "feasible": true,
+        "meets_slo": true,
+        "num_gpus": 24
+      },
+      {
+        "description": "PD：3×prefill TP8 + 2×decode TP2",
+        "feasible": true,
+        "meets_slo": true,
+        "num_gpus": 28
+      }
+    ],
+    "chosen": {
+      "description": "5×TP4",
+      "disaggregated": false,
+      "meets_slo": true,
+      "num_gpus": 20,
+      "num_instances": 5,
+      "policy": "cache_aware",
+      "pools": [
+        {
+          "capacity": {
+            "limit": "ttft",
+            "rate": 0.4097
+          },
+          "count": 5,
+          "role": "colocated"
+        }
+      ],
+      "result": {
+        "goodput_rps": 1.605,
+        "slo_attainment": 1.0,
+        "tpot_ms": {
+          "p90": 15.76
+        },
+        "ttft_ms": {
+          "p90": 1662.0
+        }
+      }
+    },
+    "commands": {
+      "colocated": [
+        "python3",
+        "-m",
+        "sglang.launch_server",
+        "--model-path",
+        "Qwen/Qwen3-32B",
+        "--tp-size",
+        "4",
+        "--host",
+        "0.0.0.0",
+        "--port",
+        "30000"
+      ]
+    },
+    "mode": "rate"
+  },
+  "qwen3-32b/h20/offline-batch": {
+    "budget_gpus": 8,
+    "candidates": [
+      {
+        "description": "8×TP1",
+        "feasible": true,
+        "meets_slo": true,
+        "num_gpus": 8
+      },
+      {
+        "description": "4×TP2",
+        "feasible": true,
+        "meets_slo": true,
+        "num_gpus": 8
+      },
+      {
+        "description": "2×TP4·DPA4",
+        "feasible": true,
+        "meets_slo": true,
+        "num_gpus": 8
+      },
+      {
+        "description": "1×TP8·DPA4",
+        "feasible": true,
+        "meets_slo": true,
+        "num_gpus": 8
+      }
+    ],
+    "chosen": {
+      "description": "1×TP8·DPA4",
+      "disaggregated": false,
+      "meets_slo": true,
+      "num_gpus": 8,
+      "num_instances": 1,
+      "policy": "cache_aware",
+      "pools": [
+        {
+          "capacity": null,
+          "count": 1,
+          "role": "colocated"
+        }
+      ],
+      "result": {
+        "goodput_rps": 3.946,
+        "slo_attainment": 1.0,
+        "tpot_ms": {
+          "p90": 34.83
+        },
+        "ttft_ms": {
+          "p90": 14790.0
+        }
+      }
+    },
+    "commands": {
+      "colocated": [
+        "python3",
+        "-m",
+        "sglang.launch_server",
+        "--model-path",
+        "Qwen/Qwen3-32B",
+        "--tp-size",
+        "8",
+        "--attn-dp-size",
+        "4",
+        "--load-balance-method",
+        "total_tokens",
+        "--host",
+        "0.0.0.0",
+        "--port",
+        "30000"
+      ]
+    },
+    "mode": "throughput"
+  },
+  "qwen3-32b/h20/rag-long-context": {
+    "budget_gpus": 64,
+    "candidates": [
+      {
+        "description": "0×TP1 + EAGLE3",
+        "feasible": false,
+        "meets_slo": false,
+        "num_gpus": 0
+      },
+      {
+        "description": "0×TP2 + EAGLE3",
+        "feasible": false,
+        "meets_slo": false,
+        "num_gpus": 0
+      },
+      {
+        "description": "0×TP4 + EAGLE3",
+        "feasible": false,
+        "meets_slo": false,
+        "num_gpus": 0
+      },
+      {
+        "description": "8×TP8 + EAGLE3",
+        "feasible": true,
+        "meets_slo": true,
+        "num_gpus": 64
+      },
+      {
+        "description": "PD：8×prefill TP8 + EAGLE3 + 1×decode TP4 + EAGLE3",
+        "feasible": true,
+        "meets_slo": true,
+        "num_gpus": 68
+      }
+    ],
+    "chosen": {
+      "description": "8×TP8 + EAGLE3",
+      "disaggregated": false,
+      "meets_slo": true,
+      "num_gpus": 64,
+      "num_instances": 8,
+      "policy": "cache_aware",
+      "pools": [
+        {
+          "capacity": {
+            "limit": "ttft",
+            "rate": 0.06257
+          },
+          "count": 8,
+          "role": "colocated"
+        }
+      ],
+      "result": {
+        "goodput_rps": 0.5056,
+        "slo_attainment": 1.0,
+        "tpot_ms": {
+          "p90": 2.684
+        },
+        "ttft_ms": {
+          "p90": 4285.0
+        }
+      }
+    },
+    "commands": {
+      "colocated": [
+        "python3",
+        "-m",
+        "sglang.launch_server",
+        "--model-path",
+        "Qwen/Qwen3-32B",
+        "--tp-size",
+        "8",
+        "--speculative-algorithm",
+        "EAGLE3",
+        "--speculative-num-steps",
+        "4",
+        "--speculative-eagle-topk",
+        "1",
+        "--speculative-num-draft-tokens",
+        "5",
+        "--speculative-draft-model-path",
+        "<eagle3-draft-model>",
+        "--host",
+        "0.0.0.0",
+        "--port",
+        "30000"
+      ]
+    },
+    "mode": "rate"
+  },
+  "qwen3-32b/h20/reasoning": {
+    "budget_gpus": 64,
+    "candidates": [
+      {
+        "description": "16×TP1 + EAGLE3",
+        "feasible": true,
+        "meets_slo": false,
+        "num_gpus": 16
+      },
+      {
+        "description": "3×TP2 + mixed chunk 512",
+        "feasible": true,
+        "meets_slo": true,
+        "num_gpus": 6
+      },
+      {
+        "description": "2×TP4",
+        "feasible": true,
+        "meets_slo": false,
+        "num_gpus": 8
+      },
+      {
+        "description": "1×TP8",
+        "feasible": true,
+        "meets_slo": true,
+        "num_gpus": 8
+      },
+      {
+        "description": "PD：1×prefill TP8 + 3×decode TP2",
+        "feasible": true,
+        "meets_slo": true,
+        "num_gpus": 14
+      }
+    ],
+    "chosen": {
+      "description": "3×TP2 + mixed chunk 512",
+      "disaggregated": false,
+      "meets_slo": true,
+      "num_gpus": 6,
+      "num_instances": 3,
+      "policy": "cache_aware",
+      "pools": [
+        {
+          "capacity": {
+            "limit": "tpot",
+            "rate": 0.1746
+          },
+          "count": 3,
+          "role": "colocated"
+        }
+      ],
+      "result": {
+        "goodput_rps": 0.2406,
+        "slo_attainment": 1.0,
+        "tpot_ms": {
+          "p90": 20.81
+        },
+        "ttft_ms": {
+          "p90": 651.5
+        }
+      }
+    },
+    "commands": {
+      "colocated": [
+        "python3",
+        "-m",
+        "sglang.launch_server",
+        "--model-path",
+        "Qwen/Qwen3-32B",
+        "--tp-size",
+        "2",
+        "--enable-mixed-chunk",
+        "--chunked-prefill-size",
+        "512",
+        "--host",
+        "0.0.0.0",
+        "--port",
+        "30000"
+      ]
+    },
+    "mode": "rate"
+  },
+  "qwen3-32b/h20/shared-prefix-agent": {
+    "budget_gpus": 64,
+    "candidates": [
+      {
+        "description": "0×TP1 + EAGLE3 + HiCache",
+        "feasible": false,
+        "meets_slo": false,
+        "num_gpus": 0
+      },
+      {
+        "description": "0×TP2",
+        "feasible": false,
+        "meets_slo": false,
+        "num_gpus": 0
+      },
+      {
+        "description": "0×TP4",
+        "feasible": false,
+        "meets_slo": false,
+        "num_gpus": 0
+      },
+      {
+        "description": "4×TP8 + EAGLE3",
+        "feasible": true,
+        "meets_slo": true,
+        "num_gpus": 32
+      },
+      {
+        "description": "PD：4×prefill TP8 + 1×decode TP4",
+        "feasible": true,
+        "meets_slo": true,
+        "num_gpus": 36
+      }
+    ],
+    "chosen": {
+      "description": "4×TP8 + EAGLE3",
+      "disaggregated": false,
+      "meets_slo": true,
+      "num_gpus": 32,
+      "num_instances": 4,
+      "policy": "cache_aware",
+      "pools": [
+        {
+          "capacity": {
+            "limit": "ttft",
+            "rate": 1.147
+          },
+          "count": 4,
+          "role": "colocated"
+        }
+      ],
+      "result": {
+        "goodput_rps": 11.73,
+        "slo_attainment": 0.975,
+        "tpot_ms": {
+          "p90": 4.84
+        },
+        "ttft_ms": {
+          "p90": 162.6
+        }
+      }
+    },
+    "commands": {
+      "colocated": [
+        "python3",
+        "-m",
+        "sglang.launch_server",
+        "--model-path",
+        "Qwen/Qwen3-32B",
+        "--tp-size",
+        "8",
+        "--speculative-algorithm",
+        "EAGLE3",
+        "--speculative-num-steps",
+        "2",
+        "--speculative-eagle-topk",
+        "1",
+        "--speculative-num-draft-tokens",
+        "3",
+        "--speculative-draft-model-path",
+        "<eagle3-draft-model>",
+        "--host",
+        "0.0.0.0",
+        "--port",
+        "30000"
+      ]
+    },
+    "mode": "rate"
+  },
+  "qwen3-32b/template-h20-class/chat": {
+    "budget_gpus": 64,
+    "candidates": [
+      {
+        "description": "0×TP1 + EAGLE3",
+        "feasible": false,
+        "meets_slo": false,
+        "num_gpus": 0
+      },
+      {
+        "description": "80×TP2",
+        "feasible": true,
+        "meets_slo": false,
+        "num_gpus": 160
+      },
+      {
+        "description": "10×TP4 + EAGLE3",
+        "feasible": true,
+        "meets_slo": true,
+        "num_gpus": 40
+      },
+      {
+        "description": "5×TP8 + EAGLE3",
+        "feasible": true,
+        "meets_slo": true,
+        "num_gpus": 40
+      },
+      {
+        "description": "PD：5×prefill TP8 + 1×decode TP4",
+        "feasible": true,
+        "meets_slo": true,
+        "num_gpus": 44
+      }
+    ],
+    "chosen": {
+      "description": "5×TP8 + EAGLE3",
+      "disaggregated": false,
+      "meets_slo": true,
+      "num_gpus": 40,
+      "num_instances": 5,
+      "policy": "cache_aware",
+      "pools": [
+        {
+          "capacity": {
+            "limit": "overload",
+            "rate": 1.91
+          },
+          "count": 5,
+          "role": "colocated"
+        }
+      ],
+      "result": {
+        "goodput_rps": 7.304,
+        "slo_attainment": 1.0,
+        "tpot_ms": {
+          "p90": 8.317
+        },
+        "ttft_ms": {
+          "p90": 521.9
+        }
+      }
+    },
+    "commands": {
+      "colocated": [
+        "python3",
+        "-m",
+        "sglang.launch_server",
+        "--model-path",
+        "Qwen/Qwen3-32B",
+        "--device",
+        "example",
+        "--tp-size",
+        "8",
+        "--speculative-algorithm",
+        "EAGLE3",
+        "--speculative-num-steps",
+        "4",
+        "--speculative-eagle-topk",
+        "1",
+        "--speculative-num-draft-tokens",
+        "5",
+        "--speculative-draft-model-path",
+        "<eagle3-draft-model>",
+        "--host",
+        "0.0.0.0",
+        "--port",
+        "30000"
+      ]
+    },
+    "mode": "rate"
+  },
+  "qwen3-32b/template-h20-class/code": {
+    "budget_gpus": 64,
+    "candidates": [
+      {
+        "description": "0×TP1 + EAGLE3",
+        "feasible": false,
+        "meets_slo": false,
+        "num_gpus": 0
+      },
+      {
+        "description": "0×TP2",
+        "feasible": false,
+        "meets_slo": false,
+        "num_gpus": 0
+      },
+      {
+        "description": "6×TP4",
+        "feasible": true,
+        "meets_slo": true,
+        "num_gpus": 24
+      },
+      {
+        "description": "3×TP8 + EAGLE3",
+        "feasible": true,
+        "meets_slo": true,
+        "num_gpus": 24
+      },
+      {
+        "description": "PD：3×prefill TP8 + 2×decode TP2",
+        "feasible": true,
+        "meets_slo": true,
+        "num_gpus": 28
+      }
+    ],
+    "chosen": {
+      "description": "3×TP8 + EAGLE3",
+      "disaggregated": false,
+      "meets_slo": true,
+      "num_gpus": 24,
+      "num_instances": 3,
+      "policy": "cache_aware",
+      "pools": [
+        {
+          "capacity": {
+            "limit": "overload",
+            "rate": 0.7728
+          },
+          "count": 3,
+          "role": "colocated"
+        }
+      ],
+      "result": {
+        "goodput_rps": 1.862,
+        "slo_attainment": 1.0,
+        "tpot_ms": {
+          "p90": 8.152
+        },
+        "ttft_ms": {
+          "p90": 1290.0
+        }
+      }
+    },
+    "commands": {
+      "colocated": [
+        "python3",
+        "-m",
+        "sglang.launch_server",
+        "--model-path",
+        "Qwen/Qwen3-32B",
+        "--device",
+        "example",
+        "--tp-size",
+        "8",
+        "--speculative-algorithm",
+        "EAGLE3",
+        "--speculative-num-steps",
+        "2",
+        "--speculative-eagle-topk",
+        "1",
+        "--speculative-num-draft-tokens",
+        "3",
+        "--speculative-draft-model-path",
+        "<eagle3-draft-model>",
+        "--host",
+        "0.0.0.0",
+        "--port",
+        "30000"
+      ]
+    },
+    "mode": "rate"
+  },
+  "qwen3-32b/template-h20-class/offline-batch": {
+    "budget_gpus": 8,
+    "candidates": [
+      {
+        "description": "8×TP1",
+        "feasible": true,
+        "meets_slo": true,
+        "num_gpus": 8
+      },
+      {
+        "description": "4×TP2",
+        "feasible": true,
+        "meets_slo": true,
+        "num_gpus": 8
+      },
+      {
+        "description": "2×TP4·DPA4",
+        "feasible": true,
+        "meets_slo": true,
+        "num_gpus": 8
+      },
+      {
+        "description": "1×TP8·DPA4",
+        "feasible": true,
+        "meets_slo": true,
+        "num_gpus": 8
+      }
+    ],
+    "chosen": {
+      "description": "4×TP2",
+      "disaggregated": false,
+      "meets_slo": true,
+      "num_gpus": 8,
+      "num_instances": 4,
+      "policy": "cache_aware",
+      "pools": [
+        {
+          "capacity": null,
+          "count": 4,
+          "role": "colocated"
+        }
+      ],
+      "result": {
+        "goodput_rps": 3.269,
+        "slo_attainment": 1.0,
+        "tpot_ms": {
+          "p90": 37.69
+        },
+        "ttft_ms": {
+          "p90": 15880.0
+        }
+      }
+    },
+    "commands": {
+      "colocated": [
+        "python3",
+        "-m",
+        "sglang.launch_server",
+        "--model-path",
+        "Qwen/Qwen3-32B",
+        "--device",
+        "example",
+        "--tp-size",
+        "2",
+        "--host",
+        "0.0.0.0",
+        "--port",
+        "30000"
+      ]
+    },
+    "mode": "throughput"
+  },
+  "qwen3-32b/template-h20-class/rag-long-context": {
+    "budget_gpus": 64,
+    "candidates": [
+      {
+        "description": "0×TP1 + EAGLE3",
+        "feasible": false,
+        "meets_slo": false,
+        "num_gpus": 0
+      },
+      {
+        "description": "0×TP2 + EAGLE3",
+        "feasible": false,
+        "meets_slo": false,
+        "num_gpus": 0
+      },
+      {
+        "description": "0×TP4 + EAGLE3",
+        "feasible": false,
+        "meets_slo": false,
+        "num_gpus": 0
+      },
+      {
+        "description": "38×TP8 + EAGLE3",
+        "feasible": true,
+        "meets_slo": true,
+        "num_gpus": 304
+      },
+      {
+        "description": "PD：37×prefill TP8 + EAGLE3 + 1×decode TP4 + EAGLE3",
+        "feasible": true,
+        "meets_slo": true,
+        "num_gpus": 300
+      }
+    ],
+    "chosen": {
+      "description": "38×TP8 + EAGLE3",
+      "disaggregated": false,
+      "meets_slo": true,
+      "num_gpus": 304,
+      "num_instances": 38,
+      "policy": "cache_aware",
+      "pools": [
+        {
+          "capacity": {
+            "limit": "ttft",
+            "rate": 0.01323
+          },
+          "count": 38,
+          "role": "colocated"
+        }
+      ],
+      "result": {
+        "goodput_rps": 0.5035,
+        "slo_attainment": 1.0,
+        "tpot_ms": {
+          "p90": 3.921
+        },
+        "ttft_ms": {
+          "p90": 5061.0
+        }
+      }
+    },
+    "commands": {
+      "colocated": [
+        "python3",
+        "-m",
+        "sglang.launch_server",
+        "--model-path",
+        "Qwen/Qwen3-32B",
+        "--device",
+        "example",
+        "--tp-size",
+        "8",
+        "--speculative-algorithm",
+        "EAGLE3",
+        "--speculative-num-steps",
+        "4",
+        "--speculative-eagle-topk",
+        "1",
+        "--speculative-num-draft-tokens",
+        "5",
+        "--speculative-draft-model-path",
+        "<eagle3-draft-model>",
+        "--host",
+        "0.0.0.0",
+        "--port",
+        "30000"
+      ]
+    },
+    "mode": "rate"
+  },
+  "qwen3-32b/template-h20-class/reasoning": {
+    "budget_gpus": 64,
+    "candidates": [
+      {
+        "description": "29×TP1 + EAGLE3",
+        "feasible": true,
+        "meets_slo": false,
+        "num_gpus": 29
+      },
+      {
+        "description": "4×TP2",
+        "feasible": true,
+        "meets_slo": false,
+        "num_gpus": 8
+      },
+      {
+        "description": "2×TP4",
+        "feasible": true,
+        "meets_slo": true,
+        "num_gpus": 8
+      },
+      {
+        "description": "1×TP8 + mixed chunk 512",
+        "feasible": true,
+        "meets_slo": true,
+        "num_gpus": 8
+      },
+      {
+        "description": "PD：1×prefill TP8 + 4×decode TP2",
+        "feasible": true,
+        "meets_slo": true,
+        "num_gpus": 16
+      }
+    ],
+    "chosen": {
+      "description": "1×TP8 + mixed chunk 512",
+      "disaggregated": false,
+      "meets_slo": true,
+      "num_gpus": 8,
+      "num_instances": 1,
+      "policy": "cache_aware",
+      "pools": [
+        {
+          "capacity": {
+            "limit": "tpot",
+            "rate": 0.5159
+          },
+          "count": 1,
+          "role": "colocated"
+        }
+      ],
+      "result": {
+        "goodput_rps": 0.2789,
+        "slo_attainment": 1.0,
+        "tpot_ms": {
+          "p90": 17.76
+        },
+        "ttft_ms": {
+          "p90": 270.2
+        }
+      }
+    },
+    "commands": {
+      "colocated": [
+        "python3",
+        "-m",
+        "sglang.launch_server",
+        "--model-path",
+        "Qwen/Qwen3-32B",
+        "--device",
+        "example",
+        "--tp-size",
+        "8",
+        "--enable-mixed-chunk",
+        "--chunked-prefill-size",
+        "512",
+        "--host",
+        "0.0.0.0",
+        "--port",
+        "30000"
+      ]
+    },
+    "mode": "rate"
+  },
+  "qwen3-32b/template-h20-class/shared-prefix-agent": {
+    "budget_gpus": 64,
+    "candidates": [
+      {
+        "description": "0×TP1 + EAGLE3 + HiCache",
+        "feasible": false,
+        "meets_slo": false,
+        "num_gpus": 0
+      },
+      {
+        "description": "0×TP2",
+        "feasible": false,
+        "meets_slo": false,
+        "num_gpus": 0
+      },
+      {
+        "description": "0×TP4",
+        "feasible": false,
+        "meets_slo": false,
+        "num_gpus": 0
+      },
+      {
+        "description": "5×TP8 + EAGLE3",
+        "feasible": true,
+        "meets_slo": true,
+        "num_gpus": 40
+      },
+      {
+        "description": "PD：5×prefill TP8 + 2×decode TP4",
+        "feasible": true,
+        "meets_slo": true,
+        "num_gpus": 48
+      }
+    ],
+    "chosen": {
+      "description": "5×TP8 + EAGLE3",
+      "disaggregated": false,
+      "meets_slo": true,
+      "num_gpus": 40,
+      "num_instances": 5,
+      "policy": "cache_aware",
+      "pools": [
+        {
+          "capacity": {
+            "limit": "ttft",
+            "rate": 0.9735
+          },
+          "count": 5,
+          "role": "colocated"
+        }
+      ],
+      "result": {
+        "goodput_rps": 11.17,
+        "slo_attainment": 0.9694,
+        "tpot_ms": {
+          "p90": 6.259
+        },
+        "ttft_ms": {
+          "p90": 641.7
+        }
+      }
+    },
+    "commands": {
+      "colocated": [
+        "python3",
+        "-m",
+        "sglang.launch_server",
+        "--model-path",
+        "Qwen/Qwen3-32B",
+        "--device",
+        "example",
+        "--tp-size",
+        "8",
+        "--speculative-algorithm",
+        "EAGLE3",
+        "--speculative-num-steps",
+        "3",
+        "--speculative-eagle-topk",
+        "1",
+        "--speculative-num-draft-tokens",
+        "4",
+        "--speculative-draft-model-path",
+        "<eagle3-draft-model>",
+        "--host",
+        "0.0.0.0",
+        "--port",
+        "30000"
+      ]
+    },
+    "mode": "rate"
+  }
+}
