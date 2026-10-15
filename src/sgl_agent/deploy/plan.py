@@ -570,6 +570,82 @@ def router_command(candidate: Candidate, placements: list[Placement]) -> Command
     return tool_command(ROUTER_MODULE, flags, title="启动 sglang_router", note=note)
 
 
+# ---------------------------------------------------------------------- cluster simulation
+def transfer_bytes_per_us(hardware: HardwareSpec) -> float:
+    """PD KV transfer rate per GPU over the inter-node network."""
+    return hardware.inter_node_bandwidth_gbps * 1e9 * hardware.efficiency.inter_node_comm / 1e6
+
+
+def verify_rows(workload: Workload, verify_samples: int = VERIFY_SAMPLES) -> int:
+    """Requests a whole-cluster simulation replays (the benchmark's rows, capped)."""
+    prefix = workload.shared_prefix
+    rows = prefix.num_rows if prefix is not None else workload.num_prompts
+    return min(rows, verify_samples)
+
+
+def fits_context(requests: list[Request], arch: ModelArch) -> list[Request]:
+    """Requests SGLang's tokenizer accepts: prompt plus output within the context length."""
+    limit = arch.max_position_embeddings or 0
+    if not limit:
+        return requests
+    return [r for r in requests if r.input_len + r.output_len <= limit]
+
+
+def simulate_candidate(
+    candidate: Candidate, workload: Workload, requests: list[Request], *, seed: int = 1
+) -> SimResult:
+    """Every instance of ``candidate`` behind its router, serving ``requests``."""
+    common: dict[str, Any] = {
+        "dp_aware": candidate.dp_aware,
+        "max_concurrency": workload.max_concurrency,
+        "slo": workload.slo,
+        "seed": seed,
+    }
+    if candidate.disaggregated:
+        prefill, decode = candidate.pools["prefill"], candidate.pools["decode"]
+        sim = ClusterSim(
+            prefill=[prefill.model] * prefill.count,
+            decode=[decode.model] * decode.count,
+            prefill_policy=candidate.policy,
+            decode_policy="round_robin",
+            transfer_bytes_per_us=transfer_bytes_per_us(prefill.model.ctx.hardware),
+            **common,
+        )
+    else:
+        pool = candidate.pools["colocated"]
+        sim = ClusterSim(colocated=[pool.model] * pool.count, policy=candidate.policy, **common)
+    return sim.run(requests)
+
+
+def recalibrated(candidate: Candidate, calibration: Calibration) -> Candidate:
+    """The same instances, flags and router with step times from ``calibration``."""
+    pools = {}
+    for role, pool in candidate.pools.items():
+        ctx = replace(pool.model.ctx, calibration=calibration, _costs={}, _plans={})
+        pools[role] = replace(pool, model=InstanceModel(ctx, pool.spec))
+    return replace(candidate, pools=pools, result=None)
+
+
+def simulate_plan(
+    plan: DeployPlan,
+    *,
+    calibration: Calibration | None = None,
+    verify_samples: int = VERIFY_SAMPLES,
+    seed: int = 1,
+) -> SimResult:
+    """The chosen cluster at the workload's rate again, optionally on a device whose step times
+    follow ``calibration`` instead of the plan's cost model (a what-if on device speed)."""
+    chosen = plan.chosen
+    if chosen is None or not chosen.feasible:
+        raise ValueError("the plan has no feasible deployment to simulate")
+    if calibration is not None:
+        chosen = recalibrated(chosen, calibration)
+    arch = next(iter(chosen.pools.values())).model.ctx.arch
+    workload = plan.workload
+    requests = sample_requests(workload, num=verify_rows(workload, verify_samples), seed=seed)
+    return simulate_candidate(chosen, workload, fits_context(requests, arch), seed=seed)
+
+
 # ---------------------------------------------------------------------- search
 def _limit(result: SimResult, slo: SLO) -> str:
     """Why ``result`` misses ``slo``: rejected requests, TTFT, TPOT or an unbounded queue."""
@@ -628,10 +704,8 @@ class _Planner:
             raise ValueError(
                 f"GPU 预算 {self.budget} 放不下最小实例 {self.base.parallel.describe()}（{minimum} 卡）"
             )
-        efficiency = hardware.efficiency.inter_node_comm
-        self.transfer_bytes_per_us = hardware.inter_node_bandwidth_gbps * 1e9 * efficiency / 1e6
-        rows = prefix.num_rows if prefix is not None else workload.num_prompts
-        self.verify_rows = min(rows, options.verify_samples)
+        self.transfer_bytes_per_us = transfer_bytes_per_us(hardware)
+        self.verify_rows = verify_rows(workload, options.verify_samples)
         # mean KV a running request holds over its life; shared system prompts sit in the radix
         # cache once per group, not once per request.
         shared = mean_length(prefix.system_prompt_len, workload.range_ratio) if prefix else 0.0
@@ -682,12 +756,10 @@ class _Planner:
         requests = sample_requests(
             self.workload.with_(request_rate=rate), num=num, seed=self.options.seed
         )
-        limit = self.arch.max_position_embeddings or 0
-        if limit:
-            kept = [r for r in requests if r.input_len + r.output_len <= limit]
-            if len(kept) < len(requests) and num == self.verify_rows:
-                self.context_dropped = (len(requests) - len(kept), len(requests))
-            requests = kept
+        kept = fits_context(requests, self.arch)
+        if len(kept) < len(requests) and num == self.verify_rows:
+            self.context_dropped = (len(requests) - len(kept), len(requests))
+        requests = kept
         if rate is None or rate == self.rate:
             self._samples[key] = requests
         return requests
@@ -885,26 +957,7 @@ class _Planner:
 
     def simulate(self, candidate: Candidate) -> SimResult:
         requests = self._requests(self.rate, self.verify_rows)
-        common: dict[str, Any] = {
-            "dp_aware": candidate.dp_aware,
-            "max_concurrency": self.workload.max_concurrency,
-            "slo": self.slo,
-            "seed": self.options.seed,
-        }
-        if candidate.disaggregated:
-            prefill, decode = candidate.pools["prefill"], candidate.pools["decode"]
-            sim = ClusterSim(
-                prefill=[prefill.model] * prefill.count,
-                decode=[decode.model] * decode.count,
-                prefill_policy=candidate.policy,
-                decode_policy="round_robin",
-                transfer_bytes_per_us=self.transfer_bytes_per_us,
-                **common,
-            )
-        else:
-            pool = candidate.pools["colocated"]
-            sim = ClusterSim(colocated=[pool.model] * pool.count, policy=candidate.policy, **common)
-        return sim.run(requests)
+        return simulate_candidate(candidate, self.workload, requests, seed=self.options.seed)
 
     # ------------------------------------------------------------------ colocated
     def _dp_aware(self, spec: InstanceSpec) -> bool:
@@ -1389,7 +1442,8 @@ class _Planner:
             "发一条冒烟请求确认链路通",
             f"跑压测命令，对比 P{self.slo.percentile} TTFT/TPOT 和吞吐与本方案的预测",
             "偏差超过 20% 时：用 `sgl-agent calibrate --log <server.log> --bench "
-            f"{BENCH_OUTPUT}` 校准成本模型，再带 `--calibration` 重新跑 `sgl-agent deploy`",
+            f"{BENCH_OUTPUT} -o calibration.json` 校准成本模型，再带 "
+            "`--calibration calibration.json` 重新跑 `sgl-agent deploy`",
         ]
         return steps
 
