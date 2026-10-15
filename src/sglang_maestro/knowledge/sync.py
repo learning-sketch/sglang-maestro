@@ -441,9 +441,14 @@ def _module_level_statements(statements: list[ast.stmt]) -> list[ast.stmt]:
 
 
 def _parse_quietly(path: Path) -> ast.Module | None:
-    """Parse a source file, ignoring invalid-escape ``SyntaxWarning``s in third-party code."""
+    """Parse a source file, ignoring invalid-escape warnings in third-party code.
+
+    Those escapes are a ``DeprecationWarning`` before Python 3.12 and a ``SyntaxWarning``
+    from 3.12 on.
+    """
     try:
         with warnings.catch_warnings():
+            warnings.simplefilter("ignore", DeprecationWarning)
             warnings.simplefilter("ignore", SyntaxWarning)
             return ast.parse(path.read_text(encoding="utf-8"))
     except (SyntaxError, UnicodeDecodeError):
