@@ -3,7 +3,7 @@ requires = ["setuptools>=68", "wheel"]
 build-backend = "setuptools.build_meta"
 
 [project]
-name = "sgl-agent"
+name = "sglang-maestro"
 version = "0.1.0"
 description = "An agent that adapts, profiles, tunes and deploys LLMs on SGLang for H20-class accelerators"
 readme = "README.md"
@@ -15,13 +15,13 @@ dependencies = ["pyyaml>=6"]
 dev = ["pytest>=8", "ruff>=0.6"]
 
 [project.scripts]
-sgl-agent = "sgl_agent.cli:main"
+sglang-maestro = "sglang_maestro.cli:main"
 
 [tool.setuptools.packages.find]
 where = ["src"]
 
 [tool.setuptools.package-data]
-sgl_agent = [
+sglang_maestro = [
     "knowledge/*.json",
     "data/hardware/*.yaml",
     "data/models/*.json",

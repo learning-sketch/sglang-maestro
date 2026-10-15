@@ -4,8 +4,8 @@ import json
 
 import pytest
 
-from sgl_agent.cli import main
-from sgl_agent.target import layout_from
+from sglang_maestro.cli import main
+from sglang_maestro.target import layout_from
 
 
 def test_list_json(capsys):

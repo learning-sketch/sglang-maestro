@@ -7,7 +7,7 @@ dist/
 .pytest_cache/
 .ruff_cache/
 reports/
-sgl-agent-report/
+sglang-maestro-report/
 out/
 *.trace.json.gz
 !examples/traces/*.trace.json.gz

@@ -2,8 +2,8 @@ from __future__ import annotations
 
 import pytest
 
-from sgl_agent.deploy import DeployOptions
-from sgl_agent.target import Target
+from sglang_maestro.deploy import DeployOptions
+from sglang_maestro.target import Target
 
 SMALL_DEPLOY = DeployOptions(sizes=(8,), capacity_samples=40, verify_samples=120)
 """Few simulated requests and one instance size: seconds instead of minutes per plan."""

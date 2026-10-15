@@ -5,8 +5,8 @@ import json
 import pytest
 
 from conftest import SMALL_DEPLOY
-from sgl_agent.pipeline import RunOptions, run_pipeline, section
-from sgl_agent.target import Target
+from sglang_maestro.pipeline import RunOptions, run_pipeline, section
+from sglang_maestro.target import Target
 
 
 def test_section_extracts_one_heading():

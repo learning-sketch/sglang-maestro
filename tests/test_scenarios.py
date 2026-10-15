@@ -3,18 +3,18 @@ from __future__ import annotations
 import pytest
 
 from conftest import SMALL_DEPLOY
-from sgl_agent.adapt import analyze_adaptation
-from sgl_agent.deploy import plan_deployment
-from sgl_agent.deploy.plan import simulate_plan
-from sgl_agent.features import advise_features
-from sgl_agent.model import Calibration, ParallelConfig
-from sgl_agent.perf import analyze_roofline, analyze_trace, fit_calibration
-from sgl_agent.perf.synthetic import (
+from sglang_maestro.adapt import analyze_adaptation
+from sglang_maestro.deploy import plan_deployment
+from sglang_maestro.deploy.plan import simulate_plan
+from sglang_maestro.features import advise_features
+from sglang_maestro.model import Calibration, ParallelConfig
+from sglang_maestro.perf import analyze_roofline, analyze_trace, fit_calibration
+from sglang_maestro.perf.synthetic import (
     SyntheticIssues,
     generate_synthetic_traces,
     write_synthetic_traces,
 )
-from sgl_agent.perf.synthetic_log import synthetic_server_log, write_synthetic_log
+from sglang_maestro.perf.synthetic_log import synthetic_server_log, write_synthetic_log
 
 
 def test_in_tree_model_needs_no_model_code(dense_chat):
