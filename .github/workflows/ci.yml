@@ -2,10 +2,13 @@ name: CI
 
 on:
   push:
+    branches:
+      - main
   pull_request:
   workflow_dispatch:
   schedule:
-    # Weekly check that sync-knowledge still reproduces the bundled snapshot.
+    # The snapshot commit does not move on its own; PRs and pushes to main run the
+    # check. The weekly run covers main between those events.
     - cron: "0 3 * * 1"
 
 jobs:
@@ -26,11 +29,12 @@ jobs:
         run: ruff check .
       - name: Ruff format
         run: ruff format --check .
+      - name: Shellcheck
+        run: shellcheck scripts/*.sh
       - name: Pytest
         run: pytest
 
   snapshot:
-    if: github.event_name == 'workflow_dispatch' || github.event_name == 'schedule'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4

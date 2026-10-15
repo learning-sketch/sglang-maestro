@@ -12,7 +12,7 @@ license = { text = "Apache-2.0" }
 dependencies = ["pyyaml>=6"]
 
 [project.optional-dependencies]
-dev = ["pytest>=8", "ruff>=0.6"]
+dev = ["pytest>=8", "ruff>=0.6", "shellcheck-py>=0.10"]
 
 [project.scripts]
 sglang-maestro = "sglang_maestro.cli:main"
@@ -33,7 +33,7 @@ sglang_maestro = [
 testpaths = ["tests"]
 addopts = "-q -m \"not slow\""
 markers = [
-    "slow: regenerates the SGLang capability snapshot; set SGLANG_SRC to the checkout",
+    "slow: 耗时长的测试，默认不跑；快照可复现测试还需要 SGLANG_SRC",
 ]
 
 [tool.ruff]
