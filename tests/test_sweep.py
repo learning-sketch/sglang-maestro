@@ -9,12 +9,14 @@ from __future__ import annotations
 
 import json
 import os
+from dataclasses import replace
 from pathlib import Path
 
 import pytest
 import yaml
 
 from sglang_maestro.cli import main
+from sglang_maestro.deploy.plan import DeployOptions, plan_deployment
 from sglang_maestro.hardware.spec import list_presets
 from sglang_maestro.model.config import list_bundled_models
 from sglang_maestro.sweep import (
@@ -30,6 +32,7 @@ from sglang_maestro.sweep import (
     SweepResult,
     SweepTask,
     _cell_from_dict,
+    _deploy_fingerprint,
     _run_task,
     bundled_names,
     default_jobs,
@@ -40,6 +43,7 @@ from sglang_maestro.sweep import (
     sweep,
     write_baselines,
 )
+from sglang_maestro.target import Target
 from sglang_maestro.workload import list_workloads
 
 _BASELINES = Path(__file__).parent / "baselines"
@@ -243,6 +247,34 @@ def test_task_exception_is_not_a_command_problem() -> None:
     )
     assert "`error` 只表示这个组合在运行时抛了异常" in report
     assert "`commands` 只表示启动命令的参数问题" in report
+
+
+def test_deploy_fingerprint_rejects_a_rewritten_launch_title() -> None:
+    target = Target.load("qwen3-30b-a3b", "h20", "offline-batch")
+    plan = plan_deployment(
+        target.arch,
+        target.hardware,
+        target.knowledge,
+        target.require_workload(),
+        options=DeployOptions(
+            capacity_samples=BASELINE_CAPACITY_SAMPLES,
+            verify_samples=BASELINE_VERIFY_SAMPLES,
+            seed=BASELINE_SEED,
+        ),
+        model_path=target.model_path,
+        kv_dtype=target.kv_dtype,
+        host_memory_gb=target.host_memory_gb,
+        calibration=target.calibration,
+    )
+    fingerprint = _deploy_fingerprint(plan)
+    assert fingerprint["commands"]
+    assert plan.chosen is not None and plan.chosen.feasible
+    for node in plan.nodes:
+        node.commands[:] = [replace(command, title="rewritten") for command in node.commands]
+    with pytest.raises(ValueError, match="launch_commands") as caught:
+        _deploy_fingerprint(plan)
+    for role in plan.chosen.pools:
+        assert role in str(caught.value)
 
 
 def test_no_plan_contradiction_is_invariant_5() -> None:

@@ -487,6 +487,14 @@ def _deploy_fingerprint(plan: DeployPlan) -> dict[str, Any]:
             if current is None or rank < (current[0], current[1]):
                 picked[role] = (rank[0], rank[1], list(command.argv))
     commands = {role: argv for role, (_index, _node, argv) in sorted(picked.items())}
+    if chosen is not None and chosen.feasible:
+        missing_roles = [role for role in sorted(chosen.pools) if role not in commands]
+        if missing_roles:
+            raise ValueError(
+                "没有取到这些 role 的启动命令："
+                + "、".join(missing_roles)
+                + "。请检查 launch_commands 的标题格式"
+            )
     return _canon(
         {
             "mode": plan.mode,
