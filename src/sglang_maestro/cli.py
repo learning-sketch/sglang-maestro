@@ -428,16 +428,17 @@ def cmd_sweep(args: argparse.Namespace) -> int:
         f"共 {len(result.cells)} 个组合，未登记违反 {len(unexpected)}，"
         f"已登记违反 {len(result.violations()) - len(unexpected)}。"
     )
-    for item in unexpected:
-        print(f"未登记：{item['combo']} {item['id']} {item['detail']}", file=sys.stderr)
-    for item in missing:
-        print(f"已登记但未出现：{item.combo} {item.id}", file=sys.stderr)
     if args.write_baselines:
         try:
             write_baselines(result, Path(args.write_baselines))
         except BaselineWriteError:
             return 1
         print(f"已写入基线 {args.write_baselines}/{{adapt,roofline,features,deploy}}.json")
+    else:
+        for item in unexpected:
+            print(f"未登记：{item['combo']} {item['id']} {item['detail']}", file=sys.stderr)
+        for item in missing:
+            print(f"已登记但未出现：{item.combo} {item.id}", file=sys.stderr)
     return 0 if result.ok else 1
 
 

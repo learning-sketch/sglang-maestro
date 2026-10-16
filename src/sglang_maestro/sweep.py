@@ -921,15 +921,18 @@ def write_baselines(result: SweepResult, directory: Path) -> None:
             f"{BASELINE_CAPACITY_SAMPLES}、verify_samples={BASELINE_VERIFY_SAMPLES}、seed={BASELINE_SEED} 生成"
         )
     reasons: list[str] = []
+    reported_errors = set()
     for item in result.unexpected_violations():
         reasons.append(f"未登记违反：{item['combo']} {item['id']} {item['detail']}")
+        if item["id"] == "error":
+            reported_errors.add(item["combo"])
     for item in result.missing_known():
         reasons.append(
             f"已登记违反没有出现：{item.combo} {item.id}。"
             "修好已登记违反的改动必须同时删掉登记，否则基线写不出来。"
         )
     for key, cell in sorted(result.cells.items()):
-        if cell.error:
+        if cell.error and key not in reported_errors:
             reasons.append(f"组合运行失败：{key} {cell.error}")
     if not result.ok or any(cell.error for cell in result.cells.values()):
         if not reasons:

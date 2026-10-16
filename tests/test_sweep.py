@@ -377,6 +377,31 @@ def test_crashed_registered_combo_is_not_a_fixed_violation(
     assert "删掉登记" not in capsys.readouterr().err
 
 
+def test_write_baselines_prints_a_crash_once(
+    tmp_path: Path, capsys: pytest.CaptureFixture[str]
+) -> None:
+    key = "qwen3-32b/h20/chat"
+    result = SweepResult(
+        cells={
+            key: SweepCell(
+                key=key,
+                seconds=0.0,
+                fingerprints={},
+                violations=[{"combo": key, "id": "error", "detail": "RuntimeError: boom"}],
+                summary={},
+                error="RuntimeError: boom",
+            )
+        },
+        options=_baseline_options(),
+    )
+    with pytest.raises(BaselineWriteError):
+        write_baselines(result, tmp_path / "once")
+    err = capsys.readouterr().err
+    assert err.count("boom") == 1
+    assert err.count("未登记违反") == 1
+    assert "组合运行失败" not in err
+
+
 def test_fingerprint_diff_names_combo_field_and_truncates() -> None:
     expected = {"m/h/w": {"chosen": {"num_gpus": 8}}}
     actual = {"m/h/w": {"chosen": {"num_gpus": 16}}}
