@@ -42,8 +42,7 @@ from sglang_maestro.sweep import (
 from sglang_maestro.workload import list_workloads
 
 _BASELINES = Path(__file__).parent / "baselines"
-# Architect-timed on Python 3.12, one process, baseline sample counts. Keep this list
-# small: the default suite's added time has to stay within about 10 seconds.
+# Keep this list small: the default suite's added time has to stay within about 10 seconds.
 DEPLOY_SUBSET = (
     "qwen3-235b-a22b/h20/chat",
     "deepseek-v3/template-h20-class/rag-long-context",
