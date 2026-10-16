@@ -39,7 +39,14 @@ def _snapshot_diff(expected: bytes, generated: bytes) -> str:
 def test_sync_knowledge_reproduces_bundled_snapshot(
     tmp_path: Path, capsys: pytest.CaptureFixture[str]
 ) -> None:
-    """``sglang-maestro sync-knowledge`` on ``SGLANG_SRC`` matches the bundled snapshot byte for byte."""
+    """``sglang-maestro sync-knowledge`` on ``SGLANG_SRC`` matches the bundled snapshot byte for byte.
+
+    CI runs this on the ``h20`` slow shard only. A local ``pytest -m slow`` with
+    ``SGLANG_SRC`` set and no shard variable still runs it.
+    """
+    shard = os.environ.get("SGLANG_MAESTRO_SLOW_HARDWARE")
+    if shard and shard != "h20":
+        pytest.skip("快照可复现只在 h20 分片跑")
     sglang_src = os.environ.get("SGLANG_SRC")
     if not sglang_src:
         pytest.skip("未设置 SGLANG_SRC")

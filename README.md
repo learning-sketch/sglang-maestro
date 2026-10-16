@@ -50,9 +50,14 @@ sglang-maestro features --model deepseek-v3 --hardware h20 --workload rag-long-c
 
 # 场景 5：部署规划（--json 可以留给 calibrate --plan 对比预测）
 sglang-maestro deploy --model qwen3-235b-a22b --hardware h20 --workload chat --json -o plan.json
+
+# 回归：内置模型 × 硬件 × 负载跑场景 1、2、3、5，检查不变量
+sglang-maestro sweep -o out/sweep --jobs 4
 ```
 
-所有分析命令默认输出 Markdown；`--json` 或 `-o 文件.json` 输出 JSON。
+所有分析命令默认输出 Markdown；`--json` 或 `-o 文件.json` 输出 JSON。`sweep` 把汇总写到 `out/sweep/sweep.md`（每个组合的方案、卡数、是否超预算、是否满足 SLO、单实例容量和瓶颈、P90 TTFT/TPOT、耗时），并把决策写到 `sweep.json`。报告是生成物，不要提交；`.gitignore` 已经忽略 `out/`。
+
+`--models`、`--hardware`、`--workloads` 用逗号分隔，默认全部内置。`--capacity-samples`、`--verify-samples`、`--seed` 的默认值和 `deploy` 一样（240 / 1200 / 1）。`--jobs` 用多进程跑，每个组合独立，结论不随进程数变化。有未登记的不变量违反时退出码非 0。
 
 ## 在真实设备上闭环
 
@@ -95,12 +100,20 @@ sglang-maestro adapt --model deepseek-v3 --hardware ./my-chip.yaml
 ## 开发
 
 ```bash
-pytest            # 默认测试（不含 slow）
-pytest -m slow    # 快照可复现；需要 SGLANG_SRC 指向 SGLang 源码，未设置时该测试会 skip
+pytest            # 默认测试（不含 slow）：场景 1–3 全矩阵，场景 5 只跑一个小子集
+pytest -m slow    # 不带分片参数时跑全部：快照可复现，外加场景 5 全部 90 个组合
 ruff check . && ruff format --check .
 ```
 
-`pytest -m slow` 会对 `SGLANG_SRC` 运行 `sglang-maestro sync-knowledge`，要求输出和内置的 `sglang_capabilities.json` 逐字节一致。源码用 `scripts/fetch_sglang.sh` 准备（默认目录 `/tmp/sglang-src`，checkout 快照里的 `sglang_commit`）：
+默认测试对照 `tests/baselines/` 里的决策基线。基线固定用 `capacity_samples=40`、`verify_samples=120`、`seed=1` 生成，而且只能整矩阵生成（不能加 `--models`、`--hardware`、`--workloads`）：
+
+```bash
+sglang-maestro sweep --write-baselines tests/baselines
+```
+
+有组合运行失败、未登记的不变量违反，或已登记违反没有出现时，一个基线文件都不写，原因打在 stderr，退出码 1。修好已登记违反的改动必须同时删掉登记，否则基线写不出来。`adapt.json` 和 `roofline.json` 的 key 是「模型/硬件」（这两个分析不看负载，同一对只算一次）；`features.json` 和 `deploy.json` 的 key 是「模型/硬件/负载」。基线 JSON 要提交。改动让结论变了，就重新生成，并在 PR 描述里逐条解释每处变化为什么是对的；解释不了的变化就是回归。
+
+`pytest -m slow` 在没设 `SGLANG_MAESTRO_SLOW_HARDWARE` 时跑全部。它对 `SGLANG_SRC` 运行 `sglang-maestro sync-knowledge`，要求输出和内置的 `sglang_capabilities.json` 逐字节一致；同时用多进程跑完全部部署组合，和 `tests/baselines/deploy.json` 对比，并检查单调性。没设 `SGLANG_SRC` 时只有快照那一项会 skip，部署矩阵仍会跑。CI 把这一步按硬件切成 `h20`、`h100-sxm`、`template-h20-class` 三片，每片只跑该硬件的 30 个部署组合并各自检查单调性；快照可复现只在 `h20` 那片跑。源码用 `scripts/fetch_sglang.sh` 准备（默认目录 `/tmp/sglang-src`，checkout 快照里的 `sglang_commit`）：
 
 - 目录不存在时按该 SHA 浅取；服务器不支持时回退到完整 fetch，并打印一行说明。
 - 目录已是 git 仓库时，commit 已在本地就直接 checkout、不联网；不在才 fetch，且不加 `--depth`，避免把完整 clone 变成浅克隆。
@@ -121,4 +134,4 @@ SGLANG_SRC=/tmp/sglang-src pytest -m slow
 | `src/sglang_maestro/perf/` | 场景 2：roofline、trace 解析与检测器（异常/融合/重叠/多流/预取）、日志分析、校准 |
 | `src/sglang_maestro/features/` | 场景 3：各特性的 advisor 和组合 |
 | `src/sglang_maestro/deploy/` | 场景 5：实例模型、集群仿真、规模/副本/PD 搜索、放置与命令渲染 |
-| `src/sglang_maestro/pipeline.py`、`cli.py` | 一键流水线和命令行 |
+| `src/sglang_maestro/pipeline.py`、`cli.py`、`sweep.py` | 一键流水线、命令行，以及回归 sweep |

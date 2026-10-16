@@ -1,0 +1,482 @@
+{
+  "deepseek-v3/h100-sxm": {
+    "scenarios": [
+      {
+        "batch_size": 1,
+        "label": "decode bs=1",
+        "phase": "decode",
+        "tokens_per_s_per_gpu": 7.309,
+        "total_ms": 8.552
+      },
+      {
+        "batch_size": 32,
+        "label": "decode bs=32",
+        "phase": "decode",
+        "tokens_per_s_per_gpu": 87.0,
+        "total_ms": 22.99
+      },
+      {
+        "batch_size": 128,
+        "label": "decode bs=128",
+        "phase": "decode",
+        "tokens_per_s_per_gpu": 179.4,
+        "total_ms": 44.59
+      },
+      {
+        "batch_size": 1,
+        "label": "prefill 1×4096",
+        "phase": "prefill",
+        "tokens_per_s_per_gpu": 881.3,
+        "total_ms": 290.5
+      }
+    ]
+  },
+  "deepseek-v3/h20": {
+    "scenarios": [
+      {
+        "batch_size": 1,
+        "label": "decode bs=1",
+        "phase": "decode",
+        "tokens_per_s_per_gpu": 17.67,
+        "total_ms": 7.074
+      },
+      {
+        "batch_size": 32,
+        "label": "decode bs=32",
+        "phase": "decode",
+        "tokens_per_s_per_gpu": 151.8,
+        "total_ms": 26.36
+      },
+      {
+        "batch_size": 128,
+        "label": "decode bs=128",
+        "phase": "decode",
+        "tokens_per_s_per_gpu": 322.1,
+        "total_ms": 49.67
+      },
+      {
+        "batch_size": 1,
+        "label": "prefill 1×4096",
+        "phase": "prefill",
+        "tokens_per_s_per_gpu": 1483.0,
+        "total_ms": 345.2
+      }
+    ]
+  },
+  "deepseek-v3/template-h20-class": {
+    "scenarios": [
+      {
+        "batch_size": 1,
+        "label": "decode bs=1",
+        "phase": "decode",
+        "tokens_per_s_per_gpu": 5.03,
+        "total_ms": 12.43
+      },
+      {
+        "batch_size": 32,
+        "label": "decode bs=32",
+        "phase": "decode",
+        "tokens_per_s_per_gpu": 76.58,
+        "total_ms": 26.12
+      },
+      {
+        "batch_size": 128,
+        "label": "decode bs=128",
+        "phase": "decode",
+        "tokens_per_s_per_gpu": 158.8,
+        "total_ms": 50.39
+      },
+      {
+        "batch_size": 1,
+        "label": "prefill 1×4096",
+        "phase": "prefill",
+        "tokens_per_s_per_gpu": 428.2,
+        "total_ms": 597.9
+      }
+    ]
+  },
+  "qwen2.5-72b-instruct/h100-sxm": {
+    "scenarios": [
+      {
+        "batch_size": 1,
+        "label": "decode bs=1",
+        "phase": "decode",
+        "tokens_per_s_per_gpu": 14.59,
+        "total_ms": 17.14
+      },
+      {
+        "batch_size": 32,
+        "label": "decode bs=32",
+        "phase": "decode",
+        "tokens_per_s_per_gpu": 371.7,
+        "total_ms": 21.52
+      },
+      {
+        "batch_size": 128,
+        "label": "decode bs=128",
+        "phase": "decode",
+        "tokens_per_s_per_gpu": 906.9,
+        "total_ms": 35.28
+      },
+      {
+        "batch_size": 1,
+        "label": "prefill 1×4096",
+        "phase": "prefill",
+        "tokens_per_s_per_gpu": 3517.0,
+        "total_ms": 291.2
+      }
+    ]
+  },
+  "qwen2.5-72b-instruct/h20": {
+    "scenarios": [
+      {
+        "batch_size": 1,
+        "label": "decode bs=1",
+        "phase": "decode",
+        "tokens_per_s_per_gpu": 19.09,
+        "total_ms": 26.19
+      },
+      {
+        "batch_size": 32,
+        "label": "decode bs=32",
+        "phase": "decode",
+        "tokens_per_s_per_gpu": 483.1,
+        "total_ms": 33.12
+      },
+      {
+        "batch_size": 128,
+        "label": "decode bs=128",
+        "phase": "decode",
+        "tokens_per_s_per_gpu": 532.8,
+        "total_ms": 120.1
+      },
+      {
+        "batch_size": 1,
+        "label": "prefill 1×4096",
+        "phase": "prefill",
+        "tokens_per_s_per_gpu": 689.5,
+        "total_ms": 2970.0
+      }
+    ]
+  },
+  "qwen2.5-72b-instruct/template-h20-class": {
+    "scenarios": [
+      {
+        "batch_size": 1,
+        "label": "decode bs=1",
+        "phase": "decode",
+        "tokens_per_s_per_gpu": 16.26,
+        "total_ms": 30.74
+      },
+      {
+        "batch_size": 32,
+        "label": "decode bs=32",
+        "phase": "decode",
+        "tokens_per_s_per_gpu": 403.8,
+        "total_ms": 39.62
+      },
+      {
+        "batch_size": 128,
+        "label": "decode bs=128",
+        "phase": "decode",
+        "tokens_per_s_per_gpu": 461.8,
+        "total_ms": 138.6
+      },
+      {
+        "batch_size": 1,
+        "label": "prefill 1×4096",
+        "phase": "prefill",
+        "tokens_per_s_per_gpu": 596.7,
+        "total_ms": 3432.0
+      }
+    ]
+  },
+  "qwen3-235b-a22b/h100-sxm": {
+    "scenarios": [
+      {
+        "batch_size": 1,
+        "label": "decode bs=1",
+        "phase": "decode",
+        "tokens_per_s_per_gpu": 15.73,
+        "total_ms": 7.946
+      },
+      {
+        "batch_size": 32,
+        "label": "decode bs=32",
+        "phase": "decode",
+        "tokens_per_s_per_gpu": 144.1,
+        "total_ms": 27.76
+      },
+      {
+        "batch_size": 128,
+        "label": "decode bs=128",
+        "phase": "decode",
+        "tokens_per_s_per_gpu": 409.0,
+        "total_ms": 39.12
+      },
+      {
+        "batch_size": 1,
+        "label": "prefill 1×4096",
+        "phase": "prefill",
+        "tokens_per_s_per_gpu": 4367.0,
+        "total_ms": 117.2
+      }
+    ]
+  },
+  "qwen3-235b-a22b/h20": {
+    "scenarios": [
+      {
+        "batch_size": 1,
+        "label": "decode bs=1",
+        "phase": "decode",
+        "tokens_per_s_per_gpu": 16.42,
+        "total_ms": 7.614
+      },
+      {
+        "batch_size": 32,
+        "label": "decode bs=32",
+        "phase": "decode",
+        "tokens_per_s_per_gpu": 165.1,
+        "total_ms": 24.23
+      },
+      {
+        "batch_size": 128,
+        "label": "decode bs=128",
+        "phase": "decode",
+        "tokens_per_s_per_gpu": 449.8,
+        "total_ms": 35.57
+      },
+      {
+        "batch_size": 1,
+        "label": "prefill 1×4096",
+        "phase": "prefill",
+        "tokens_per_s_per_gpu": 1657.0,
+        "total_ms": 308.9
+      }
+    ]
+  },
+  "qwen3-235b-a22b/template-h20-class": {
+    "scenarios": [
+      {
+        "batch_size": 1,
+        "label": "decode bs=1",
+        "phase": "decode",
+        "tokens_per_s_per_gpu": 10.08,
+        "total_ms": 12.4
+      },
+      {
+        "batch_size": 32,
+        "label": "decode bs=32",
+        "phase": "decode",
+        "tokens_per_s_per_gpu": 132.8,
+        "total_ms": 30.12
+      },
+      {
+        "batch_size": 128,
+        "label": "decode bs=128",
+        "phase": "decode",
+        "tokens_per_s_per_gpu": 376.0,
+        "total_ms": 42.55
+      },
+      {
+        "batch_size": 1,
+        "label": "prefill 1×4096",
+        "phase": "prefill",
+        "tokens_per_s_per_gpu": 1397.0,
+        "total_ms": 366.5
+      }
+    ]
+  },
+  "qwen3-30b-a3b/h100-sxm": {
+    "scenarios": [
+      {
+        "batch_size": 1,
+        "label": "decode bs=1",
+        "phase": "decode",
+        "tokens_per_s_per_gpu": 219.5,
+        "total_ms": 4.556
+      },
+      {
+        "batch_size": 32,
+        "label": "decode bs=32",
+        "phase": "decode",
+        "tokens_per_s_per_gpu": 1192.0,
+        "total_ms": 26.84
+      },
+      {
+        "batch_size": 128,
+        "label": "decode bs=128",
+        "phase": "decode",
+        "tokens_per_s_per_gpu": 2888.0,
+        "total_ms": 44.32
+      },
+      {
+        "batch_size": 1,
+        "label": "prefill 1×4096",
+        "phase": "prefill",
+        "tokens_per_s_per_gpu": 65910.0,
+        "total_ms": 62.14
+      }
+    ]
+  },
+  "qwen3-30b-a3b/h20": {
+    "scenarios": [
+      {
+        "batch_size": 1,
+        "label": "decode bs=1",
+        "phase": "decode",
+        "tokens_per_s_per_gpu": 240.1,
+        "total_ms": 4.165
+      },
+      {
+        "batch_size": 32,
+        "label": "decode bs=32",
+        "phase": "decode",
+        "tokens_per_s_per_gpu": 1401.0,
+        "total_ms": 22.84
+      },
+      {
+        "batch_size": 128,
+        "label": "decode bs=128",
+        "phase": "decode",
+        "tokens_per_s_per_gpu": 3227.0,
+        "total_ms": 39.67
+      },
+      {
+        "batch_size": 1,
+        "label": "prefill 1×4096",
+        "phase": "prefill",
+        "tokens_per_s_per_gpu": 13440.0,
+        "total_ms": 304.7
+      }
+    ]
+  },
+  "qwen3-30b-a3b/template-h20-class": {
+    "scenarios": [
+      {
+        "batch_size": 1,
+        "label": "decode bs=1",
+        "phase": "decode",
+        "tokens_per_s_per_gpu": 173.3,
+        "total_ms": 5.769
+      },
+      {
+        "batch_size": 32,
+        "label": "decode bs=32",
+        "phase": "decode",
+        "tokens_per_s_per_gpu": 1245.0,
+        "total_ms": 25.71
+      },
+      {
+        "batch_size": 128,
+        "label": "decode bs=128",
+        "phase": "decode",
+        "tokens_per_s_per_gpu": 2917.0,
+        "total_ms": 43.88
+      },
+      {
+        "batch_size": 1,
+        "label": "prefill 1×4096",
+        "phase": "prefill",
+        "tokens_per_s_per_gpu": 11510.0,
+        "total_ms": 355.7
+      }
+    ]
+  },
+  "qwen3-32b/h100-sxm": {
+    "scenarios": [
+      {
+        "batch_size": 1,
+        "label": "decode bs=1",
+        "phase": "decode",
+        "tokens_per_s_per_gpu": 37.96,
+        "total_ms": 26.34
+      },
+      {
+        "batch_size": 32,
+        "label": "decode bs=32",
+        "phase": "decode",
+        "tokens_per_s_per_gpu": 821.3,
+        "total_ms": 38.96
+      },
+      {
+        "batch_size": 128,
+        "label": "decode bs=128",
+        "phase": "decode",
+        "tokens_per_s_per_gpu": 1633.0,
+        "total_ms": 78.4
+      },
+      {
+        "batch_size": 1,
+        "label": "prefill 1×4096",
+        "phase": "prefill",
+        "tokens_per_s_per_gpu": 9475.0,
+        "total_ms": 432.3
+      }
+    ]
+  },
+  "qwen3-32b/h20": {
+    "scenarios": [
+      {
+        "batch_size": 1,
+        "label": "decode bs=1",
+        "phase": "decode",
+        "tokens_per_s_per_gpu": 44.62,
+        "total_ms": 22.41
+      },
+      {
+        "batch_size": 32,
+        "label": "decode bs=32",
+        "phase": "decode",
+        "tokens_per_s_per_gpu": 970.1,
+        "total_ms": 32.99
+      },
+      {
+        "batch_size": 128,
+        "label": "decode bs=128",
+        "phase": "decode",
+        "tokens_per_s_per_gpu": 1028.0,
+        "total_ms": 124.5
+      },
+      {
+        "batch_size": 1,
+        "label": "prefill 1×4096",
+        "phase": "prefill",
+        "tokens_per_s_per_gpu": 1512.0,
+        "total_ms": 2710.0
+      }
+    ]
+  },
+  "qwen3-32b/template-h20-class": {
+    "scenarios": [
+      {
+        "batch_size": 1,
+        "label": "decode bs=1",
+        "phase": "decode",
+        "tokens_per_s_per_gpu": 39.69,
+        "total_ms": 25.19
+      },
+      {
+        "batch_size": 32,
+        "label": "decode bs=32",
+        "phase": "decode",
+        "tokens_per_s_per_gpu": 848.1,
+        "total_ms": 37.73
+      },
+      {
+        "batch_size": 128,
+        "label": "decode bs=128",
+        "phase": "decode",
+        "tokens_per_s_per_gpu": 910.0,
+        "total_ms": 140.7
+      },
+      {
+        "batch_size": 1,
+        "label": "prefill 1×4096",
+        "phase": "prefill",
+        "tokens_per_s_per_gpu": 1309.0,
+        "total_ms": 3130.0
+      }
+    ]
+  }
+}

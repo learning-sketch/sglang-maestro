@@ -1,0 +1,5334 @@
+{
+  "deepseek-v3/h100-sxm/chat": {
+    "advices": [
+      [
+        "dp_attention",
+        "recommend"
+      ],
+      [
+        "prefill_cp",
+        "not_recommended"
+      ],
+      [
+        "dcp",
+        "recommend"
+      ],
+      [
+        "layernorm_sp",
+        "unsupported"
+      ],
+      [
+        "hicache",
+        "not_recommended"
+      ],
+      [
+        "deepep",
+        "not_recommended"
+      ],
+      [
+        "tbo",
+        "optional"
+      ],
+      [
+        "eplb",
+        "not_recommended"
+      ],
+      [
+        "speculative",
+        "recommend"
+      ]
+    ],
+    "combined": {
+      "enabled": [
+        "dp_attention",
+        "speculative"
+      ],
+      "flags": {
+        "--attn-dp-size": 4,
+        "--dist-init-addr": "<node0_ip>:5000",
+        "--host": "0.0.0.0",
+        "--load-balance-method": "total_tokens",
+        "--max-running-requests": 68,
+        "--model-path": "deepseek-ai/DeepSeek-V3",
+        "--nnodes": 2,
+        "--node-rank": 0,
+        "--port": 30000,
+        "--speculative-algorithm": "NEXTN",
+        "--speculative-eagle-topk": 1,
+        "--speculative-num-draft-tokens": 5,
+        "--speculative-num-steps": 4,
+        "--tp-size": 16,
+        "--trust-remote-code": true
+      },
+      "layout": "TP16·DPA4"
+    }
+  },
+  "deepseek-v3/h100-sxm/code": {
+    "advices": [
+      [
+        "dp_attention",
+        "recommend"
+      ],
+      [
+        "prefill_cp",
+        "optional"
+      ],
+      [
+        "dcp",
+        "recommend"
+      ],
+      [
+        "layernorm_sp",
+        "unsupported"
+      ],
+      [
+        "hicache",
+        "not_recommended"
+      ],
+      [
+        "deepep",
+        "not_recommended"
+      ],
+      [
+        "tbo",
+        "optional"
+      ],
+      [
+        "eplb",
+        "not_recommended"
+      ],
+      [
+        "speculative",
+        "recommend"
+      ]
+    ],
+    "combined": {
+      "enabled": [
+        "dcp",
+        "speculative"
+      ],
+      "flags": {
+        "--attention-backend": "flashmla",
+        "--dcp-size": 8,
+        "--dist-init-addr": "<node0_ip>:5000",
+        "--host": "0.0.0.0",
+        "--max-running-requests": 77,
+        "--model-path": "deepseek-ai/DeepSeek-V3",
+        "--nnodes": 2,
+        "--node-rank": 0,
+        "--page-size": 64,
+        "--port": 30000,
+        "--speculative-algorithm": "NEXTN",
+        "--speculative-eagle-topk": 1,
+        "--speculative-num-draft-tokens": 4,
+        "--speculative-num-steps": 3,
+        "--tp-size": 16,
+        "--trust-remote-code": true
+      },
+      "layout": "TP16·DCP8"
+    }
+  },
+  "deepseek-v3/h100-sxm/offline-batch": {
+    "advices": [
+      [
+        "dp_attention",
+        "recommend"
+      ],
+      [
+        "prefill_cp",
+        "not_recommended"
+      ],
+      [
+        "dcp",
+        "recommend"
+      ],
+      [
+        "layernorm_sp",
+        "unsupported"
+      ],
+      [
+        "hicache",
+        "not_recommended"
+      ],
+      [
+        "deepep",
+        "not_recommended"
+      ],
+      [
+        "tbo",
+        "optional"
+      ],
+      [
+        "eplb",
+        "not_recommended"
+      ],
+      [
+        "speculative",
+        "recommend"
+      ]
+    ],
+    "combined": {
+      "enabled": [
+        "dp_attention",
+        "dcp"
+      ],
+      "flags": {
+        "--attention-backend": "flashmla",
+        "--attn-dp-size": 4,
+        "--dcp-size": 4,
+        "--dist-init-addr": "<node0_ip>:5000",
+        "--host": "0.0.0.0",
+        "--load-balance-method": "total_tokens",
+        "--model-path": "deepseek-ai/DeepSeek-V3",
+        "--nnodes": 2,
+        "--node-rank": 0,
+        "--page-size": 64,
+        "--port": 30000,
+        "--tp-size": 16,
+        "--trust-remote-code": true
+      },
+      "layout": "TP16·DPA4·DCP4"
+    }
+  },
+  "deepseek-v3/h100-sxm/rag-long-context": {
+    "advices": [
+      [
+        "dp_attention",
+        "recommend"
+      ],
+      [
+        "prefill_cp",
+        "optional"
+      ],
+      [
+        "dcp",
+        "recommend"
+      ],
+      [
+        "layernorm_sp",
+        "unsupported"
+      ],
+      [
+        "hicache",
+        "not_recommended"
+      ],
+      [
+        "deepep",
+        "not_recommended"
+      ],
+      [
+        "tbo",
+        "optional"
+      ],
+      [
+        "eplb",
+        "not_recommended"
+      ],
+      [
+        "speculative",
+        "recommend"
+      ]
+    ],
+    "combined": {
+      "enabled": [
+        "dcp",
+        "speculative"
+      ],
+      "flags": {
+        "--attention-backend": "flashmla",
+        "--dcp-size": 16,
+        "--dist-init-addr": "<node0_ip>:5000",
+        "--host": "0.0.0.0",
+        "--model-path": "deepseek-ai/DeepSeek-V3",
+        "--nnodes": 2,
+        "--node-rank": 0,
+        "--page-size": 64,
+        "--port": 30000,
+        "--speculative-algorithm": "NEXTN",
+        "--speculative-eagle-topk": 1,
+        "--speculative-num-draft-tokens": 4,
+        "--speculative-num-steps": 3,
+        "--tp-size": 16,
+        "--trust-remote-code": true
+      },
+      "layout": "TP16·DCP16"
+    }
+  },
+  "deepseek-v3/h100-sxm/reasoning": {
+    "advices": [
+      [
+        "dp_attention",
+        "recommend"
+      ],
+      [
+        "prefill_cp",
+        "not_recommended"
+      ],
+      [
+        "dcp",
+        "recommend"
+      ],
+      [
+        "layernorm_sp",
+        "unsupported"
+      ],
+      [
+        "hicache",
+        "not_recommended"
+      ],
+      [
+        "deepep",
+        "not_recommended"
+      ],
+      [
+        "tbo",
+        "optional"
+      ],
+      [
+        "eplb",
+        "not_recommended"
+      ],
+      [
+        "speculative",
+        "recommend"
+      ]
+    ],
+    "combined": {
+      "enabled": [
+        "dcp"
+      ],
+      "flags": {
+        "--attention-backend": "flashmla",
+        "--dcp-size": 8,
+        "--dist-init-addr": "<node0_ip>:5000",
+        "--host": "0.0.0.0",
+        "--model-path": "deepseek-ai/DeepSeek-V3",
+        "--nnodes": 2,
+        "--node-rank": 0,
+        "--page-size": 64,
+        "--port": 30000,
+        "--tp-size": 16,
+        "--trust-remote-code": true
+      },
+      "layout": "TP16·DCP8"
+    }
+  },
+  "deepseek-v3/h100-sxm/shared-prefix-agent": {
+    "advices": [
+      [
+        "dp_attention",
+        "recommend"
+      ],
+      [
+        "prefill_cp",
+        "optional"
+      ],
+      [
+        "dcp",
+        "recommend"
+      ],
+      [
+        "layernorm_sp",
+        "unsupported"
+      ],
+      [
+        "hicache",
+        "not_recommended"
+      ],
+      [
+        "deepep",
+        "not_recommended"
+      ],
+      [
+        "tbo",
+        "optional"
+      ],
+      [
+        "eplb",
+        "not_recommended"
+      ],
+      [
+        "speculative",
+        "recommend"
+      ]
+    ],
+    "combined": {
+      "enabled": [
+        "dcp",
+        "speculative"
+      ],
+      "flags": {
+        "--attention-backend": "flashmla",
+        "--dcp-size": 8,
+        "--dist-init-addr": "<node0_ip>:5000",
+        "--host": "0.0.0.0",
+        "--max-running-requests": 119,
+        "--model-path": "deepseek-ai/DeepSeek-V3",
+        "--nnodes": 2,
+        "--node-rank": 0,
+        "--page-size": 64,
+        "--port": 30000,
+        "--speculative-algorithm": "NEXTN",
+        "--speculative-eagle-topk": 1,
+        "--speculative-num-draft-tokens": 3,
+        "--speculative-num-steps": 2,
+        "--tp-size": 16,
+        "--trust-remote-code": true
+      },
+      "layout": "TP16·DCP8"
+    }
+  },
+  "deepseek-v3/h20/chat": {
+    "advices": [
+      [
+        "dp_attention",
+        "not_recommended"
+      ],
+      [
+        "prefill_cp",
+        "not_recommended"
+      ],
+      [
+        "dcp",
+        "recommend"
+      ],
+      [
+        "layernorm_sp",
+        "unsupported"
+      ],
+      [
+        "hicache",
+        "not_recommended"
+      ],
+      [
+        "deepep",
+        "not_recommended"
+      ],
+      [
+        "tbo",
+        "not_recommended"
+      ],
+      [
+        "eplb",
+        "not_recommended"
+      ],
+      [
+        "speculative",
+        "recommend"
+      ]
+    ],
+    "combined": {
+      "enabled": [
+        "dcp"
+      ],
+      "flags": {
+        "--attention-backend": "flashmla",
+        "--chunked-prefill-size": 4096,
+        "--dcp-size": 8,
+        "--host": "0.0.0.0",
+        "--model-path": "deepseek-ai/DeepSeek-V3",
+        "--page-size": 64,
+        "--port": 30000,
+        "--tp-size": 8,
+        "--trust-remote-code": true
+      },
+      "layout": "TP8·DCP8"
+    }
+  },
+  "deepseek-v3/h20/code": {
+    "advices": [
+      [
+        "dp_attention",
+        "not_recommended"
+      ],
+      [
+        "prefill_cp",
+        "not_recommended"
+      ],
+      [
+        "dcp",
+        "recommend"
+      ],
+      [
+        "layernorm_sp",
+        "unsupported"
+      ],
+      [
+        "hicache",
+        "not_recommended"
+      ],
+      [
+        "deepep",
+        "not_recommended"
+      ],
+      [
+        "tbo",
+        "not_recommended"
+      ],
+      [
+        "eplb",
+        "not_recommended"
+      ],
+      [
+        "speculative",
+        "recommend"
+      ]
+    ],
+    "combined": {
+      "enabled": [
+        "dcp"
+      ],
+      "flags": {
+        "--attention-backend": "flashmla",
+        "--chunked-prefill-size": 4096,
+        "--dcp-size": 8,
+        "--host": "0.0.0.0",
+        "--model-path": "deepseek-ai/DeepSeek-V3",
+        "--page-size": 64,
+        "--port": 30000,
+        "--tp-size": 8,
+        "--trust-remote-code": true
+      },
+      "layout": "TP8·DCP8"
+    }
+  },
+  "deepseek-v3/h20/offline-batch": {
+    "advices": [
+      [
+        "dp_attention",
+        "not_recommended"
+      ],
+      [
+        "prefill_cp",
+        "not_recommended"
+      ],
+      [
+        "dcp",
+        "recommend"
+      ],
+      [
+        "layernorm_sp",
+        "unsupported"
+      ],
+      [
+        "hicache",
+        "not_recommended"
+      ],
+      [
+        "deepep",
+        "not_recommended"
+      ],
+      [
+        "tbo",
+        "not_recommended"
+      ],
+      [
+        "eplb",
+        "not_recommended"
+      ],
+      [
+        "speculative",
+        "recommend"
+      ]
+    ],
+    "combined": {
+      "enabled": [
+        "dcp"
+      ],
+      "flags": {
+        "--attention-backend": "flashmla",
+        "--chunked-prefill-size": 4096,
+        "--dcp-size": 8,
+        "--host": "0.0.0.0",
+        "--model-path": "deepseek-ai/DeepSeek-V3",
+        "--page-size": 64,
+        "--port": 30000,
+        "--tp-size": 8,
+        "--trust-remote-code": true
+      },
+      "layout": "TP8·DCP8"
+    }
+  },
+  "deepseek-v3/h20/rag-long-context": {
+    "advices": [
+      [
+        "dp_attention",
+        "not_recommended"
+      ],
+      [
+        "prefill_cp",
+        "not_recommended"
+      ],
+      [
+        "dcp",
+        "recommend"
+      ],
+      [
+        "layernorm_sp",
+        "unsupported"
+      ],
+      [
+        "hicache",
+        "not_recommended"
+      ],
+      [
+        "deepep",
+        "not_recommended"
+      ],
+      [
+        "tbo",
+        "not_recommended"
+      ],
+      [
+        "eplb",
+        "not_recommended"
+      ],
+      [
+        "speculative",
+        "recommend"
+      ]
+    ],
+    "combined": {
+      "enabled": [
+        "dcp"
+      ],
+      "flags": {
+        "--attention-backend": "flashmla",
+        "--chunked-prefill-size": 4096,
+        "--dcp-size": 8,
+        "--host": "0.0.0.0",
+        "--model-path": "deepseek-ai/DeepSeek-V3",
+        "--page-size": 64,
+        "--port": 30000,
+        "--tp-size": 8,
+        "--trust-remote-code": true
+      },
+      "layout": "TP8·DCP8"
+    }
+  },
+  "deepseek-v3/h20/reasoning": {
+    "advices": [
+      [
+        "dp_attention",
+        "not_recommended"
+      ],
+      [
+        "prefill_cp",
+        "not_recommended"
+      ],
+      [
+        "dcp",
+        "recommend"
+      ],
+      [
+        "layernorm_sp",
+        "unsupported"
+      ],
+      [
+        "hicache",
+        "not_recommended"
+      ],
+      [
+        "deepep",
+        "not_recommended"
+      ],
+      [
+        "tbo",
+        "not_recommended"
+      ],
+      [
+        "eplb",
+        "not_recommended"
+      ],
+      [
+        "speculative",
+        "recommend"
+      ]
+    ],
+    "combined": {
+      "enabled": [
+        "dcp"
+      ],
+      "flags": {
+        "--attention-backend": "flashmla",
+        "--chunked-prefill-size": 4096,
+        "--dcp-size": 8,
+        "--host": "0.0.0.0",
+        "--model-path": "deepseek-ai/DeepSeek-V3",
+        "--page-size": 64,
+        "--port": 30000,
+        "--tp-size": 8,
+        "--trust-remote-code": true
+      },
+      "layout": "TP8·DCP8"
+    }
+  },
+  "deepseek-v3/h20/shared-prefix-agent": {
+    "advices": [
+      [
+        "dp_attention",
+        "not_recommended"
+      ],
+      [
+        "prefill_cp",
+        "not_recommended"
+      ],
+      [
+        "dcp",
+        "recommend"
+      ],
+      [
+        "layernorm_sp",
+        "unsupported"
+      ],
+      [
+        "hicache",
+        "recommend"
+      ],
+      [
+        "deepep",
+        "not_recommended"
+      ],
+      [
+        "tbo",
+        "not_recommended"
+      ],
+      [
+        "eplb",
+        "not_recommended"
+      ],
+      [
+        "speculative",
+        "optional"
+      ]
+    ],
+    "combined": {
+      "enabled": [
+        "dcp"
+      ],
+      "flags": {
+        "--attention-backend": "flashmla",
+        "--chunked-prefill-size": 4096,
+        "--dcp-size": 8,
+        "--host": "0.0.0.0",
+        "--model-path": "deepseek-ai/DeepSeek-V3",
+        "--page-size": 64,
+        "--port": 30000,
+        "--tp-size": 8,
+        "--trust-remote-code": true
+      },
+      "layout": "TP8·DCP8"
+    }
+  },
+  "deepseek-v3/template-h20-class/chat": {
+    "advices": [
+      [
+        "dp_attention",
+        "recommend"
+      ],
+      [
+        "prefill_cp",
+        "not_recommended"
+      ],
+      [
+        "dcp",
+        "recommend"
+      ],
+      [
+        "layernorm_sp",
+        "unsupported"
+      ],
+      [
+        "hicache",
+        "not_recommended"
+      ],
+      [
+        "deepep",
+        "not_recommended"
+      ],
+      [
+        "tbo",
+        "not_recommended"
+      ],
+      [
+        "eplb",
+        "not_recommended"
+      ],
+      [
+        "speculative",
+        "optional"
+      ]
+    ],
+    "combined": {
+      "enabled": [
+        "dp_attention",
+        "dcp",
+        "speculative"
+      ],
+      "flags": {
+        "--attn-dp-size": 4,
+        "--dcp-size": 2,
+        "--device": "example",
+        "--dist-init-addr": "<node0_ip>:5000",
+        "--host": "0.0.0.0",
+        "--load-balance-method": "total_tokens",
+        "--max-running-requests": 96,
+        "--model-path": "deepseek-ai/DeepSeek-V3",
+        "--nnodes": 2,
+        "--node-rank": 0,
+        "--port": 30000,
+        "--speculative-algorithm": "NEXTN",
+        "--speculative-eagle-topk": 1,
+        "--speculative-num-draft-tokens": 3,
+        "--speculative-num-steps": 2,
+        "--tp-size": 16,
+        "--trust-remote-code": true
+      },
+      "layout": "TP16·DPA4·DCP2"
+    }
+  },
+  "deepseek-v3/template-h20-class/code": {
+    "advices": [
+      [
+        "dp_attention",
+        "recommend"
+      ],
+      [
+        "prefill_cp",
+        "optional"
+      ],
+      [
+        "dcp",
+        "recommend"
+      ],
+      [
+        "layernorm_sp",
+        "unsupported"
+      ],
+      [
+        "hicache",
+        "not_recommended"
+      ],
+      [
+        "deepep",
+        "not_recommended"
+      ],
+      [
+        "tbo",
+        "not_recommended"
+      ],
+      [
+        "eplb",
+        "not_recommended"
+      ],
+      [
+        "speculative",
+        "recommend"
+      ]
+    ],
+    "combined": {
+      "enabled": [
+        "dp_attention",
+        "dcp"
+      ],
+      "flags": {
+        "--attn-dp-size": 4,
+        "--dcp-size": 4,
+        "--device": "example",
+        "--dist-init-addr": "<node0_ip>:5000",
+        "--host": "0.0.0.0",
+        "--load-balance-method": "total_tokens",
+        "--model-path": "deepseek-ai/DeepSeek-V3",
+        "--nnodes": 2,
+        "--node-rank": 0,
+        "--port": 30000,
+        "--tp-size": 16,
+        "--trust-remote-code": true
+      },
+      "layout": "TP16·DPA4·DCP4"
+    }
+  },
+  "deepseek-v3/template-h20-class/offline-batch": {
+    "advices": [
+      [
+        "dp_attention",
+        "recommend"
+      ],
+      [
+        "prefill_cp",
+        "not_recommended"
+      ],
+      [
+        "dcp",
+        "optional"
+      ],
+      [
+        "layernorm_sp",
+        "unsupported"
+      ],
+      [
+        "hicache",
+        "not_recommended"
+      ],
+      [
+        "deepep",
+        "not_recommended"
+      ],
+      [
+        "tbo",
+        "not_recommended"
+      ],
+      [
+        "eplb",
+        "not_recommended"
+      ],
+      [
+        "speculative",
+        "not_recommended"
+      ]
+    ],
+    "combined": {
+      "enabled": [
+        "dp_attention",
+        "dcp"
+      ],
+      "flags": {
+        "--attn-dp-size": 8,
+        "--dcp-size": 2,
+        "--device": "example",
+        "--dist-init-addr": "<node0_ip>:5000",
+        "--host": "0.0.0.0",
+        "--load-balance-method": "total_tokens",
+        "--model-path": "deepseek-ai/DeepSeek-V3",
+        "--nnodes": 2,
+        "--node-rank": 0,
+        "--port": 30000,
+        "--tp-size": 16,
+        "--trust-remote-code": true
+      },
+      "layout": "TP16·DPA8·DCP2"
+    }
+  },
+  "deepseek-v3/template-h20-class/rag-long-context": {
+    "advices": [
+      [
+        "dp_attention",
+        "recommend"
+      ],
+      [
+        "prefill_cp",
+        "optional"
+      ],
+      [
+        "dcp",
+        "recommend"
+      ],
+      [
+        "layernorm_sp",
+        "unsupported"
+      ],
+      [
+        "hicache",
+        "not_recommended"
+      ],
+      [
+        "deepep",
+        "not_recommended"
+      ],
+      [
+        "tbo",
+        "not_recommended"
+      ],
+      [
+        "eplb",
+        "not_recommended"
+      ],
+      [
+        "speculative",
+        "recommend"
+      ]
+    ],
+    "combined": {
+      "enabled": [
+        "dcp",
+        "speculative"
+      ],
+      "flags": {
+        "--dcp-size": 8,
+        "--device": "example",
+        "--dist-init-addr": "<node0_ip>:5000",
+        "--host": "0.0.0.0",
+        "--model-path": "deepseek-ai/DeepSeek-V3",
+        "--nnodes": 2,
+        "--node-rank": 0,
+        "--port": 30000,
+        "--speculative-algorithm": "NEXTN",
+        "--speculative-eagle-topk": 1,
+        "--speculative-num-draft-tokens": 3,
+        "--speculative-num-steps": 2,
+        "--tp-size": 16,
+        "--trust-remote-code": true
+      },
+      "layout": "TP16·DCP8"
+    }
+  },
+  "deepseek-v3/template-h20-class/reasoning": {
+    "advices": [
+      [
+        "dp_attention",
+        "recommend"
+      ],
+      [
+        "prefill_cp",
+        "not_recommended"
+      ],
+      [
+        "dcp",
+        "recommend"
+      ],
+      [
+        "layernorm_sp",
+        "unsupported"
+      ],
+      [
+        "hicache",
+        "not_recommended"
+      ],
+      [
+        "deepep",
+        "not_recommended"
+      ],
+      [
+        "tbo",
+        "not_recommended"
+      ],
+      [
+        "eplb",
+        "not_recommended"
+      ],
+      [
+        "speculative",
+        "recommend"
+      ]
+    ],
+    "combined": {
+      "enabled": [
+        "dp_attention",
+        "dcp"
+      ],
+      "flags": {
+        "--attn-dp-size": 4,
+        "--dcp-size": 4,
+        "--device": "example",
+        "--dist-init-addr": "<node0_ip>:5000",
+        "--host": "0.0.0.0",
+        "--load-balance-method": "total_tokens",
+        "--model-path": "deepseek-ai/DeepSeek-V3",
+        "--nnodes": 2,
+        "--node-rank": 0,
+        "--port": 30000,
+        "--tp-size": 16,
+        "--trust-remote-code": true
+      },
+      "layout": "TP16·DPA4·DCP4"
+    }
+  },
+  "deepseek-v3/template-h20-class/shared-prefix-agent": {
+    "advices": [
+      [
+        "dp_attention",
+        "recommend"
+      ],
+      [
+        "prefill_cp",
+        "optional"
+      ],
+      [
+        "dcp",
+        "recommend"
+      ],
+      [
+        "layernorm_sp",
+        "unsupported"
+      ],
+      [
+        "hicache",
+        "not_recommended"
+      ],
+      [
+        "deepep",
+        "not_recommended"
+      ],
+      [
+        "tbo",
+        "not_recommended"
+      ],
+      [
+        "eplb",
+        "not_recommended"
+      ],
+      [
+        "speculative",
+        "recommend"
+      ]
+    ],
+    "combined": {
+      "enabled": [
+        "dcp"
+      ],
+      "flags": {
+        "--dcp-size": 8,
+        "--device": "example",
+        "--dist-init-addr": "<node0_ip>:5000",
+        "--host": "0.0.0.0",
+        "--model-path": "deepseek-ai/DeepSeek-V3",
+        "--nnodes": 2,
+        "--node-rank": 0,
+        "--port": 30000,
+        "--tp-size": 16,
+        "--trust-remote-code": true
+      },
+      "layout": "TP16·DCP8"
+    }
+  },
+  "qwen2.5-72b-instruct/h100-sxm/chat": {
+    "advices": [
+      [
+        "dp_attention",
+        "not_recommended"
+      ],
+      [
+        "prefill_cp",
+        "not_recommended"
+      ],
+      [
+        "dcp",
+        "not_recommended"
+      ],
+      [
+        "layernorm_sp",
+        "unsupported"
+      ],
+      [
+        "hicache",
+        "not_recommended"
+      ],
+      [
+        "deepep",
+        "unsupported"
+      ],
+      [
+        "tbo",
+        "unsupported"
+      ],
+      [
+        "eplb",
+        "unsupported"
+      ],
+      [
+        "speculative",
+        "recommend"
+      ]
+    ],
+    "combined": {
+      "enabled": [
+        "speculative"
+      ],
+      "flags": {
+        "--host": "0.0.0.0",
+        "--max-running-requests": 61,
+        "--model-path": "Qwen/Qwen2.5-72B-Instruct",
+        "--port": 30000,
+        "--speculative-algorithm": "EAGLE3",
+        "--speculative-draft-model-path": "<eagle3-draft-model>",
+        "--speculative-eagle-topk": 1,
+        "--speculative-num-draft-tokens": 4,
+        "--speculative-num-steps": 3,
+        "--tp-size": 4,
+        "--trust-remote-code": false
+      },
+      "layout": "TP4"
+    }
+  },
+  "qwen2.5-72b-instruct/h100-sxm/code": {
+    "advices": [
+      [
+        "dp_attention",
+        "not_recommended"
+      ],
+      [
+        "prefill_cp",
+        "not_recommended"
+      ],
+      [
+        "dcp",
+        "not_recommended"
+      ],
+      [
+        "layernorm_sp",
+        "unsupported"
+      ],
+      [
+        "hicache",
+        "not_recommended"
+      ],
+      [
+        "deepep",
+        "unsupported"
+      ],
+      [
+        "tbo",
+        "unsupported"
+      ],
+      [
+        "eplb",
+        "unsupported"
+      ],
+      [
+        "speculative",
+        "recommend"
+      ]
+    ],
+    "combined": {
+      "enabled": [
+        "speculative"
+      ],
+      "flags": {
+        "--host": "0.0.0.0",
+        "--max-running-requests": 70,
+        "--model-path": "Qwen/Qwen2.5-72B-Instruct",
+        "--port": 30000,
+        "--speculative-algorithm": "EAGLE3",
+        "--speculative-draft-model-path": "<eagle3-draft-model>",
+        "--speculative-eagle-topk": 1,
+        "--speculative-num-draft-tokens": 4,
+        "--speculative-num-steps": 3,
+        "--tp-size": 4,
+        "--trust-remote-code": false
+      },
+      "layout": "TP4"
+    }
+  },
+  "qwen2.5-72b-instruct/h100-sxm/offline-batch": {
+    "advices": [
+      [
+        "dp_attention",
+        "not_recommended"
+      ],
+      [
+        "prefill_cp",
+        "not_recommended"
+      ],
+      [
+        "dcp",
+        "not_recommended"
+      ],
+      [
+        "layernorm_sp",
+        "unsupported"
+      ],
+      [
+        "hicache",
+        "not_recommended"
+      ],
+      [
+        "deepep",
+        "unsupported"
+      ],
+      [
+        "tbo",
+        "unsupported"
+      ],
+      [
+        "eplb",
+        "unsupported"
+      ],
+      [
+        "speculative",
+        "optional"
+      ]
+    ],
+    "combined": {
+      "enabled": [],
+      "flags": {
+        "--host": "0.0.0.0",
+        "--model-path": "Qwen/Qwen2.5-72B-Instruct",
+        "--port": 30000,
+        "--tp-size": 4,
+        "--trust-remote-code": false
+      },
+      "layout": "TP4"
+    }
+  },
+  "qwen2.5-72b-instruct/h100-sxm/rag-long-context": {
+    "advices": [
+      [
+        "dp_attention",
+        "not_recommended"
+      ],
+      [
+        "prefill_cp",
+        "not_recommended"
+      ],
+      [
+        "dcp",
+        "not_recommended"
+      ],
+      [
+        "layernorm_sp",
+        "unsupported"
+      ],
+      [
+        "hicache",
+        "not_recommended"
+      ],
+      [
+        "deepep",
+        "unsupported"
+      ],
+      [
+        "tbo",
+        "unsupported"
+      ],
+      [
+        "eplb",
+        "unsupported"
+      ],
+      [
+        "speculative",
+        "recommend"
+      ]
+    ],
+    "combined": {
+      "enabled": [
+        "speculative"
+      ],
+      "flags": {
+        "--host": "0.0.0.0",
+        "--model-path": "Qwen/Qwen2.5-72B-Instruct",
+        "--port": 30000,
+        "--speculative-algorithm": "EAGLE3",
+        "--speculative-draft-model-path": "<eagle3-draft-model>",
+        "--speculative-eagle-topk": 1,
+        "--speculative-num-draft-tokens": 6,
+        "--speculative-num-steps": 5,
+        "--tp-size": 4,
+        "--trust-remote-code": false
+      },
+      "layout": "TP4"
+    }
+  },
+  "qwen2.5-72b-instruct/h100-sxm/reasoning": {
+    "advices": [
+      [
+        "dp_attention",
+        "not_recommended"
+      ],
+      [
+        "prefill_cp",
+        "not_recommended"
+      ],
+      [
+        "dcp",
+        "not_recommended"
+      ],
+      [
+        "layernorm_sp",
+        "unsupported"
+      ],
+      [
+        "hicache",
+        "not_recommended"
+      ],
+      [
+        "deepep",
+        "unsupported"
+      ],
+      [
+        "tbo",
+        "unsupported"
+      ],
+      [
+        "eplb",
+        "unsupported"
+      ],
+      [
+        "speculative",
+        "recommend"
+      ]
+    ],
+    "combined": {
+      "enabled": [
+        "speculative"
+      ],
+      "flags": {
+        "--host": "0.0.0.0",
+        "--max-running-requests": 63,
+        "--model-path": "Qwen/Qwen2.5-72B-Instruct",
+        "--port": 30000,
+        "--speculative-algorithm": "EAGLE3",
+        "--speculative-draft-model-path": "<eagle3-draft-model>",
+        "--speculative-eagle-topk": 1,
+        "--speculative-num-draft-tokens": 5,
+        "--speculative-num-steps": 4,
+        "--tp-size": 4,
+        "--trust-remote-code": false
+      },
+      "layout": "TP4"
+    }
+  },
+  "qwen2.5-72b-instruct/h100-sxm/shared-prefix-agent": {
+    "advices": [
+      [
+        "dp_attention",
+        "not_recommended"
+      ],
+      [
+        "prefill_cp",
+        "not_recommended"
+      ],
+      [
+        "dcp",
+        "not_recommended"
+      ],
+      [
+        "layernorm_sp",
+        "unsupported"
+      ],
+      [
+        "hicache",
+        "not_recommended"
+      ],
+      [
+        "deepep",
+        "unsupported"
+      ],
+      [
+        "tbo",
+        "unsupported"
+      ],
+      [
+        "eplb",
+        "unsupported"
+      ],
+      [
+        "speculative",
+        "recommend"
+      ]
+    ],
+    "combined": {
+      "enabled": [
+        "speculative"
+      ],
+      "flags": {
+        "--host": "0.0.0.0",
+        "--model-path": "Qwen/Qwen2.5-72B-Instruct",
+        "--port": 30000,
+        "--speculative-algorithm": "EAGLE3",
+        "--speculative-draft-model-path": "<eagle3-draft-model>",
+        "--speculative-eagle-topk": 1,
+        "--speculative-num-draft-tokens": 6,
+        "--speculative-num-steps": 5,
+        "--tp-size": 4,
+        "--trust-remote-code": false
+      },
+      "layout": "TP4"
+    }
+  },
+  "qwen2.5-72b-instruct/h20/chat": {
+    "advices": [
+      [
+        "dp_attention",
+        "not_recommended"
+      ],
+      [
+        "prefill_cp",
+        "not_recommended"
+      ],
+      [
+        "dcp",
+        "not_recommended"
+      ],
+      [
+        "layernorm_sp",
+        "unsupported"
+      ],
+      [
+        "hicache",
+        "not_recommended"
+      ],
+      [
+        "deepep",
+        "unsupported"
+      ],
+      [
+        "tbo",
+        "unsupported"
+      ],
+      [
+        "eplb",
+        "unsupported"
+      ],
+      [
+        "speculative",
+        "not_recommended"
+      ]
+    ],
+    "combined": {
+      "enabled": [],
+      "flags": {
+        "--host": "0.0.0.0",
+        "--model-path": "Qwen/Qwen2.5-72B-Instruct",
+        "--port": 30000,
+        "--tp-size": 2,
+        "--trust-remote-code": false
+      },
+      "layout": "TP2"
+    }
+  },
+  "qwen2.5-72b-instruct/h20/code": {
+    "advices": [
+      [
+        "dp_attention",
+        "not_recommended"
+      ],
+      [
+        "prefill_cp",
+        "not_recommended"
+      ],
+      [
+        "dcp",
+        "not_recommended"
+      ],
+      [
+        "layernorm_sp",
+        "unsupported"
+      ],
+      [
+        "hicache",
+        "not_recommended"
+      ],
+      [
+        "deepep",
+        "unsupported"
+      ],
+      [
+        "tbo",
+        "unsupported"
+      ],
+      [
+        "eplb",
+        "unsupported"
+      ],
+      [
+        "speculative",
+        "recommend"
+      ]
+    ],
+    "combined": {
+      "enabled": [
+        "speculative"
+      ],
+      "flags": {
+        "--host": "0.0.0.0",
+        "--model-path": "Qwen/Qwen2.5-72B-Instruct",
+        "--port": 30000,
+        "--speculative-algorithm": "EAGLE3",
+        "--speculative-draft-model-path": "<eagle3-draft-model>",
+        "--speculative-eagle-topk": 1,
+        "--speculative-num-draft-tokens": 3,
+        "--speculative-num-steps": 2,
+        "--tp-size": 2,
+        "--trust-remote-code": false
+      },
+      "layout": "TP2"
+    }
+  },
+  "qwen2.5-72b-instruct/h20/offline-batch": {
+    "advices": [
+      [
+        "dp_attention",
+        "not_recommended"
+      ],
+      [
+        "prefill_cp",
+        "not_recommended"
+      ],
+      [
+        "dcp",
+        "not_recommended"
+      ],
+      [
+        "layernorm_sp",
+        "unsupported"
+      ],
+      [
+        "hicache",
+        "not_recommended"
+      ],
+      [
+        "deepep",
+        "unsupported"
+      ],
+      [
+        "tbo",
+        "unsupported"
+      ],
+      [
+        "eplb",
+        "unsupported"
+      ],
+      [
+        "speculative",
+        "not_recommended"
+      ]
+    ],
+    "combined": {
+      "enabled": [],
+      "flags": {
+        "--host": "0.0.0.0",
+        "--model-path": "Qwen/Qwen2.5-72B-Instruct",
+        "--port": 30000,
+        "--tp-size": 2,
+        "--trust-remote-code": false
+      },
+      "layout": "TP2"
+    }
+  },
+  "qwen2.5-72b-instruct/h20/rag-long-context": {
+    "advices": [
+      [
+        "dp_attention",
+        "not_recommended"
+      ],
+      [
+        "prefill_cp",
+        "not_recommended"
+      ],
+      [
+        "dcp",
+        "not_recommended"
+      ],
+      [
+        "layernorm_sp",
+        "unsupported"
+      ],
+      [
+        "hicache",
+        "not_recommended"
+      ],
+      [
+        "deepep",
+        "unsupported"
+      ],
+      [
+        "tbo",
+        "unsupported"
+      ],
+      [
+        "eplb",
+        "unsupported"
+      ],
+      [
+        "speculative",
+        "recommend"
+      ]
+    ],
+    "combined": {
+      "enabled": [
+        "speculative"
+      ],
+      "flags": {
+        "--host": "0.0.0.0",
+        "--model-path": "Qwen/Qwen2.5-72B-Instruct",
+        "--port": 30000,
+        "--speculative-algorithm": "EAGLE3",
+        "--speculative-draft-model-path": "<eagle3-draft-model>",
+        "--speculative-eagle-topk": 1,
+        "--speculative-num-draft-tokens": 5,
+        "--speculative-num-steps": 4,
+        "--tp-size": 2,
+        "--trust-remote-code": false
+      },
+      "layout": "TP2"
+    }
+  },
+  "qwen2.5-72b-instruct/h20/reasoning": {
+    "advices": [
+      [
+        "dp_attention",
+        "not_recommended"
+      ],
+      [
+        "prefill_cp",
+        "not_recommended"
+      ],
+      [
+        "dcp",
+        "not_recommended"
+      ],
+      [
+        "layernorm_sp",
+        "unsupported"
+      ],
+      [
+        "hicache",
+        "not_recommended"
+      ],
+      [
+        "deepep",
+        "unsupported"
+      ],
+      [
+        "tbo",
+        "unsupported"
+      ],
+      [
+        "eplb",
+        "unsupported"
+      ],
+      [
+        "speculative",
+        "recommend"
+      ]
+    ],
+    "combined": {
+      "enabled": [
+        "speculative"
+      ],
+      "flags": {
+        "--host": "0.0.0.0",
+        "--model-path": "Qwen/Qwen2.5-72B-Instruct",
+        "--port": 30000,
+        "--speculative-algorithm": "EAGLE3",
+        "--speculative-draft-model-path": "<eagle3-draft-model>",
+        "--speculative-eagle-topk": 1,
+        "--speculative-num-draft-tokens": 3,
+        "--speculative-num-steps": 2,
+        "--tp-size": 2,
+        "--trust-remote-code": false
+      },
+      "layout": "TP2"
+    }
+  },
+  "qwen2.5-72b-instruct/h20/shared-prefix-agent": {
+    "advices": [
+      [
+        "dp_attention",
+        "not_recommended"
+      ],
+      [
+        "prefill_cp",
+        "not_recommended"
+      ],
+      [
+        "dcp",
+        "not_recommended"
+      ],
+      [
+        "layernorm_sp",
+        "unsupported"
+      ],
+      [
+        "hicache",
+        "recommend"
+      ],
+      [
+        "deepep",
+        "unsupported"
+      ],
+      [
+        "tbo",
+        "unsupported"
+      ],
+      [
+        "eplb",
+        "unsupported"
+      ],
+      [
+        "speculative",
+        "recommend"
+      ]
+    ],
+    "combined": {
+      "enabled": [
+        "hicache",
+        "speculative"
+      ],
+      "flags": {
+        "--enable-hierarchical-cache": true,
+        "--hicache-ratio": 3.0,
+        "--host": "0.0.0.0",
+        "--model-path": "Qwen/Qwen2.5-72B-Instruct",
+        "--port": 30000,
+        "--speculative-algorithm": "EAGLE3",
+        "--speculative-draft-model-path": "<eagle3-draft-model>",
+        "--speculative-eagle-topk": 1,
+        "--speculative-num-draft-tokens": 3,
+        "--speculative-num-steps": 2,
+        "--tp-size": 2,
+        "--trust-remote-code": false
+      },
+      "layout": "TP2"
+    }
+  },
+  "qwen2.5-72b-instruct/template-h20-class/chat": {
+    "advices": [
+      [
+        "dp_attention",
+        "not_recommended"
+      ],
+      [
+        "prefill_cp",
+        "not_recommended"
+      ],
+      [
+        "dcp",
+        "not_recommended"
+      ],
+      [
+        "layernorm_sp",
+        "unsupported"
+      ],
+      [
+        "hicache",
+        "not_recommended"
+      ],
+      [
+        "deepep",
+        "unsupported"
+      ],
+      [
+        "tbo",
+        "unsupported"
+      ],
+      [
+        "eplb",
+        "unsupported"
+      ],
+      [
+        "speculative",
+        "recommend"
+      ]
+    ],
+    "combined": {
+      "enabled": [
+        "speculative"
+      ],
+      "flags": {
+        "--device": "example",
+        "--host": "0.0.0.0",
+        "--model-path": "Qwen/Qwen2.5-72B-Instruct",
+        "--port": 30000,
+        "--speculative-algorithm": "EAGLE3",
+        "--speculative-draft-model-path": "<eagle3-draft-model>",
+        "--speculative-eagle-topk": 1,
+        "--speculative-num-draft-tokens": 2,
+        "--speculative-num-steps": 1,
+        "--tp-size": 2,
+        "--trust-remote-code": false
+      },
+      "layout": "TP2"
+    }
+  },
+  "qwen2.5-72b-instruct/template-h20-class/code": {
+    "advices": [
+      [
+        "dp_attention",
+        "not_recommended"
+      ],
+      [
+        "prefill_cp",
+        "not_recommended"
+      ],
+      [
+        "dcp",
+        "not_recommended"
+      ],
+      [
+        "layernorm_sp",
+        "unsupported"
+      ],
+      [
+        "hicache",
+        "not_recommended"
+      ],
+      [
+        "deepep",
+        "unsupported"
+      ],
+      [
+        "tbo",
+        "unsupported"
+      ],
+      [
+        "eplb",
+        "unsupported"
+      ],
+      [
+        "speculative",
+        "recommend"
+      ]
+    ],
+    "combined": {
+      "enabled": [
+        "speculative"
+      ],
+      "flags": {
+        "--device": "example",
+        "--host": "0.0.0.0",
+        "--model-path": "Qwen/Qwen2.5-72B-Instruct",
+        "--port": 30000,
+        "--speculative-algorithm": "EAGLE3",
+        "--speculative-draft-model-path": "<eagle3-draft-model>",
+        "--speculative-eagle-topk": 1,
+        "--speculative-num-draft-tokens": 3,
+        "--speculative-num-steps": 2,
+        "--tp-size": 2,
+        "--trust-remote-code": false
+      },
+      "layout": "TP2"
+    }
+  },
+  "qwen2.5-72b-instruct/template-h20-class/offline-batch": {
+    "advices": [
+      [
+        "dp_attention",
+        "not_recommended"
+      ],
+      [
+        "prefill_cp",
+        "not_recommended"
+      ],
+      [
+        "dcp",
+        "not_recommended"
+      ],
+      [
+        "layernorm_sp",
+        "unsupported"
+      ],
+      [
+        "hicache",
+        "not_recommended"
+      ],
+      [
+        "deepep",
+        "unsupported"
+      ],
+      [
+        "tbo",
+        "unsupported"
+      ],
+      [
+        "eplb",
+        "unsupported"
+      ],
+      [
+        "speculative",
+        "not_recommended"
+      ]
+    ],
+    "combined": {
+      "enabled": [],
+      "flags": {
+        "--device": "example",
+        "--host": "0.0.0.0",
+        "--model-path": "Qwen/Qwen2.5-72B-Instruct",
+        "--port": 30000,
+        "--tp-size": 2,
+        "--trust-remote-code": false
+      },
+      "layout": "TP2"
+    }
+  },
+  "qwen2.5-72b-instruct/template-h20-class/rag-long-context": {
+    "advices": [
+      [
+        "dp_attention",
+        "not_recommended"
+      ],
+      [
+        "prefill_cp",
+        "not_recommended"
+      ],
+      [
+        "dcp",
+        "not_recommended"
+      ],
+      [
+        "layernorm_sp",
+        "unsupported"
+      ],
+      [
+        "hicache",
+        "not_recommended"
+      ],
+      [
+        "deepep",
+        "unsupported"
+      ],
+      [
+        "tbo",
+        "unsupported"
+      ],
+      [
+        "eplb",
+        "unsupported"
+      ],
+      [
+        "speculative",
+        "recommend"
+      ]
+    ],
+    "combined": {
+      "enabled": [
+        "speculative"
+      ],
+      "flags": {
+        "--device": "example",
+        "--host": "0.0.0.0",
+        "--model-path": "Qwen/Qwen2.5-72B-Instruct",
+        "--port": 30000,
+        "--speculative-algorithm": "EAGLE3",
+        "--speculative-draft-model-path": "<eagle3-draft-model>",
+        "--speculative-eagle-topk": 1,
+        "--speculative-num-draft-tokens": 6,
+        "--speculative-num-steps": 5,
+        "--tp-size": 2,
+        "--trust-remote-code": false
+      },
+      "layout": "TP2"
+    }
+  },
+  "qwen2.5-72b-instruct/template-h20-class/reasoning": {
+    "advices": [
+      [
+        "dp_attention",
+        "not_recommended"
+      ],
+      [
+        "prefill_cp",
+        "not_recommended"
+      ],
+      [
+        "dcp",
+        "not_recommended"
+      ],
+      [
+        "layernorm_sp",
+        "unsupported"
+      ],
+      [
+        "hicache",
+        "not_recommended"
+      ],
+      [
+        "deepep",
+        "unsupported"
+      ],
+      [
+        "tbo",
+        "unsupported"
+      ],
+      [
+        "eplb",
+        "unsupported"
+      ],
+      [
+        "speculative",
+        "recommend"
+      ]
+    ],
+    "combined": {
+      "enabled": [
+        "speculative"
+      ],
+      "flags": {
+        "--device": "example",
+        "--host": "0.0.0.0",
+        "--model-path": "Qwen/Qwen2.5-72B-Instruct",
+        "--port": 30000,
+        "--speculative-algorithm": "EAGLE3",
+        "--speculative-draft-model-path": "<eagle3-draft-model>",
+        "--speculative-eagle-topk": 1,
+        "--speculative-num-draft-tokens": 4,
+        "--speculative-num-steps": 3,
+        "--tp-size": 2,
+        "--trust-remote-code": false
+      },
+      "layout": "TP2"
+    }
+  },
+  "qwen2.5-72b-instruct/template-h20-class/shared-prefix-agent": {
+    "advices": [
+      [
+        "dp_attention",
+        "not_recommended"
+      ],
+      [
+        "prefill_cp",
+        "not_recommended"
+      ],
+      [
+        "dcp",
+        "not_recommended"
+      ],
+      [
+        "layernorm_sp",
+        "unsupported"
+      ],
+      [
+        "hicache",
+        "recommend"
+      ],
+      [
+        "deepep",
+        "unsupported"
+      ],
+      [
+        "tbo",
+        "unsupported"
+      ],
+      [
+        "eplb",
+        "unsupported"
+      ],
+      [
+        "speculative",
+        "recommend"
+      ]
+    ],
+    "combined": {
+      "enabled": [
+        "hicache",
+        "speculative"
+      ],
+      "flags": {
+        "--device": "example",
+        "--enable-hierarchical-cache": true,
+        "--hicache-io-backend": "direct",
+        "--hicache-mem-layout": "layer_first",
+        "--hicache-ratio": 5.5,
+        "--host": "0.0.0.0",
+        "--model-path": "Qwen/Qwen2.5-72B-Instruct",
+        "--port": 30000,
+        "--speculative-algorithm": "EAGLE3",
+        "--speculative-draft-model-path": "<eagle3-draft-model>",
+        "--speculative-eagle-topk": 1,
+        "--speculative-num-draft-tokens": 6,
+        "--speculative-num-steps": 5,
+        "--tp-size": 2,
+        "--trust-remote-code": false
+      },
+      "layout": "TP2"
+    }
+  },
+  "qwen3-235b-a22b/h100-sxm/chat": {
+    "advices": [
+      [
+        "dp_attention",
+        "not_recommended"
+      ],
+      [
+        "prefill_cp",
+        "not_recommended"
+      ],
+      [
+        "dcp",
+        "recommend"
+      ],
+      [
+        "layernorm_sp",
+        "unsupported"
+      ],
+      [
+        "hicache",
+        "not_recommended"
+      ],
+      [
+        "deepep",
+        "not_recommended"
+      ],
+      [
+        "tbo",
+        "optional"
+      ],
+      [
+        "eplb",
+        "not_recommended"
+      ],
+      [
+        "speculative",
+        "recommend"
+      ]
+    ],
+    "combined": {
+      "enabled": [
+        "dcp",
+        "speculative"
+      ],
+      "flags": {
+        "--attention-backend": "flashinfer",
+        "--dcp-size": 2,
+        "--host": "0.0.0.0",
+        "--max-running-requests": 83,
+        "--model-path": "Qwen/Qwen3-235B-A22B",
+        "--port": 30000,
+        "--speculative-algorithm": "EAGLE3",
+        "--speculative-draft-model-path": "<eagle3-draft-model>",
+        "--speculative-eagle-topk": 1,
+        "--speculative-num-draft-tokens": 5,
+        "--speculative-num-steps": 4,
+        "--tp-size": 8,
+        "--trust-remote-code": false
+      },
+      "layout": "TP8·DCP2"
+    }
+  },
+  "qwen3-235b-a22b/h100-sxm/code": {
+    "advices": [
+      [
+        "dp_attention",
+        "not_recommended"
+      ],
+      [
+        "prefill_cp",
+        "optional"
+      ],
+      [
+        "dcp",
+        "recommend"
+      ],
+      [
+        "layernorm_sp",
+        "unsupported"
+      ],
+      [
+        "hicache",
+        "not_recommended"
+      ],
+      [
+        "deepep",
+        "not_recommended"
+      ],
+      [
+        "tbo",
+        "optional"
+      ],
+      [
+        "eplb",
+        "not_recommended"
+      ],
+      [
+        "speculative",
+        "recommend"
+      ]
+    ],
+    "combined": {
+      "enabled": [
+        "dcp",
+        "speculative"
+      ],
+      "flags": {
+        "--attention-backend": "flashinfer",
+        "--dcp-size": 2,
+        "--host": "0.0.0.0",
+        "--max-running-requests": 74,
+        "--model-path": "Qwen/Qwen3-235B-A22B",
+        "--port": 30000,
+        "--speculative-algorithm": "EAGLE3",
+        "--speculative-draft-model-path": "<eagle3-draft-model>",
+        "--speculative-eagle-topk": 1,
+        "--speculative-num-draft-tokens": 6,
+        "--speculative-num-steps": 5,
+        "--tp-size": 8,
+        "--trust-remote-code": false
+      },
+      "layout": "TP8·DCP2"
+    }
+  },
+  "qwen3-235b-a22b/h100-sxm/offline-batch": {
+    "advices": [
+      [
+        "dp_attention",
+        "not_recommended"
+      ],
+      [
+        "prefill_cp",
+        "not_recommended"
+      ],
+      [
+        "dcp",
+        "recommend"
+      ],
+      [
+        "layernorm_sp",
+        "unsupported"
+      ],
+      [
+        "hicache",
+        "not_recommended"
+      ],
+      [
+        "deepep",
+        "not_recommended"
+      ],
+      [
+        "tbo",
+        "optional"
+      ],
+      [
+        "eplb",
+        "not_recommended"
+      ],
+      [
+        "speculative",
+        "recommend"
+      ]
+    ],
+    "combined": {
+      "enabled": [
+        "dcp",
+        "speculative"
+      ],
+      "flags": {
+        "--attention-backend": "flashinfer",
+        "--dcp-size": 2,
+        "--host": "0.0.0.0",
+        "--max-running-requests": 224,
+        "--model-path": "Qwen/Qwen3-235B-A22B",
+        "--port": 30000,
+        "--speculative-algorithm": "EAGLE3",
+        "--speculative-draft-model-path": "<eagle3-draft-model>",
+        "--speculative-eagle-topk": 1,
+        "--speculative-num-draft-tokens": 4,
+        "--speculative-num-steps": 3,
+        "--tp-size": 8,
+        "--trust-remote-code": false
+      },
+      "layout": "TP8·DCP2"
+    }
+  },
+  "qwen3-235b-a22b/h100-sxm/rag-long-context": {
+    "advices": [
+      [
+        "dp_attention",
+        "not_recommended"
+      ],
+      [
+        "prefill_cp",
+        "optional"
+      ],
+      [
+        "dcp",
+        "recommend"
+      ],
+      [
+        "layernorm_sp",
+        "unsupported"
+      ],
+      [
+        "hicache",
+        "not_recommended"
+      ],
+      [
+        "deepep",
+        "not_recommended"
+      ],
+      [
+        "tbo",
+        "optional"
+      ],
+      [
+        "eplb",
+        "not_recommended"
+      ],
+      [
+        "speculative",
+        "recommend"
+      ]
+    ],
+    "combined": {
+      "enabled": [
+        "dcp",
+        "speculative"
+      ],
+      "flags": {
+        "--attention-backend": "flashinfer",
+        "--dcp-size": 2,
+        "--host": "0.0.0.0",
+        "--model-path": "Qwen/Qwen3-235B-A22B",
+        "--port": 30000,
+        "--speculative-algorithm": "EAGLE3",
+        "--speculative-draft-model-path": "<eagle3-draft-model>",
+        "--speculative-eagle-topk": 1,
+        "--speculative-num-draft-tokens": 4,
+        "--speculative-num-steps": 3,
+        "--tp-size": 8,
+        "--trust-remote-code": false
+      },
+      "layout": "TP8·DCP2"
+    }
+  },
+  "qwen3-235b-a22b/h100-sxm/reasoning": {
+    "advices": [
+      [
+        "dp_attention",
+        "not_recommended"
+      ],
+      [
+        "prefill_cp",
+        "not_recommended"
+      ],
+      [
+        "dcp",
+        "recommend"
+      ],
+      [
+        "layernorm_sp",
+        "unsupported"
+      ],
+      [
+        "hicache",
+        "not_recommended"
+      ],
+      [
+        "deepep",
+        "not_recommended"
+      ],
+      [
+        "tbo",
+        "optional"
+      ],
+      [
+        "eplb",
+        "not_recommended"
+      ],
+      [
+        "speculative",
+        "recommend"
+      ]
+    ],
+    "combined": {
+      "enabled": [
+        "dcp",
+        "speculative"
+      ],
+      "flags": {
+        "--attention-backend": "flashinfer",
+        "--dcp-size": 2,
+        "--host": "0.0.0.0",
+        "--max-running-requests": 67,
+        "--model-path": "Qwen/Qwen3-235B-A22B",
+        "--port": 30000,
+        "--speculative-algorithm": "EAGLE3",
+        "--speculative-draft-model-path": "<eagle3-draft-model>",
+        "--speculative-eagle-topk": 1,
+        "--speculative-num-draft-tokens": 6,
+        "--speculative-num-steps": 5,
+        "--tp-size": 8,
+        "--trust-remote-code": false
+      },
+      "layout": "TP8·DCP2"
+    }
+  },
+  "qwen3-235b-a22b/h100-sxm/shared-prefix-agent": {
+    "advices": [
+      [
+        "dp_attention",
+        "not_recommended"
+      ],
+      [
+        "prefill_cp",
+        "optional"
+      ],
+      [
+        "dcp",
+        "recommend"
+      ],
+      [
+        "layernorm_sp",
+        "unsupported"
+      ],
+      [
+        "hicache",
+        "recommend"
+      ],
+      [
+        "deepep",
+        "not_recommended"
+      ],
+      [
+        "tbo",
+        "optional"
+      ],
+      [
+        "eplb",
+        "not_recommended"
+      ],
+      [
+        "speculative",
+        "recommend"
+      ]
+    ],
+    "combined": {
+      "enabled": [
+        "dcp",
+        "speculative"
+      ],
+      "flags": {
+        "--attention-backend": "flashinfer",
+        "--dcp-size": 2,
+        "--host": "0.0.0.0",
+        "--model-path": "Qwen/Qwen3-235B-A22B",
+        "--port": 30000,
+        "--speculative-algorithm": "EAGLE3",
+        "--speculative-draft-model-path": "<eagle3-draft-model>",
+        "--speculative-eagle-topk": 1,
+        "--speculative-num-draft-tokens": 6,
+        "--speculative-num-steps": 5,
+        "--tp-size": 8,
+        "--trust-remote-code": false
+      },
+      "layout": "TP8·DCP2"
+    }
+  },
+  "qwen3-235b-a22b/h20/chat": {
+    "advices": [
+      [
+        "dp_attention",
+        "recommend"
+      ],
+      [
+        "prefill_cp",
+        "not_recommended"
+      ],
+      [
+        "dcp",
+        "recommend"
+      ],
+      [
+        "layernorm_sp",
+        "unsupported"
+      ],
+      [
+        "hicache",
+        "not_recommended"
+      ],
+      [
+        "deepep",
+        "not_recommended"
+      ],
+      [
+        "tbo",
+        "optional"
+      ],
+      [
+        "eplb",
+        "not_recommended"
+      ],
+      [
+        "speculative",
+        "recommend"
+      ]
+    ],
+    "combined": {
+      "enabled": [
+        "dp_attention",
+        "speculative"
+      ],
+      "flags": {
+        "--attn-dp-size": 2,
+        "--host": "0.0.0.0",
+        "--load-balance-method": "total_tokens",
+        "--max-running-requests": 74,
+        "--model-path": "Qwen/Qwen3-235B-A22B",
+        "--port": 30000,
+        "--speculative-algorithm": "EAGLE3",
+        "--speculative-draft-model-path": "<eagle3-draft-model>",
+        "--speculative-eagle-topk": 1,
+        "--speculative-num-draft-tokens": 4,
+        "--speculative-num-steps": 3,
+        "--tp-size": 8,
+        "--trust-remote-code": false
+      },
+      "layout": "TP8·DPA2"
+    }
+  },
+  "qwen3-235b-a22b/h20/code": {
+    "advices": [
+      [
+        "dp_attention",
+        "recommend"
+      ],
+      [
+        "prefill_cp",
+        "not_recommended"
+      ],
+      [
+        "dcp",
+        "recommend"
+      ],
+      [
+        "layernorm_sp",
+        "unsupported"
+      ],
+      [
+        "hicache",
+        "not_recommended"
+      ],
+      [
+        "deepep",
+        "not_recommended"
+      ],
+      [
+        "tbo",
+        "optional"
+      ],
+      [
+        "eplb",
+        "not_recommended"
+      ],
+      [
+        "speculative",
+        "recommend"
+      ]
+    ],
+    "combined": {
+      "enabled": [
+        "dp_attention",
+        "speculative"
+      ],
+      "flags": {
+        "--attn-dp-size": 2,
+        "--host": "0.0.0.0",
+        "--load-balance-method": "total_tokens",
+        "--max-running-requests": 78,
+        "--model-path": "Qwen/Qwen3-235B-A22B",
+        "--port": 30000,
+        "--speculative-algorithm": "EAGLE3",
+        "--speculative-draft-model-path": "<eagle3-draft-model>",
+        "--speculative-eagle-topk": 1,
+        "--speculative-num-draft-tokens": 4,
+        "--speculative-num-steps": 3,
+        "--tp-size": 8,
+        "--trust-remote-code": false
+      },
+      "layout": "TP8·DPA2"
+    }
+  },
+  "qwen3-235b-a22b/h20/offline-batch": {
+    "advices": [
+      [
+        "dp_attention",
+        "recommend"
+      ],
+      [
+        "prefill_cp",
+        "not_recommended"
+      ],
+      [
+        "dcp",
+        "optional"
+      ],
+      [
+        "layernorm_sp",
+        "unsupported"
+      ],
+      [
+        "hicache",
+        "not_recommended"
+      ],
+      [
+        "deepep",
+        "not_recommended"
+      ],
+      [
+        "tbo",
+        "optional"
+      ],
+      [
+        "eplb",
+        "not_recommended"
+      ],
+      [
+        "speculative",
+        "recommend"
+      ]
+    ],
+    "combined": {
+      "enabled": [
+        "dp_attention"
+      ],
+      "flags": {
+        "--attn-dp-size": 2,
+        "--host": "0.0.0.0",
+        "--load-balance-method": "total_tokens",
+        "--model-path": "Qwen/Qwen3-235B-A22B",
+        "--port": 30000,
+        "--tp-size": 8,
+        "--trust-remote-code": false
+      },
+      "layout": "TP8·DPA2"
+    }
+  },
+  "qwen3-235b-a22b/h20/rag-long-context": {
+    "advices": [
+      [
+        "dp_attention",
+        "recommend"
+      ],
+      [
+        "prefill_cp",
+        "not_recommended"
+      ],
+      [
+        "dcp",
+        "recommend"
+      ],
+      [
+        "layernorm_sp",
+        "unsupported"
+      ],
+      [
+        "hicache",
+        "not_recommended"
+      ],
+      [
+        "deepep",
+        "not_recommended"
+      ],
+      [
+        "tbo",
+        "optional"
+      ],
+      [
+        "eplb",
+        "not_recommended"
+      ],
+      [
+        "speculative",
+        "recommend"
+      ]
+    ],
+    "combined": {
+      "enabled": [
+        "dcp",
+        "speculative"
+      ],
+      "flags": {
+        "--attention-backend": "flashinfer",
+        "--dcp-size": 2,
+        "--host": "0.0.0.0",
+        "--model-path": "Qwen/Qwen3-235B-A22B",
+        "--port": 30000,
+        "--speculative-algorithm": "EAGLE3",
+        "--speculative-draft-model-path": "<eagle3-draft-model>",
+        "--speculative-eagle-topk": 1,
+        "--speculative-num-draft-tokens": 4,
+        "--speculative-num-steps": 3,
+        "--tp-size": 8,
+        "--trust-remote-code": false
+      },
+      "layout": "TP8·DCP2"
+    }
+  },
+  "qwen3-235b-a22b/h20/reasoning": {
+    "advices": [
+      [
+        "dp_attention",
+        "recommend"
+      ],
+      [
+        "prefill_cp",
+        "not_recommended"
+      ],
+      [
+        "dcp",
+        "recommend"
+      ],
+      [
+        "layernorm_sp",
+        "unsupported"
+      ],
+      [
+        "hicache",
+        "not_recommended"
+      ],
+      [
+        "deepep",
+        "not_recommended"
+      ],
+      [
+        "tbo",
+        "optional"
+      ],
+      [
+        "eplb",
+        "not_recommended"
+      ],
+      [
+        "speculative",
+        "recommend"
+      ]
+    ],
+    "combined": {
+      "enabled": [
+        "dcp",
+        "speculative"
+      ],
+      "flags": {
+        "--attention-backend": "flashinfer",
+        "--dcp-size": 2,
+        "--host": "0.0.0.0",
+        "--max-running-requests": 177,
+        "--model-path": "Qwen/Qwen3-235B-A22B",
+        "--port": 30000,
+        "--speculative-algorithm": "EAGLE3",
+        "--speculative-draft-model-path": "<eagle3-draft-model>",
+        "--speculative-eagle-topk": 1,
+        "--speculative-num-draft-tokens": 3,
+        "--speculative-num-steps": 2,
+        "--tp-size": 8,
+        "--trust-remote-code": false
+      },
+      "layout": "TP8·DCP2"
+    }
+  },
+  "qwen3-235b-a22b/h20/shared-prefix-agent": {
+    "advices": [
+      [
+        "dp_attention",
+        "recommend"
+      ],
+      [
+        "prefill_cp",
+        "not_recommended"
+      ],
+      [
+        "dcp",
+        "recommend"
+      ],
+      [
+        "layernorm_sp",
+        "unsupported"
+      ],
+      [
+        "hicache",
+        "not_recommended"
+      ],
+      [
+        "deepep",
+        "not_recommended"
+      ],
+      [
+        "tbo",
+        "optional"
+      ],
+      [
+        "eplb",
+        "not_recommended"
+      ],
+      [
+        "speculative",
+        "recommend"
+      ]
+    ],
+    "combined": {
+      "enabled": [
+        "dcp",
+        "speculative"
+      ],
+      "flags": {
+        "--attention-backend": "flashinfer",
+        "--dcp-size": 2,
+        "--host": "0.0.0.0",
+        "--max-running-requests": 123,
+        "--model-path": "Qwen/Qwen3-235B-A22B",
+        "--port": 30000,
+        "--speculative-algorithm": "EAGLE3",
+        "--speculative-draft-model-path": "<eagle3-draft-model>",
+        "--speculative-eagle-topk": 1,
+        "--speculative-num-draft-tokens": 3,
+        "--speculative-num-steps": 2,
+        "--tp-size": 8,
+        "--trust-remote-code": false
+      },
+      "layout": "TP8·DCP2"
+    }
+  },
+  "qwen3-235b-a22b/template-h20-class/chat": {
+    "advices": [
+      [
+        "dp_attention",
+        "recommend"
+      ],
+      [
+        "prefill_cp",
+        "not_recommended"
+      ],
+      [
+        "dcp",
+        "recommend"
+      ],
+      [
+        "layernorm_sp",
+        "unsupported"
+      ],
+      [
+        "hicache",
+        "not_recommended"
+      ],
+      [
+        "deepep",
+        "not_recommended"
+      ],
+      [
+        "tbo",
+        "not_recommended"
+      ],
+      [
+        "eplb",
+        "not_recommended"
+      ],
+      [
+        "speculative",
+        "recommend"
+      ]
+    ],
+    "combined": {
+      "enabled": [
+        "dcp",
+        "speculative"
+      ],
+      "flags": {
+        "--dcp-size": 2,
+        "--device": "example",
+        "--host": "0.0.0.0",
+        "--max-running-requests": 97,
+        "--model-path": "Qwen/Qwen3-235B-A22B",
+        "--port": 30000,
+        "--speculative-algorithm": "EAGLE3",
+        "--speculative-draft-model-path": "<eagle3-draft-model>",
+        "--speculative-eagle-topk": 1,
+        "--speculative-num-draft-tokens": 4,
+        "--speculative-num-steps": 3,
+        "--tp-size": 8,
+        "--trust-remote-code": false
+      },
+      "layout": "TP8·DCP2"
+    }
+  },
+  "qwen3-235b-a22b/template-h20-class/code": {
+    "advices": [
+      [
+        "dp_attention",
+        "recommend"
+      ],
+      [
+        "prefill_cp",
+        "not_recommended"
+      ],
+      [
+        "dcp",
+        "recommend"
+      ],
+      [
+        "layernorm_sp",
+        "unsupported"
+      ],
+      [
+        "hicache",
+        "not_recommended"
+      ],
+      [
+        "deepep",
+        "not_recommended"
+      ],
+      [
+        "tbo",
+        "not_recommended"
+      ],
+      [
+        "eplb",
+        "not_recommended"
+      ],
+      [
+        "speculative",
+        "recommend"
+      ]
+    ],
+    "combined": {
+      "enabled": [
+        "dcp",
+        "speculative"
+      ],
+      "flags": {
+        "--dcp-size": 2,
+        "--device": "example",
+        "--host": "0.0.0.0",
+        "--max-running-requests": 104,
+        "--model-path": "Qwen/Qwen3-235B-A22B",
+        "--port": 30000,
+        "--speculative-algorithm": "EAGLE3",
+        "--speculative-draft-model-path": "<eagle3-draft-model>",
+        "--speculative-eagle-topk": 1,
+        "--speculative-num-draft-tokens": 4,
+        "--speculative-num-steps": 3,
+        "--tp-size": 8,
+        "--trust-remote-code": false
+      },
+      "layout": "TP8·DCP2"
+    }
+  },
+  "qwen3-235b-a22b/template-h20-class/offline-batch": {
+    "advices": [
+      [
+        "dp_attention",
+        "recommend"
+      ],
+      [
+        "prefill_cp",
+        "not_recommended"
+      ],
+      [
+        "dcp",
+        "optional"
+      ],
+      [
+        "layernorm_sp",
+        "unsupported"
+      ],
+      [
+        "hicache",
+        "not_recommended"
+      ],
+      [
+        "deepep",
+        "not_recommended"
+      ],
+      [
+        "tbo",
+        "not_recommended"
+      ],
+      [
+        "eplb",
+        "not_recommended"
+      ],
+      [
+        "speculative",
+        "recommend"
+      ]
+    ],
+    "combined": {
+      "enabled": [
+        "dp_attention"
+      ],
+      "flags": {
+        "--attn-dp-size": 2,
+        "--device": "example",
+        "--host": "0.0.0.0",
+        "--load-balance-method": "total_tokens",
+        "--model-path": "Qwen/Qwen3-235B-A22B",
+        "--port": 30000,
+        "--tp-size": 8,
+        "--trust-remote-code": false
+      },
+      "layout": "TP8·DPA2"
+    }
+  },
+  "qwen3-235b-a22b/template-h20-class/rag-long-context": {
+    "advices": [
+      [
+        "dp_attention",
+        "recommend"
+      ],
+      [
+        "prefill_cp",
+        "not_recommended"
+      ],
+      [
+        "dcp",
+        "recommend"
+      ],
+      [
+        "layernorm_sp",
+        "unsupported"
+      ],
+      [
+        "hicache",
+        "not_recommended"
+      ],
+      [
+        "deepep",
+        "not_recommended"
+      ],
+      [
+        "tbo",
+        "not_recommended"
+      ],
+      [
+        "eplb",
+        "not_recommended"
+      ],
+      [
+        "speculative",
+        "recommend"
+      ]
+    ],
+    "combined": {
+      "enabled": [
+        "dcp",
+        "speculative"
+      ],
+      "flags": {
+        "--dcp-size": 2,
+        "--device": "example",
+        "--host": "0.0.0.0",
+        "--model-path": "Qwen/Qwen3-235B-A22B",
+        "--port": 30000,
+        "--speculative-algorithm": "EAGLE3",
+        "--speculative-draft-model-path": "<eagle3-draft-model>",
+        "--speculative-eagle-topk": 1,
+        "--speculative-num-draft-tokens": 5,
+        "--speculative-num-steps": 4,
+        "--tp-size": 8,
+        "--trust-remote-code": false
+      },
+      "layout": "TP8·DCP2"
+    }
+  },
+  "qwen3-235b-a22b/template-h20-class/reasoning": {
+    "advices": [
+      [
+        "dp_attention",
+        "recommend"
+      ],
+      [
+        "prefill_cp",
+        "not_recommended"
+      ],
+      [
+        "dcp",
+        "recommend"
+      ],
+      [
+        "layernorm_sp",
+        "unsupported"
+      ],
+      [
+        "hicache",
+        "not_recommended"
+      ],
+      [
+        "deepep",
+        "not_recommended"
+      ],
+      [
+        "tbo",
+        "not_recommended"
+      ],
+      [
+        "eplb",
+        "not_recommended"
+      ],
+      [
+        "speculative",
+        "recommend"
+      ]
+    ],
+    "combined": {
+      "enabled": [
+        "dcp",
+        "speculative"
+      ],
+      "flags": {
+        "--dcp-size": 2,
+        "--device": "example",
+        "--host": "0.0.0.0",
+        "--max-running-requests": 134,
+        "--model-path": "Qwen/Qwen3-235B-A22B",
+        "--port": 30000,
+        "--speculative-algorithm": "EAGLE3",
+        "--speculative-draft-model-path": "<eagle3-draft-model>",
+        "--speculative-eagle-topk": 1,
+        "--speculative-num-draft-tokens": 3,
+        "--speculative-num-steps": 2,
+        "--tp-size": 8,
+        "--trust-remote-code": false
+      },
+      "layout": "TP8·DCP2"
+    }
+  },
+  "qwen3-235b-a22b/template-h20-class/shared-prefix-agent": {
+    "advices": [
+      [
+        "dp_attention",
+        "recommend"
+      ],
+      [
+        "prefill_cp",
+        "not_recommended"
+      ],
+      [
+        "dcp",
+        "recommend"
+      ],
+      [
+        "layernorm_sp",
+        "unsupported"
+      ],
+      [
+        "hicache",
+        "not_recommended"
+      ],
+      [
+        "deepep",
+        "not_recommended"
+      ],
+      [
+        "tbo",
+        "not_recommended"
+      ],
+      [
+        "eplb",
+        "not_recommended"
+      ],
+      [
+        "speculative",
+        "recommend"
+      ]
+    ],
+    "combined": {
+      "enabled": [
+        "dcp",
+        "speculative"
+      ],
+      "flags": {
+        "--dcp-size": 2,
+        "--device": "example",
+        "--host": "0.0.0.0",
+        "--max-running-requests": 95,
+        "--model-path": "Qwen/Qwen3-235B-A22B",
+        "--port": 30000,
+        "--speculative-algorithm": "EAGLE3",
+        "--speculative-draft-model-path": "<eagle3-draft-model>",
+        "--speculative-eagle-topk": 1,
+        "--speculative-num-draft-tokens": 3,
+        "--speculative-num-steps": 2,
+        "--tp-size": 8,
+        "--trust-remote-code": false
+      },
+      "layout": "TP8·DCP2"
+    }
+  },
+  "qwen3-30b-a3b/h100-sxm/chat": {
+    "advices": [
+      [
+        "dp_attention",
+        "not_recommended"
+      ],
+      [
+        "prefill_cp",
+        "not_recommended"
+      ],
+      [
+        "dcp",
+        "not_recommended"
+      ],
+      [
+        "layernorm_sp",
+        "unsupported"
+      ],
+      [
+        "hicache",
+        "not_recommended"
+      ],
+      [
+        "deepep",
+        "not_recommended"
+      ],
+      [
+        "tbo",
+        "not_recommended"
+      ],
+      [
+        "eplb",
+        "not_recommended"
+      ],
+      [
+        "speculative",
+        "recommend"
+      ]
+    ],
+    "combined": {
+      "enabled": [
+        "speculative"
+      ],
+      "flags": {
+        "--host": "0.0.0.0",
+        "--model-path": "Qwen/Qwen3-30B-A3B",
+        "--port": 30000,
+        "--speculative-algorithm": "EAGLE3",
+        "--speculative-draft-model-path": "<eagle3-draft-model>",
+        "--speculative-eagle-topk": 1,
+        "--speculative-num-draft-tokens": 6,
+        "--speculative-num-steps": 5,
+        "--tp-size": 1,
+        "--trust-remote-code": false
+      },
+      "layout": "TP1"
+    }
+  },
+  "qwen3-30b-a3b/h100-sxm/code": {
+    "advices": [
+      [
+        "dp_attention",
+        "not_recommended"
+      ],
+      [
+        "prefill_cp",
+        "not_recommended"
+      ],
+      [
+        "dcp",
+        "not_recommended"
+      ],
+      [
+        "layernorm_sp",
+        "unsupported"
+      ],
+      [
+        "hicache",
+        "not_recommended"
+      ],
+      [
+        "deepep",
+        "not_recommended"
+      ],
+      [
+        "tbo",
+        "not_recommended"
+      ],
+      [
+        "eplb",
+        "not_recommended"
+      ],
+      [
+        "speculative",
+        "recommend"
+      ]
+    ],
+    "combined": {
+      "enabled": [
+        "speculative"
+      ],
+      "flags": {
+        "--host": "0.0.0.0",
+        "--model-path": "Qwen/Qwen3-30B-A3B",
+        "--port": 30000,
+        "--speculative-algorithm": "EAGLE3",
+        "--speculative-draft-model-path": "<eagle3-draft-model>",
+        "--speculative-eagle-topk": 1,
+        "--speculative-num-draft-tokens": 6,
+        "--speculative-num-steps": 5,
+        "--tp-size": 1,
+        "--trust-remote-code": false
+      },
+      "layout": "TP1"
+    }
+  },
+  "qwen3-30b-a3b/h100-sxm/offline-batch": {
+    "advices": [
+      [
+        "dp_attention",
+        "not_recommended"
+      ],
+      [
+        "prefill_cp",
+        "not_recommended"
+      ],
+      [
+        "dcp",
+        "not_recommended"
+      ],
+      [
+        "layernorm_sp",
+        "unsupported"
+      ],
+      [
+        "hicache",
+        "not_recommended"
+      ],
+      [
+        "deepep",
+        "not_recommended"
+      ],
+      [
+        "tbo",
+        "not_recommended"
+      ],
+      [
+        "eplb",
+        "not_recommended"
+      ],
+      [
+        "speculative",
+        "recommend"
+      ]
+    ],
+    "combined": {
+      "enabled": [
+        "speculative"
+      ],
+      "flags": {
+        "--host": "0.0.0.0",
+        "--max-running-requests": 51,
+        "--model-path": "Qwen/Qwen3-30B-A3B",
+        "--port": 30000,
+        "--speculative-algorithm": "EAGLE3",
+        "--speculative-draft-model-path": "<eagle3-draft-model>",
+        "--speculative-eagle-topk": 1,
+        "--speculative-num-draft-tokens": 6,
+        "--speculative-num-steps": 5,
+        "--tp-size": 1,
+        "--trust-remote-code": false
+      },
+      "layout": "TP1"
+    }
+  },
+  "qwen3-30b-a3b/h100-sxm/rag-long-context": {
+    "advices": [
+      [
+        "dp_attention",
+        "not_recommended"
+      ],
+      [
+        "prefill_cp",
+        "not_recommended"
+      ],
+      [
+        "dcp",
+        "not_recommended"
+      ],
+      [
+        "layernorm_sp",
+        "unsupported"
+      ],
+      [
+        "hicache",
+        "not_recommended"
+      ],
+      [
+        "deepep",
+        "not_recommended"
+      ],
+      [
+        "tbo",
+        "not_recommended"
+      ],
+      [
+        "eplb",
+        "not_recommended"
+      ],
+      [
+        "speculative",
+        "recommend"
+      ]
+    ],
+    "combined": {
+      "enabled": [
+        "speculative"
+      ],
+      "flags": {
+        "--host": "0.0.0.0",
+        "--model-path": "Qwen/Qwen3-30B-A3B",
+        "--port": 30000,
+        "--speculative-algorithm": "EAGLE3",
+        "--speculative-draft-model-path": "<eagle3-draft-model>",
+        "--speculative-eagle-topk": 1,
+        "--speculative-num-draft-tokens": 3,
+        "--speculative-num-steps": 2,
+        "--tp-size": 1,
+        "--trust-remote-code": false
+      },
+      "layout": "TP1"
+    }
+  },
+  "qwen3-30b-a3b/h100-sxm/reasoning": {
+    "advices": [
+      [
+        "dp_attention",
+        "not_recommended"
+      ],
+      [
+        "prefill_cp",
+        "not_recommended"
+      ],
+      [
+        "dcp",
+        "not_recommended"
+      ],
+      [
+        "layernorm_sp",
+        "unsupported"
+      ],
+      [
+        "hicache",
+        "not_recommended"
+      ],
+      [
+        "deepep",
+        "not_recommended"
+      ],
+      [
+        "tbo",
+        "not_recommended"
+      ],
+      [
+        "eplb",
+        "not_recommended"
+      ],
+      [
+        "speculative",
+        "recommend"
+      ]
+    ],
+    "combined": {
+      "enabled": [
+        "speculative"
+      ],
+      "flags": {
+        "--host": "0.0.0.0",
+        "--model-path": "Qwen/Qwen3-30B-A3B",
+        "--port": 30000,
+        "--speculative-algorithm": "EAGLE3",
+        "--speculative-draft-model-path": "<eagle3-draft-model>",
+        "--speculative-eagle-topk": 1,
+        "--speculative-num-draft-tokens": 6,
+        "--speculative-num-steps": 5,
+        "--tp-size": 1,
+        "--trust-remote-code": false
+      },
+      "layout": "TP1"
+    }
+  },
+  "qwen3-30b-a3b/h100-sxm/shared-prefix-agent": {
+    "advices": [
+      [
+        "dp_attention",
+        "not_recommended"
+      ],
+      [
+        "prefill_cp",
+        "not_recommended"
+      ],
+      [
+        "dcp",
+        "not_recommended"
+      ],
+      [
+        "layernorm_sp",
+        "unsupported"
+      ],
+      [
+        "hicache",
+        "recommend"
+      ],
+      [
+        "deepep",
+        "not_recommended"
+      ],
+      [
+        "tbo",
+        "not_recommended"
+      ],
+      [
+        "eplb",
+        "not_recommended"
+      ],
+      [
+        "speculative",
+        "recommend"
+      ]
+    ],
+    "combined": {
+      "enabled": [
+        "hicache",
+        "speculative"
+      ],
+      "flags": {
+        "--enable-hierarchical-cache": true,
+        "--hicache-ratio": 3.0,
+        "--host": "0.0.0.0",
+        "--model-path": "Qwen/Qwen3-30B-A3B",
+        "--port": 30000,
+        "--speculative-algorithm": "EAGLE3",
+        "--speculative-draft-model-path": "<eagle3-draft-model>",
+        "--speculative-eagle-topk": 1,
+        "--speculative-num-draft-tokens": 6,
+        "--speculative-num-steps": 5,
+        "--tp-size": 1,
+        "--trust-remote-code": false
+      },
+      "layout": "TP1"
+    }
+  },
+  "qwen3-30b-a3b/h20/chat": {
+    "advices": [
+      [
+        "dp_attention",
+        "not_recommended"
+      ],
+      [
+        "prefill_cp",
+        "not_recommended"
+      ],
+      [
+        "dcp",
+        "not_recommended"
+      ],
+      [
+        "layernorm_sp",
+        "unsupported"
+      ],
+      [
+        "hicache",
+        "not_recommended"
+      ],
+      [
+        "deepep",
+        "not_recommended"
+      ],
+      [
+        "tbo",
+        "not_recommended"
+      ],
+      [
+        "eplb",
+        "not_recommended"
+      ],
+      [
+        "speculative",
+        "recommend"
+      ]
+    ],
+    "combined": {
+      "enabled": [
+        "speculative"
+      ],
+      "flags": {
+        "--host": "0.0.0.0",
+        "--max-running-requests": 74,
+        "--model-path": "Qwen/Qwen3-30B-A3B",
+        "--port": 30000,
+        "--speculative-algorithm": "EAGLE3",
+        "--speculative-draft-model-path": "<eagle3-draft-model>",
+        "--speculative-eagle-topk": 1,
+        "--speculative-num-draft-tokens": 4,
+        "--speculative-num-steps": 3,
+        "--tp-size": 1,
+        "--trust-remote-code": false
+      },
+      "layout": "TP1"
+    }
+  },
+  "qwen3-30b-a3b/h20/code": {
+    "advices": [
+      [
+        "dp_attention",
+        "not_recommended"
+      ],
+      [
+        "prefill_cp",
+        "not_recommended"
+      ],
+      [
+        "dcp",
+        "not_recommended"
+      ],
+      [
+        "layernorm_sp",
+        "unsupported"
+      ],
+      [
+        "hicache",
+        "not_recommended"
+      ],
+      [
+        "deepep",
+        "not_recommended"
+      ],
+      [
+        "tbo",
+        "not_recommended"
+      ],
+      [
+        "eplb",
+        "not_recommended"
+      ],
+      [
+        "speculative",
+        "recommend"
+      ]
+    ],
+    "combined": {
+      "enabled": [
+        "speculative"
+      ],
+      "flags": {
+        "--host": "0.0.0.0",
+        "--model-path": "Qwen/Qwen3-30B-A3B",
+        "--port": 30000,
+        "--speculative-algorithm": "EAGLE3",
+        "--speculative-draft-model-path": "<eagle3-draft-model>",
+        "--speculative-eagle-topk": 1,
+        "--speculative-num-draft-tokens": 4,
+        "--speculative-num-steps": 3,
+        "--tp-size": 1,
+        "--trust-remote-code": false
+      },
+      "layout": "TP1"
+    }
+  },
+  "qwen3-30b-a3b/h20/offline-batch": {
+    "advices": [
+      [
+        "dp_attention",
+        "not_recommended"
+      ],
+      [
+        "prefill_cp",
+        "not_recommended"
+      ],
+      [
+        "dcp",
+        "not_recommended"
+      ],
+      [
+        "layernorm_sp",
+        "unsupported"
+      ],
+      [
+        "hicache",
+        "not_recommended"
+      ],
+      [
+        "deepep",
+        "not_recommended"
+      ],
+      [
+        "tbo",
+        "not_recommended"
+      ],
+      [
+        "eplb",
+        "not_recommended"
+      ],
+      [
+        "speculative",
+        "recommend"
+      ]
+    ],
+    "combined": {
+      "enabled": [
+        "speculative"
+      ],
+      "flags": {
+        "--host": "0.0.0.0",
+        "--max-running-requests": 140,
+        "--model-path": "Qwen/Qwen3-30B-A3B",
+        "--port": 30000,
+        "--speculative-algorithm": "EAGLE3",
+        "--speculative-draft-model-path": "<eagle3-draft-model>",
+        "--speculative-eagle-topk": 1,
+        "--speculative-num-draft-tokens": 3,
+        "--speculative-num-steps": 2,
+        "--tp-size": 1,
+        "--trust-remote-code": false
+      },
+      "layout": "TP1"
+    }
+  },
+  "qwen3-30b-a3b/h20/rag-long-context": {
+    "advices": [
+      [
+        "dp_attention",
+        "not_recommended"
+      ],
+      [
+        "prefill_cp",
+        "not_recommended"
+      ],
+      [
+        "dcp",
+        "not_recommended"
+      ],
+      [
+        "layernorm_sp",
+        "unsupported"
+      ],
+      [
+        "hicache",
+        "not_recommended"
+      ],
+      [
+        "deepep",
+        "not_recommended"
+      ],
+      [
+        "tbo",
+        "not_recommended"
+      ],
+      [
+        "eplb",
+        "not_recommended"
+      ],
+      [
+        "speculative",
+        "recommend"
+      ]
+    ],
+    "combined": {
+      "enabled": [
+        "speculative"
+      ],
+      "flags": {
+        "--host": "0.0.0.0",
+        "--model-path": "Qwen/Qwen3-30B-A3B",
+        "--port": 30000,
+        "--speculative-algorithm": "EAGLE3",
+        "--speculative-draft-model-path": "<eagle3-draft-model>",
+        "--speculative-eagle-topk": 1,
+        "--speculative-num-draft-tokens": 3,
+        "--speculative-num-steps": 2,
+        "--tp-size": 1,
+        "--trust-remote-code": false
+      },
+      "layout": "TP1"
+    }
+  },
+  "qwen3-30b-a3b/h20/reasoning": {
+    "advices": [
+      [
+        "dp_attention",
+        "not_recommended"
+      ],
+      [
+        "prefill_cp",
+        "not_recommended"
+      ],
+      [
+        "dcp",
+        "not_recommended"
+      ],
+      [
+        "layernorm_sp",
+        "unsupported"
+      ],
+      [
+        "hicache",
+        "not_recommended"
+      ],
+      [
+        "deepep",
+        "not_recommended"
+      ],
+      [
+        "tbo",
+        "not_recommended"
+      ],
+      [
+        "eplb",
+        "not_recommended"
+      ],
+      [
+        "speculative",
+        "recommend"
+      ]
+    ],
+    "combined": {
+      "enabled": [
+        "speculative"
+      ],
+      "flags": {
+        "--host": "0.0.0.0",
+        "--model-path": "Qwen/Qwen3-30B-A3B",
+        "--port": 30000,
+        "--speculative-algorithm": "EAGLE3",
+        "--speculative-draft-model-path": "<eagle3-draft-model>",
+        "--speculative-eagle-topk": 1,
+        "--speculative-num-draft-tokens": 4,
+        "--speculative-num-steps": 3,
+        "--tp-size": 1,
+        "--trust-remote-code": false
+      },
+      "layout": "TP1"
+    }
+  },
+  "qwen3-30b-a3b/h20/shared-prefix-agent": {
+    "advices": [
+      [
+        "dp_attention",
+        "not_recommended"
+      ],
+      [
+        "prefill_cp",
+        "not_recommended"
+      ],
+      [
+        "dcp",
+        "not_recommended"
+      ],
+      [
+        "layernorm_sp",
+        "unsupported"
+      ],
+      [
+        "hicache",
+        "not_recommended"
+      ],
+      [
+        "deepep",
+        "not_recommended"
+      ],
+      [
+        "tbo",
+        "not_recommended"
+      ],
+      [
+        "eplb",
+        "not_recommended"
+      ],
+      [
+        "speculative",
+        "recommend"
+      ]
+    ],
+    "combined": {
+      "enabled": [
+        "speculative"
+      ],
+      "flags": {
+        "--host": "0.0.0.0",
+        "--model-path": "Qwen/Qwen3-30B-A3B",
+        "--port": 30000,
+        "--speculative-algorithm": "EAGLE3",
+        "--speculative-draft-model-path": "<eagle3-draft-model>",
+        "--speculative-eagle-topk": 1,
+        "--speculative-num-draft-tokens": 4,
+        "--speculative-num-steps": 3,
+        "--tp-size": 1,
+        "--trust-remote-code": false
+      },
+      "layout": "TP1"
+    }
+  },
+  "qwen3-30b-a3b/template-h20-class/chat": {
+    "advices": [
+      [
+        "dp_attention",
+        "not_recommended"
+      ],
+      [
+        "prefill_cp",
+        "not_recommended"
+      ],
+      [
+        "dcp",
+        "not_recommended"
+      ],
+      [
+        "layernorm_sp",
+        "unsupported"
+      ],
+      [
+        "hicache",
+        "not_recommended"
+      ],
+      [
+        "deepep",
+        "not_recommended"
+      ],
+      [
+        "tbo",
+        "not_recommended"
+      ],
+      [
+        "eplb",
+        "not_recommended"
+      ],
+      [
+        "speculative",
+        "recommend"
+      ]
+    ],
+    "combined": {
+      "enabled": [
+        "speculative"
+      ],
+      "flags": {
+        "--device": "example",
+        "--host": "0.0.0.0",
+        "--max-running-requests": 74,
+        "--model-path": "Qwen/Qwen3-30B-A3B",
+        "--port": 30000,
+        "--speculative-algorithm": "EAGLE3",
+        "--speculative-draft-model-path": "<eagle3-draft-model>",
+        "--speculative-eagle-topk": 1,
+        "--speculative-num-draft-tokens": 4,
+        "--speculative-num-steps": 3,
+        "--tp-size": 1,
+        "--trust-remote-code": false
+      },
+      "layout": "TP1"
+    }
+  },
+  "qwen3-30b-a3b/template-h20-class/code": {
+    "advices": [
+      [
+        "dp_attention",
+        "not_recommended"
+      ],
+      [
+        "prefill_cp",
+        "not_recommended"
+      ],
+      [
+        "dcp",
+        "not_recommended"
+      ],
+      [
+        "layernorm_sp",
+        "unsupported"
+      ],
+      [
+        "hicache",
+        "not_recommended"
+      ],
+      [
+        "deepep",
+        "not_recommended"
+      ],
+      [
+        "tbo",
+        "not_recommended"
+      ],
+      [
+        "eplb",
+        "not_recommended"
+      ],
+      [
+        "speculative",
+        "recommend"
+      ]
+    ],
+    "combined": {
+      "enabled": [
+        "speculative"
+      ],
+      "flags": {
+        "--device": "example",
+        "--host": "0.0.0.0",
+        "--model-path": "Qwen/Qwen3-30B-A3B",
+        "--port": 30000,
+        "--speculative-algorithm": "EAGLE3",
+        "--speculative-draft-model-path": "<eagle3-draft-model>",
+        "--speculative-eagle-topk": 1,
+        "--speculative-num-draft-tokens": 5,
+        "--speculative-num-steps": 4,
+        "--tp-size": 1,
+        "--trust-remote-code": false
+      },
+      "layout": "TP1"
+    }
+  },
+  "qwen3-30b-a3b/template-h20-class/offline-batch": {
+    "advices": [
+      [
+        "dp_attention",
+        "not_recommended"
+      ],
+      [
+        "prefill_cp",
+        "not_recommended"
+      ],
+      [
+        "dcp",
+        "not_recommended"
+      ],
+      [
+        "layernorm_sp",
+        "unsupported"
+      ],
+      [
+        "hicache",
+        "not_recommended"
+      ],
+      [
+        "deepep",
+        "not_recommended"
+      ],
+      [
+        "tbo",
+        "not_recommended"
+      ],
+      [
+        "eplb",
+        "not_recommended"
+      ],
+      [
+        "speculative",
+        "recommend"
+      ]
+    ],
+    "combined": {
+      "enabled": [
+        "speculative"
+      ],
+      "flags": {
+        "--device": "example",
+        "--host": "0.0.0.0",
+        "--max-running-requests": 105,
+        "--model-path": "Qwen/Qwen3-30B-A3B",
+        "--port": 30000,
+        "--speculative-algorithm": "EAGLE3",
+        "--speculative-draft-model-path": "<eagle3-draft-model>",
+        "--speculative-eagle-topk": 1,
+        "--speculative-num-draft-tokens": 3,
+        "--speculative-num-steps": 2,
+        "--tp-size": 1,
+        "--trust-remote-code": false
+      },
+      "layout": "TP1"
+    }
+  },
+  "qwen3-30b-a3b/template-h20-class/rag-long-context": {
+    "advices": [
+      [
+        "dp_attention",
+        "not_recommended"
+      ],
+      [
+        "prefill_cp",
+        "not_recommended"
+      ],
+      [
+        "dcp",
+        "not_recommended"
+      ],
+      [
+        "layernorm_sp",
+        "unsupported"
+      ],
+      [
+        "hicache",
+        "not_recommended"
+      ],
+      [
+        "deepep",
+        "not_recommended"
+      ],
+      [
+        "tbo",
+        "not_recommended"
+      ],
+      [
+        "eplb",
+        "not_recommended"
+      ],
+      [
+        "speculative",
+        "recommend"
+      ]
+    ],
+    "combined": {
+      "enabled": [
+        "speculative"
+      ],
+      "flags": {
+        "--device": "example",
+        "--host": "0.0.0.0",
+        "--model-path": "Qwen/Qwen3-30B-A3B",
+        "--port": 30000,
+        "--speculative-algorithm": "EAGLE3",
+        "--speculative-draft-model-path": "<eagle3-draft-model>",
+        "--speculative-eagle-topk": 1,
+        "--speculative-num-draft-tokens": 3,
+        "--speculative-num-steps": 2,
+        "--tp-size": 1,
+        "--trust-remote-code": false
+      },
+      "layout": "TP1"
+    }
+  },
+  "qwen3-30b-a3b/template-h20-class/reasoning": {
+    "advices": [
+      [
+        "dp_attention",
+        "not_recommended"
+      ],
+      [
+        "prefill_cp",
+        "not_recommended"
+      ],
+      [
+        "dcp",
+        "not_recommended"
+      ],
+      [
+        "layernorm_sp",
+        "unsupported"
+      ],
+      [
+        "hicache",
+        "not_recommended"
+      ],
+      [
+        "deepep",
+        "not_recommended"
+      ],
+      [
+        "tbo",
+        "not_recommended"
+      ],
+      [
+        "eplb",
+        "not_recommended"
+      ],
+      [
+        "speculative",
+        "recommend"
+      ]
+    ],
+    "combined": {
+      "enabled": [
+        "speculative"
+      ],
+      "flags": {
+        "--device": "example",
+        "--host": "0.0.0.0",
+        "--model-path": "Qwen/Qwen3-30B-A3B",
+        "--port": 30000,
+        "--speculative-algorithm": "EAGLE3",
+        "--speculative-draft-model-path": "<eagle3-draft-model>",
+        "--speculative-eagle-topk": 1,
+        "--speculative-num-draft-tokens": 5,
+        "--speculative-num-steps": 4,
+        "--tp-size": 1,
+        "--trust-remote-code": false
+      },
+      "layout": "TP1"
+    }
+  },
+  "qwen3-30b-a3b/template-h20-class/shared-prefix-agent": {
+    "advices": [
+      [
+        "dp_attention",
+        "not_recommended"
+      ],
+      [
+        "prefill_cp",
+        "not_recommended"
+      ],
+      [
+        "dcp",
+        "not_recommended"
+      ],
+      [
+        "layernorm_sp",
+        "unsupported"
+      ],
+      [
+        "hicache",
+        "recommend"
+      ],
+      [
+        "deepep",
+        "not_recommended"
+      ],
+      [
+        "tbo",
+        "not_recommended"
+      ],
+      [
+        "eplb",
+        "not_recommended"
+      ],
+      [
+        "speculative",
+        "recommend"
+      ]
+    ],
+    "combined": {
+      "enabled": [
+        "hicache",
+        "speculative"
+      ],
+      "flags": {
+        "--device": "example",
+        "--enable-hierarchical-cache": true,
+        "--hicache-io-backend": "direct",
+        "--hicache-mem-layout": "layer_first",
+        "--host": "0.0.0.0",
+        "--model-path": "Qwen/Qwen3-30B-A3B",
+        "--port": 30000,
+        "--speculative-algorithm": "EAGLE3",
+        "--speculative-draft-model-path": "<eagle3-draft-model>",
+        "--speculative-eagle-topk": 1,
+        "--speculative-num-draft-tokens": 4,
+        "--speculative-num-steps": 3,
+        "--tp-size": 1,
+        "--trust-remote-code": false
+      },
+      "layout": "TP1"
+    }
+  },
+  "qwen3-32b/h100-sxm/chat": {
+    "advices": [
+      [
+        "dp_attention",
+        "not_recommended"
+      ],
+      [
+        "prefill_cp",
+        "not_recommended"
+      ],
+      [
+        "dcp",
+        "not_recommended"
+      ],
+      [
+        "layernorm_sp",
+        "not_recommended"
+      ],
+      [
+        "hicache",
+        "not_recommended"
+      ],
+      [
+        "deepep",
+        "unsupported"
+      ],
+      [
+        "tbo",
+        "unsupported"
+      ],
+      [
+        "eplb",
+        "unsupported"
+      ],
+      [
+        "speculative",
+        "recommend"
+      ]
+    ],
+    "combined": {
+      "enabled": [
+        "speculative"
+      ],
+      "flags": {
+        "--chunked-prefill-size": 4096,
+        "--host": "0.0.0.0",
+        "--model-path": "Qwen/Qwen3-32B",
+        "--port": 30000,
+        "--speculative-algorithm": "EAGLE3",
+        "--speculative-draft-model-path": "<eagle3-draft-model>",
+        "--speculative-eagle-topk": 1,
+        "--speculative-num-draft-tokens": 6,
+        "--speculative-num-steps": 5,
+        "--tp-size": 1,
+        "--trust-remote-code": false
+      },
+      "layout": "TP1"
+    }
+  },
+  "qwen3-32b/h100-sxm/code": {
+    "advices": [
+      [
+        "dp_attention",
+        "not_recommended"
+      ],
+      [
+        "prefill_cp",
+        "not_recommended"
+      ],
+      [
+        "dcp",
+        "not_recommended"
+      ],
+      [
+        "layernorm_sp",
+        "not_recommended"
+      ],
+      [
+        "hicache",
+        "not_recommended"
+      ],
+      [
+        "deepep",
+        "unsupported"
+      ],
+      [
+        "tbo",
+        "unsupported"
+      ],
+      [
+        "eplb",
+        "unsupported"
+      ],
+      [
+        "speculative",
+        "recommend"
+      ]
+    ],
+    "combined": {
+      "enabled": [
+        "speculative"
+      ],
+      "flags": {
+        "--chunked-prefill-size": 4096,
+        "--host": "0.0.0.0",
+        "--model-path": "Qwen/Qwen3-32B",
+        "--port": 30000,
+        "--speculative-algorithm": "EAGLE3",
+        "--speculative-draft-model-path": "<eagle3-draft-model>",
+        "--speculative-eagle-topk": 1,
+        "--speculative-num-draft-tokens": 6,
+        "--speculative-num-steps": 5,
+        "--tp-size": 1,
+        "--trust-remote-code": false
+      },
+      "layout": "TP1"
+    }
+  },
+  "qwen3-32b/h100-sxm/offline-batch": {
+    "advices": [
+      [
+        "dp_attention",
+        "not_recommended"
+      ],
+      [
+        "prefill_cp",
+        "not_recommended"
+      ],
+      [
+        "dcp",
+        "not_recommended"
+      ],
+      [
+        "layernorm_sp",
+        "not_recommended"
+      ],
+      [
+        "hicache",
+        "not_recommended"
+      ],
+      [
+        "deepep",
+        "unsupported"
+      ],
+      [
+        "tbo",
+        "unsupported"
+      ],
+      [
+        "eplb",
+        "unsupported"
+      ],
+      [
+        "speculative",
+        "recommend"
+      ]
+    ],
+    "combined": {
+      "enabled": [
+        "speculative"
+      ],
+      "flags": {
+        "--chunked-prefill-size": 4096,
+        "--host": "0.0.0.0",
+        "--model-path": "Qwen/Qwen3-32B",
+        "--port": 30000,
+        "--speculative-algorithm": "EAGLE3",
+        "--speculative-draft-model-path": "<eagle3-draft-model>",
+        "--speculative-eagle-topk": 1,
+        "--speculative-num-draft-tokens": 6,
+        "--speculative-num-steps": 5,
+        "--tp-size": 1,
+        "--trust-remote-code": false
+      },
+      "layout": "TP1"
+    }
+  },
+  "qwen3-32b/h100-sxm/rag-long-context": {
+    "advices": [
+      [
+        "dp_attention",
+        "not_recommended"
+      ],
+      [
+        "prefill_cp",
+        "not_recommended"
+      ],
+      [
+        "dcp",
+        "not_recommended"
+      ],
+      [
+        "layernorm_sp",
+        "not_recommended"
+      ],
+      [
+        "hicache",
+        "not_recommended"
+      ],
+      [
+        "deepep",
+        "unsupported"
+      ],
+      [
+        "tbo",
+        "unsupported"
+      ],
+      [
+        "eplb",
+        "unsupported"
+      ],
+      [
+        "speculative",
+        "recommend"
+      ]
+    ],
+    "combined": {
+      "enabled": [
+        "speculative"
+      ],
+      "flags": {
+        "--chunked-prefill-size": 4096,
+        "--host": "0.0.0.0",
+        "--model-path": "Qwen/Qwen3-32B",
+        "--port": 30000,
+        "--speculative-algorithm": "EAGLE3",
+        "--speculative-draft-model-path": "<eagle3-draft-model>",
+        "--speculative-eagle-topk": 1,
+        "--speculative-num-draft-tokens": 6,
+        "--speculative-num-steps": 5,
+        "--tp-size": 1,
+        "--trust-remote-code": false
+      },
+      "layout": "TP1"
+    }
+  },
+  "qwen3-32b/h100-sxm/reasoning": {
+    "advices": [
+      [
+        "dp_attention",
+        "not_recommended"
+      ],
+      [
+        "prefill_cp",
+        "not_recommended"
+      ],
+      [
+        "dcp",
+        "not_recommended"
+      ],
+      [
+        "layernorm_sp",
+        "not_recommended"
+      ],
+      [
+        "hicache",
+        "not_recommended"
+      ],
+      [
+        "deepep",
+        "unsupported"
+      ],
+      [
+        "tbo",
+        "unsupported"
+      ],
+      [
+        "eplb",
+        "unsupported"
+      ],
+      [
+        "speculative",
+        "recommend"
+      ]
+    ],
+    "combined": {
+      "enabled": [
+        "speculative"
+      ],
+      "flags": {
+        "--chunked-prefill-size": 4096,
+        "--host": "0.0.0.0",
+        "--model-path": "Qwen/Qwen3-32B",
+        "--port": 30000,
+        "--speculative-algorithm": "EAGLE3",
+        "--speculative-draft-model-path": "<eagle3-draft-model>",
+        "--speculative-eagle-topk": 1,
+        "--speculative-num-draft-tokens": 6,
+        "--speculative-num-steps": 5,
+        "--tp-size": 1,
+        "--trust-remote-code": false
+      },
+      "layout": "TP1"
+    }
+  },
+  "qwen3-32b/h100-sxm/shared-prefix-agent": {
+    "advices": [
+      [
+        "dp_attention",
+        "not_recommended"
+      ],
+      [
+        "prefill_cp",
+        "not_recommended"
+      ],
+      [
+        "dcp",
+        "not_recommended"
+      ],
+      [
+        "layernorm_sp",
+        "not_recommended"
+      ],
+      [
+        "hicache",
+        "recommend"
+      ],
+      [
+        "deepep",
+        "unsupported"
+      ],
+      [
+        "tbo",
+        "unsupported"
+      ],
+      [
+        "eplb",
+        "unsupported"
+      ],
+      [
+        "speculative",
+        "recommend"
+      ]
+    ],
+    "combined": {
+      "enabled": [
+        "hicache",
+        "speculative"
+      ],
+      "flags": {
+        "--chunked-prefill-size": 4096,
+        "--enable-hierarchical-cache": true,
+        "--hicache-ratio": 8.0,
+        "--host": "0.0.0.0",
+        "--model-path": "Qwen/Qwen3-32B",
+        "--port": 30000,
+        "--speculative-algorithm": "EAGLE3",
+        "--speculative-draft-model-path": "<eagle3-draft-model>",
+        "--speculative-eagle-topk": 1,
+        "--speculative-num-draft-tokens": 6,
+        "--speculative-num-steps": 5,
+        "--tp-size": 1,
+        "--trust-remote-code": false
+      },
+      "layout": "TP1"
+    }
+  },
+  "qwen3-32b/h20/chat": {
+    "advices": [
+      [
+        "dp_attention",
+        "not_recommended"
+      ],
+      [
+        "prefill_cp",
+        "not_recommended"
+      ],
+      [
+        "dcp",
+        "not_recommended"
+      ],
+      [
+        "layernorm_sp",
+        "not_recommended"
+      ],
+      [
+        "hicache",
+        "not_recommended"
+      ],
+      [
+        "deepep",
+        "unsupported"
+      ],
+      [
+        "tbo",
+        "unsupported"
+      ],
+      [
+        "eplb",
+        "unsupported"
+      ],
+      [
+        "speculative",
+        "not_recommended"
+      ]
+    ],
+    "combined": {
+      "enabled": [],
+      "flags": {
+        "--host": "0.0.0.0",
+        "--model-path": "Qwen/Qwen3-32B",
+        "--port": 30000,
+        "--tp-size": 1,
+        "--trust-remote-code": false
+      },
+      "layout": "TP1"
+    }
+  },
+  "qwen3-32b/h20/code": {
+    "advices": [
+      [
+        "dp_attention",
+        "not_recommended"
+      ],
+      [
+        "prefill_cp",
+        "not_recommended"
+      ],
+      [
+        "dcp",
+        "not_recommended"
+      ],
+      [
+        "layernorm_sp",
+        "not_recommended"
+      ],
+      [
+        "hicache",
+        "not_recommended"
+      ],
+      [
+        "deepep",
+        "unsupported"
+      ],
+      [
+        "tbo",
+        "unsupported"
+      ],
+      [
+        "eplb",
+        "unsupported"
+      ],
+      [
+        "speculative",
+        "recommend"
+      ]
+    ],
+    "combined": {
+      "enabled": [
+        "speculative"
+      ],
+      "flags": {
+        "--host": "0.0.0.0",
+        "--model-path": "Qwen/Qwen3-32B",
+        "--port": 30000,
+        "--speculative-algorithm": "EAGLE3",
+        "--speculative-draft-model-path": "<eagle3-draft-model>",
+        "--speculative-eagle-topk": 1,
+        "--speculative-num-draft-tokens": 3,
+        "--speculative-num-steps": 2,
+        "--tp-size": 1,
+        "--trust-remote-code": false
+      },
+      "layout": "TP1"
+    }
+  },
+  "qwen3-32b/h20/offline-batch": {
+    "advices": [
+      [
+        "dp_attention",
+        "not_recommended"
+      ],
+      [
+        "prefill_cp",
+        "not_recommended"
+      ],
+      [
+        "dcp",
+        "not_recommended"
+      ],
+      [
+        "layernorm_sp",
+        "not_recommended"
+      ],
+      [
+        "hicache",
+        "not_recommended"
+      ],
+      [
+        "deepep",
+        "unsupported"
+      ],
+      [
+        "tbo",
+        "unsupported"
+      ],
+      [
+        "eplb",
+        "unsupported"
+      ],
+      [
+        "speculative",
+        "not_recommended"
+      ]
+    ],
+    "combined": {
+      "enabled": [],
+      "flags": {
+        "--host": "0.0.0.0",
+        "--model-path": "Qwen/Qwen3-32B",
+        "--port": 30000,
+        "--tp-size": 1,
+        "--trust-remote-code": false
+      },
+      "layout": "TP1"
+    }
+  },
+  "qwen3-32b/h20/rag-long-context": {
+    "advices": [
+      [
+        "dp_attention",
+        "not_recommended"
+      ],
+      [
+        "prefill_cp",
+        "not_recommended"
+      ],
+      [
+        "dcp",
+        "not_recommended"
+      ],
+      [
+        "layernorm_sp",
+        "not_recommended"
+      ],
+      [
+        "hicache",
+        "not_recommended"
+      ],
+      [
+        "deepep",
+        "unsupported"
+      ],
+      [
+        "tbo",
+        "unsupported"
+      ],
+      [
+        "eplb",
+        "unsupported"
+      ],
+      [
+        "speculative",
+        "recommend"
+      ]
+    ],
+    "combined": {
+      "enabled": [
+        "speculative"
+      ],
+      "flags": {
+        "--host": "0.0.0.0",
+        "--model-path": "Qwen/Qwen3-32B",
+        "--port": 30000,
+        "--speculative-algorithm": "EAGLE3",
+        "--speculative-draft-model-path": "<eagle3-draft-model>",
+        "--speculative-eagle-topk": 1,
+        "--speculative-num-draft-tokens": 5,
+        "--speculative-num-steps": 4,
+        "--tp-size": 1,
+        "--trust-remote-code": false
+      },
+      "layout": "TP1"
+    }
+  },
+  "qwen3-32b/h20/reasoning": {
+    "advices": [
+      [
+        "dp_attention",
+        "not_recommended"
+      ],
+      [
+        "prefill_cp",
+        "not_recommended"
+      ],
+      [
+        "dcp",
+        "not_recommended"
+      ],
+      [
+        "layernorm_sp",
+        "not_recommended"
+      ],
+      [
+        "hicache",
+        "not_recommended"
+      ],
+      [
+        "deepep",
+        "unsupported"
+      ],
+      [
+        "tbo",
+        "unsupported"
+      ],
+      [
+        "eplb",
+        "unsupported"
+      ],
+      [
+        "speculative",
+        "recommend"
+      ]
+    ],
+    "combined": {
+      "enabled": [
+        "speculative"
+      ],
+      "flags": {
+        "--host": "0.0.0.0",
+        "--model-path": "Qwen/Qwen3-32B",
+        "--port": 30000,
+        "--speculative-algorithm": "EAGLE3",
+        "--speculative-draft-model-path": "<eagle3-draft-model>",
+        "--speculative-eagle-topk": 1,
+        "--speculative-num-draft-tokens": 3,
+        "--speculative-num-steps": 2,
+        "--tp-size": 1,
+        "--trust-remote-code": false
+      },
+      "layout": "TP1"
+    }
+  },
+  "qwen3-32b/h20/shared-prefix-agent": {
+    "advices": [
+      [
+        "dp_attention",
+        "not_recommended"
+      ],
+      [
+        "prefill_cp",
+        "not_recommended"
+      ],
+      [
+        "dcp",
+        "not_recommended"
+      ],
+      [
+        "layernorm_sp",
+        "not_recommended"
+      ],
+      [
+        "hicache",
+        "recommend"
+      ],
+      [
+        "deepep",
+        "unsupported"
+      ],
+      [
+        "tbo",
+        "unsupported"
+      ],
+      [
+        "eplb",
+        "unsupported"
+      ],
+      [
+        "speculative",
+        "recommend"
+      ]
+    ],
+    "combined": {
+      "enabled": [
+        "hicache",
+        "speculative"
+      ],
+      "flags": {
+        "--enable-hierarchical-cache": true,
+        "--hicache-ratio": 3.5,
+        "--host": "0.0.0.0",
+        "--model-path": "Qwen/Qwen3-32B",
+        "--port": 30000,
+        "--speculative-algorithm": "EAGLE3",
+        "--speculative-draft-model-path": "<eagle3-draft-model>",
+        "--speculative-eagle-topk": 1,
+        "--speculative-num-draft-tokens": 4,
+        "--speculative-num-steps": 3,
+        "--tp-size": 1,
+        "--trust-remote-code": false
+      },
+      "layout": "TP1"
+    }
+  },
+  "qwen3-32b/template-h20-class/chat": {
+    "advices": [
+      [
+        "dp_attention",
+        "not_recommended"
+      ],
+      [
+        "prefill_cp",
+        "not_recommended"
+      ],
+      [
+        "dcp",
+        "not_recommended"
+      ],
+      [
+        "layernorm_sp",
+        "not_recommended"
+      ],
+      [
+        "hicache",
+        "not_recommended"
+      ],
+      [
+        "deepep",
+        "unsupported"
+      ],
+      [
+        "tbo",
+        "unsupported"
+      ],
+      [
+        "eplb",
+        "unsupported"
+      ],
+      [
+        "speculative",
+        "recommend"
+      ]
+    ],
+    "combined": {
+      "enabled": [
+        "speculative"
+      ],
+      "flags": {
+        "--device": "example",
+        "--host": "0.0.0.0",
+        "--model-path": "Qwen/Qwen3-32B",
+        "--port": 30000,
+        "--speculative-algorithm": "EAGLE3",
+        "--speculative-draft-model-path": "<eagle3-draft-model>",
+        "--speculative-eagle-topk": 1,
+        "--speculative-num-draft-tokens": 2,
+        "--speculative-num-steps": 1,
+        "--tp-size": 1,
+        "--trust-remote-code": false
+      },
+      "layout": "TP1"
+    }
+  },
+  "qwen3-32b/template-h20-class/code": {
+    "advices": [
+      [
+        "dp_attention",
+        "not_recommended"
+      ],
+      [
+        "prefill_cp",
+        "not_recommended"
+      ],
+      [
+        "dcp",
+        "not_recommended"
+      ],
+      [
+        "layernorm_sp",
+        "not_recommended"
+      ],
+      [
+        "hicache",
+        "not_recommended"
+      ],
+      [
+        "deepep",
+        "unsupported"
+      ],
+      [
+        "tbo",
+        "unsupported"
+      ],
+      [
+        "eplb",
+        "unsupported"
+      ],
+      [
+        "speculative",
+        "recommend"
+      ]
+    ],
+    "combined": {
+      "enabled": [
+        "speculative"
+      ],
+      "flags": {
+        "--device": "example",
+        "--host": "0.0.0.0",
+        "--model-path": "Qwen/Qwen3-32B",
+        "--port": 30000,
+        "--speculative-algorithm": "EAGLE3",
+        "--speculative-draft-model-path": "<eagle3-draft-model>",
+        "--speculative-eagle-topk": 1,
+        "--speculative-num-draft-tokens": 3,
+        "--speculative-num-steps": 2,
+        "--tp-size": 1,
+        "--trust-remote-code": false
+      },
+      "layout": "TP1"
+    }
+  },
+  "qwen3-32b/template-h20-class/offline-batch": {
+    "advices": [
+      [
+        "dp_attention",
+        "not_recommended"
+      ],
+      [
+        "prefill_cp",
+        "not_recommended"
+      ],
+      [
+        "dcp",
+        "not_recommended"
+      ],
+      [
+        "layernorm_sp",
+        "not_recommended"
+      ],
+      [
+        "hicache",
+        "not_recommended"
+      ],
+      [
+        "deepep",
+        "unsupported"
+      ],
+      [
+        "tbo",
+        "unsupported"
+      ],
+      [
+        "eplb",
+        "unsupported"
+      ],
+      [
+        "speculative",
+        "not_recommended"
+      ]
+    ],
+    "combined": {
+      "enabled": [],
+      "flags": {
+        "--device": "example",
+        "--host": "0.0.0.0",
+        "--model-path": "Qwen/Qwen3-32B",
+        "--port": 30000,
+        "--tp-size": 1,
+        "--trust-remote-code": false
+      },
+      "layout": "TP1"
+    }
+  },
+  "qwen3-32b/template-h20-class/rag-long-context": {
+    "advices": [
+      [
+        "dp_attention",
+        "not_recommended"
+      ],
+      [
+        "prefill_cp",
+        "not_recommended"
+      ],
+      [
+        "dcp",
+        "not_recommended"
+      ],
+      [
+        "layernorm_sp",
+        "not_recommended"
+      ],
+      [
+        "hicache",
+        "not_recommended"
+      ],
+      [
+        "deepep",
+        "unsupported"
+      ],
+      [
+        "tbo",
+        "unsupported"
+      ],
+      [
+        "eplb",
+        "unsupported"
+      ],
+      [
+        "speculative",
+        "recommend"
+      ]
+    ],
+    "combined": {
+      "enabled": [
+        "speculative"
+      ],
+      "flags": {
+        "--device": "example",
+        "--host": "0.0.0.0",
+        "--model-path": "Qwen/Qwen3-32B",
+        "--port": 30000,
+        "--speculative-algorithm": "EAGLE3",
+        "--speculative-draft-model-path": "<eagle3-draft-model>",
+        "--speculative-eagle-topk": 1,
+        "--speculative-num-draft-tokens": 5,
+        "--speculative-num-steps": 4,
+        "--tp-size": 1,
+        "--trust-remote-code": false
+      },
+      "layout": "TP1"
+    }
+  },
+  "qwen3-32b/template-h20-class/reasoning": {
+    "advices": [
+      [
+        "dp_attention",
+        "not_recommended"
+      ],
+      [
+        "prefill_cp",
+        "not_recommended"
+      ],
+      [
+        "dcp",
+        "not_recommended"
+      ],
+      [
+        "layernorm_sp",
+        "not_recommended"
+      ],
+      [
+        "hicache",
+        "not_recommended"
+      ],
+      [
+        "deepep",
+        "unsupported"
+      ],
+      [
+        "tbo",
+        "unsupported"
+      ],
+      [
+        "eplb",
+        "unsupported"
+      ],
+      [
+        "speculative",
+        "recommend"
+      ]
+    ],
+    "combined": {
+      "enabled": [
+        "speculative"
+      ],
+      "flags": {
+        "--device": "example",
+        "--host": "0.0.0.0",
+        "--model-path": "Qwen/Qwen3-32B",
+        "--port": 30000,
+        "--speculative-algorithm": "EAGLE3",
+        "--speculative-draft-model-path": "<eagle3-draft-model>",
+        "--speculative-eagle-topk": 1,
+        "--speculative-num-draft-tokens": 3,
+        "--speculative-num-steps": 2,
+        "--tp-size": 1,
+        "--trust-remote-code": false
+      },
+      "layout": "TP1"
+    }
+  },
+  "qwen3-32b/template-h20-class/shared-prefix-agent": {
+    "advices": [
+      [
+        "dp_attention",
+        "not_recommended"
+      ],
+      [
+        "prefill_cp",
+        "not_recommended"
+      ],
+      [
+        "dcp",
+        "not_recommended"
+      ],
+      [
+        "layernorm_sp",
+        "not_recommended"
+      ],
+      [
+        "hicache",
+        "recommend"
+      ],
+      [
+        "deepep",
+        "unsupported"
+      ],
+      [
+        "tbo",
+        "unsupported"
+      ],
+      [
+        "eplb",
+        "unsupported"
+      ],
+      [
+        "speculative",
+        "recommend"
+      ]
+    ],
+    "combined": {
+      "enabled": [
+        "hicache",
+        "speculative"
+      ],
+      "flags": {
+        "--device": "example",
+        "--enable-hierarchical-cache": true,
+        "--hicache-io-backend": "direct",
+        "--hicache-mem-layout": "layer_first",
+        "--hicache-ratio": 4.5,
+        "--host": "0.0.0.0",
+        "--model-path": "Qwen/Qwen3-32B",
+        "--port": 30000,
+        "--speculative-algorithm": "EAGLE3",
+        "--speculative-draft-model-path": "<eagle3-draft-model>",
+        "--speculative-eagle-topk": 1,
+        "--speculative-num-draft-tokens": 5,
+        "--speculative-num-steps": 4,
+        "--tp-size": 1,
+        "--trust-remote-code": false
+      },
+      "layout": "TP1"
+    }
+  }
+}
