@@ -1,10 +1,11 @@
 """Sweep the bundled model × hardware × workload matrix and fingerprint the decisions.
 
-Scenario 1 and 2 depend only on the model and device; scenario 3 and 5 also take the workload.
-Fingerprints keep decisions and key numbers (floats at four significant digits), not prose, so a
-baseline diff points at the field that moved. Invariants 1–5 run on every deployment plan.
-Determinism (invariant 6) and monotonicity (invariant 7, report only) are exercised by the caller:
-a second pass of the whole matrix would blow the time budget.
+Scenario 1 and 2 depend only on the model and device, so their baselines are keyed
+``model/hardware`` and each pair is computed once. Scenario 3 and 5 also take the workload
+and stay keyed ``model/hardware/workload``. Fingerprints keep decisions and key numbers
+(floats at four significant digits), not prose, so a baseline diff points at the field that
+moved. Invariants run on every deployment plan. Determinism and monotonicity (report only)
+are exercised by the caller: a second pass of the whole matrix would blow the time budget.
 """
 
 from __future__ import annotations
@@ -45,6 +46,7 @@ BASELINE_SEED = 1
 SIG_DIGITS = 4
 DIFF_LINE_LIMIT = 80
 SCENARIOS = ("adapt", "roofline", "features", "deploy")
+_DEVICE_SCENARIOS = frozenset({"adapt", "roofline"})
 
 INVARIANTS: dict[str, str] = {
     "commands": "启动命令问题：每个节点的启动命令以及 router、bench、checks 的 problems 都为空",
@@ -615,6 +617,19 @@ def _execute(tasks: Sequence[SweepTask], jobs: int) -> list[SweepCell]:
     return [_cell_from_dict(payload) for payload in payloads]
 
 
+def _scenarios_for(
+    seen: set[tuple[str, str]], model: str, hardware: str, scenarios: tuple[str, ...]
+) -> tuple[str, ...]:
+    """Adapt and roofline ignore the workload, so only the first combo of a pair runs them."""
+    device = tuple(name for name in scenarios if name in _DEVICE_SCENARIOS)
+    rest = tuple(name for name in scenarios if name not in _DEVICE_SCENARIOS)
+    pair = (model, hardware)
+    if pair in seen:
+        return rest
+    seen.add(pair)
+    return device + rest
+
+
 def _tasks(
     models: Sequence[str],
     hardware: Sequence[str],
@@ -626,21 +641,27 @@ def _tasks(
     scenarios: tuple[str, ...],
     request_rate: float | None = None,
 ) -> list[SweepTask]:
-    return [
-        SweepTask(
-            model,
-            device,
-            workload,
-            capacity_samples,
-            verify_samples,
-            seed,
-            scenarios,
-            request_rate,
-        )
-        for model in models
-        for device in hardware
-        for workload in workloads
-    ]
+    seen: set[tuple[str, str]] = set()
+    tasks = []
+    for model in models:
+        for device in hardware:
+            for workload in workloads:
+                chosen = _scenarios_for(seen, model, device, scenarios)
+                if not chosen:
+                    continue
+                tasks.append(
+                    SweepTask(
+                        model,
+                        device,
+                        workload,
+                        capacity_samples,
+                        verify_samples,
+                        seed,
+                        chosen,
+                        request_rate,
+                    )
+                )
+    return tasks
 
 
 def _validate_names(
@@ -730,12 +751,14 @@ def sweep(
         raise ValueError(f"未知场景 {sorted(unknown)}")
     if combos is not None:
         tasks = []
+        seen: set[tuple[str, str]] = set()
         for combo in combos:
             model, device, workload = combo.split("/")
+            chosen = _scenarios_for(seen, model, device, scenarios)
+            if not chosen:
+                continue
             tasks.append(
-                SweepTask(
-                    model, device, workload, capacity_samples, verify_samples, seed, scenarios
-                )
+                SweepTask(model, device, workload, capacity_samples, verify_samples, seed, chosen)
             )
         _validate_names(
             [task.model for task in tasks],
@@ -836,11 +859,25 @@ def fingerprint_diff(
 
 
 def scenario_fingerprints(result: SweepResult, scenario: str) -> dict[str, Any]:
-    return {
-        key: cell.fingerprints[scenario]
-        for key, cell in sorted(result.cells.items())
-        if scenario in cell.fingerprints
-    }
+    """Fingerprints for one scenario.
+
+    Adapt and roofline do not take a workload, so their keys are ``model/hardware``.
+    Features and deploy stay ``model/hardware/workload``.
+    """
+    found: dict[str, Any] = {}
+    for key, cell in sorted(result.cells.items()):
+        if scenario not in cell.fingerprints:
+            continue
+        out_key = key
+        if scenario in _DEVICE_SCENARIOS:
+            model, hardware, *_rest = key.split("/")
+            out_key = f"{model}/{hardware}"
+        current = found.get(out_key)
+        fingerprint = cell.fingerprints[scenario]
+        if current is not None and current != fingerprint:
+            raise ValueError(f"{scenario} 指纹在 {out_key} 上不一致")
+        found[out_key] = fingerprint
+    return found
 
 
 class BaselineWriteError(RuntimeError):
@@ -848,7 +885,10 @@ class BaselineWriteError(RuntimeError):
 
 
 def write_baselines(result: SweepResult, directory: Path) -> None:
-    """Write one sorted JSON file per scenario. Keys are ``model/hardware/workload``.
+    """Write one sorted JSON file per scenario.
+
+    Adapt and roofline keys are ``model/hardware``. Features and deploy keys are
+    ``model/hardware/workload``.
 
     Refuses, writes nothing, and raises ``BaselineWriteError`` when ``result.ok`` is false
     (unexpected violations, or a registered violation that did not appear) or any combo

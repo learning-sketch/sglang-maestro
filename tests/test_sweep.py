@@ -119,14 +119,17 @@ def test_baseline_keys_are_the_full_bundled_matrix() -> None:
     models = sorted(list_bundled_models())
     hardware = sorted(list_presets())
     workloads = sorted(list_workloads())
-    full = {
+    by_device = {f"{model}/{device}" for model in models for device in hardware}
+    by_workload = {
         f"{model}/{device}/{workload}"
         for model in models
         for device in hardware
         for workload in workloads
     }
-    for scenario in SCENARIOS:
-        assert set(_load(scenario)) == full
+    assert set(_load("adapt")) == by_device
+    assert set(_load("roofline")) == by_device
+    assert set(_load("features")) == by_workload
+    assert set(_load("deploy")) == by_workload
 
 
 def test_write_baselines_refuses_errors_and_missing_registrations(
@@ -217,7 +220,9 @@ def test_task_exception_is_not_a_command_problem() -> None:
     report = render_sweep(
         SweepResult(
             cells={cell.key: cell},
-            options=_baseline_options(capacity_samples=240, verify_samples=1200, jobs=1, scenarios=["adapt"]),
+            options=_baseline_options(
+                capacity_samples=240, verify_samples=1200, jobs=1, scenarios=["adapt"]
+            ),
         )
     )
     assert "`error` 只表示这个组合在运行时抛了异常" in report

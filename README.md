@@ -111,7 +111,7 @@ ruff check . && ruff format --check .
 sglang-maestro sweep --write-baselines tests/baselines
 ```
 
-有组合运行失败、未登记的不变量违反，或已登记违反没有出现时，一个基线文件都不写，原因打在 stderr，退出码 1。修好已登记违反的改动必须同时删掉登记，否则基线写不出来。基线 JSON 要提交。改动让结论变了，就重新生成，并在 PR 描述里逐条解释每处变化为什么是对的；解释不了的变化就是回归。
+有组合运行失败、未登记的不变量违反，或已登记违反没有出现时，一个基线文件都不写，原因打在 stderr，退出码 1。修好已登记违反的改动必须同时删掉登记，否则基线写不出来。`adapt.json` 和 `roofline.json` 的 key 是「模型/硬件」（这两个分析不看负载，同一对只算一次）；`features.json` 和 `deploy.json` 的 key 是「模型/硬件/负载」。基线 JSON 要提交。改动让结论变了，就重新生成，并在 PR 描述里逐条解释每处变化为什么是对的；解释不了的变化就是回归。
 
 `pytest -m slow` 会对 `SGLANG_SRC` 运行 `sglang-maestro sync-knowledge`，要求输出和内置的 `sglang_capabilities.json` 逐字节一致；同时用多进程跑完全部部署组合，和 `tests/baselines/deploy.json` 对比。没设 `SGLANG_SRC` 时只有快照那一项会 skip，部署矩阵仍会跑。源码用 `scripts/fetch_sglang.sh` 准备（默认目录 `/tmp/sglang-src`，checkout 快照里的 `sglang_commit`）：
 
