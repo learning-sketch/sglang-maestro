@@ -105,13 +105,13 @@ pytest -m slow    # 快照可复现，外加场景 5 全部 90 个组合
 ruff check . && ruff format --check .
 ```
 
-默认测试对照 `tests/baselines/` 里的决策基线。基线固定用 `capacity_samples=40`、`verify_samples=120`、`seed=1` 生成，重新生成只用一条命令：
+默认测试对照 `tests/baselines/` 里的决策基线。基线固定用 `capacity_samples=40`、`verify_samples=120`、`seed=1` 生成，而且只能整矩阵生成（不能加 `--models`、`--hardware`、`--workloads`）：
 
 ```bash
 sglang-maestro sweep --write-baselines tests/baselines
 ```
 
-基线 JSON 要提交。改动让结论变了，就重新生成，并在 PR 描述里逐条解释每处变化为什么是对的；解释不了的变化就是回归。
+有组合运行失败、未登记的不变量违反，或已登记违反没有出现时，一个基线文件都不写，原因打在 stderr，退出码 1。修好已登记违反的改动必须同时删掉登记，否则基线写不出来。基线 JSON 要提交。改动让结论变了，就重新生成，并在 PR 描述里逐条解释每处变化为什么是对的；解释不了的变化就是回归。
 
 `pytest -m slow` 会对 `SGLANG_SRC` 运行 `sglang-maestro sync-knowledge`，要求输出和内置的 `sglang_capabilities.json` 逐字节一致；同时用多进程跑完全部部署组合，和 `tests/baselines/deploy.json` 对比。没设 `SGLANG_SRC` 时只有快照那一项会 skip，部署矩阵仍会跑。源码用 `scripts/fetch_sglang.sh` 准备（默认目录 `/tmp/sglang-src`，checkout 快照里的 `sglang_commit`）：
 

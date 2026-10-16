@@ -13,6 +13,8 @@ from pathlib import Path
 import pytest
 
 from sglang_maestro.cli import main
+from sglang_maestro.hardware.spec import list_presets
+from sglang_maestro.model.config import list_bundled_models
 from sglang_maestro.sweep import (
     BASELINE_CAPACITY_SAMPLES,
     BASELINE_SEED,
@@ -20,6 +22,7 @@ from sglang_maestro.sweep import (
     DIFF_LINE_LIMIT,
     KNOWN_VIOLATIONS,
     SCENARIOS,
+    BaselineWriteError,
     SweepCell,
     SweepResult,
     default_jobs,
@@ -27,7 +30,9 @@ from sglang_maestro.sweep import (
     no_plan_detail,
     scenario_fingerprints,
     sweep,
+    write_baselines,
 )
+from sglang_maestro.workload import list_workloads
 
 _BASELINES = Path(__file__).parent / "baselines"
 # Architect-timed on Python 3.12, one process, baseline sample counts. Keep this list
@@ -100,7 +105,69 @@ def deploy_subset() -> SweepResult:
 
 @pytest.mark.parametrize("scenario", ("adapt", "roofline", "features"))
 def test_light_scenarios_match_baseline(light_matrix: SweepResult, scenario: str) -> None:
+    assert light_matrix.ok
+    assert all(cell.error is None for cell in light_matrix.cells.values())
     _assert_matches(_load(scenario), scenario_fingerprints(light_matrix, scenario))
+
+
+def test_baseline_keys_are_the_full_bundled_matrix() -> None:
+    models = sorted(list_bundled_models())
+    hardware = sorted(list_presets())
+    workloads = sorted(list_workloads())
+    full = {
+        f"{model}/{device}/{workload}"
+        for model in models
+        for device in hardware
+        for workload in workloads
+    }
+    for scenario in SCENARIOS:
+        assert set(_load(scenario)) == full
+
+
+def test_write_baselines_refuses_errors_and_missing_registrations(
+    tmp_path: Path, capsys: pytest.CaptureFixture[str]
+) -> None:
+    known = KNOWN_VIOLATIONS[0]
+    crashed = SweepResult(
+        cells={
+            "qwen3-32b/h20/chat": SweepCell(
+                key="qwen3-32b/h20/chat",
+                seconds=0.0,
+                fingerprints={"deploy": {"chosen": None}},
+                violations=[],
+                summary={},
+                error="RuntimeError: boom",
+            )
+        },
+        options=_baseline_options(),
+    )
+    dest = tmp_path / "crashed"
+    with pytest.raises(BaselineWriteError):
+        write_baselines(crashed, dest)
+    assert not dest.exists()
+    assert "boom" in capsys.readouterr().err
+
+    missing = SweepResult(
+        cells={known.combo: _cell(known.combo, [])},
+        options=_baseline_options(),
+    )
+    dest = tmp_path / "missing"
+    with pytest.raises(BaselineWriteError):
+        write_baselines(missing, dest)
+    assert not dest.exists()
+    assert "删掉登记" in capsys.readouterr().err
+
+
+@pytest.mark.parametrize("flag", ("--models", "--hardware", "--workloads"))
+def test_write_baselines_rejects_a_subset_before_the_sweep(
+    tmp_path: Path, capsys: pytest.CaptureFixture[str], flag: str
+) -> None:
+    dest = tmp_path / "baselines"
+    status = main(["sweep", flag, "qwen3-32b", "--write-baselines", str(dest)])
+    captured = capsys.readouterr()
+    assert status == 2
+    assert "基线只能整矩阵生成" in captured.err
+    assert not dest.exists()
 
 
 def test_deploy_subset_matches_baseline(deploy_subset: SweepResult) -> None:

@@ -41,6 +41,7 @@ from sglang_maestro.sweep import (
     BASELINE_CAPACITY_SAMPLES,
     BASELINE_SEED,
     BASELINE_VERIFY_SAMPLES,
+    BaselineWriteError,
     split_csv,
     sweep,
     write_baselines,
@@ -385,6 +386,8 @@ def cmd_run(args: argparse.Namespace) -> int:
 def cmd_sweep(args: argparse.Namespace) -> int:
     if not args.output and not args.write_baselines:
         raise ValueError("需要 -o DIR，或 --write-baselines DIR")
+    if args.write_baselines and (args.models or args.hardware or args.workloads):
+        raise ValueError("基线只能整矩阵生成，不能同时使用 --models、--hardware 或 --workloads")
     capacity = args.capacity_samples
     verify = args.verify_samples
     seed = args.seed
@@ -419,9 +422,6 @@ def cmd_sweep(args: argparse.Namespace) -> int:
     if args.output:
         write_sweep(result, Path(args.output))
         print(f"已写入 {args.output}/sweep.json 和 {args.output}/sweep.md")
-    if args.write_baselines:
-        write_baselines(result, Path(args.write_baselines))
-        print(f"已写入基线 {args.write_baselines}/{{adapt,roofline,features,deploy}}.json")
     unexpected = result.unexpected_violations()
     missing = result.missing_known()
     print(
@@ -432,6 +432,12 @@ def cmd_sweep(args: argparse.Namespace) -> int:
         print(f"未登记：{item['combo']} {item['id']} {item['detail']}", file=sys.stderr)
     for item in missing:
         print(f"已登记但未出现：{item.combo} {item.id}", file=sys.stderr)
+    if args.write_baselines:
+        try:
+            write_baselines(result, Path(args.write_baselines))
+        except BaselineWriteError:
+            return 1
+        print(f"已写入基线 {args.write_baselines}/{{adapt,roofline,features,deploy}}.json")
     return 0 if result.ok else 1
 
 
@@ -571,7 +577,8 @@ def build_parser() -> argparse.ArgumentParser:
         metavar="DIR",
         help=(
             "按固定参数（capacity_samples=40、verify_samples=120、seed=1）"
-            "把决策基线写到 DIR/{adapt,roofline,features,deploy}.json"
+            "把整矩阵的决策基线写到 DIR/{adapt,roofline,features,deploy}.json；"
+            "不能和 --models、--hardware、--workloads 一起用"
         ),
     )
 

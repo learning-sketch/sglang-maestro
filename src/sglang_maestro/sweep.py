@@ -12,6 +12,7 @@ from __future__ import annotations
 import json
 import math
 import os
+import sys
 import time
 from collections import defaultdict
 from collections.abc import Iterable, Sequence
@@ -841,13 +842,40 @@ def scenario_fingerprints(result: SweepResult, scenario: str) -> dict[str, Any]:
     }
 
 
+class BaselineWriteError(RuntimeError):
+    """Baselines were refused. The reason has already been printed to stderr."""
+
+
 def write_baselines(result: SweepResult, directory: Path) -> None:
-    """Write one sorted JSON file per scenario. Keys are ``model/hardware/workload``."""
+    """Write one sorted JSON file per scenario. Keys are ``model/hardware/workload``.
+
+    Refuses, writes nothing, and raises ``BaselineWriteError`` when ``result.ok`` is false
+    (unexpected violations, or a registered violation that did not appear) or any combo
+    has ``error``. Sample-count mismatches stay ``ValueError``.
+    """
     if not _is_baseline_options(result.options):
         raise ValueError(
             "基线必须用 capacity_samples="
             f"{BASELINE_CAPACITY_SAMPLES}、verify_samples={BASELINE_VERIFY_SAMPLES}、seed={BASELINE_SEED} 生成"
         )
+    reasons: list[str] = []
+    for item in result.unexpected_violations():
+        reasons.append(f"未登记违反：{item['combo']} {item['id']} {item['detail']}")
+    for item in result.missing_known():
+        reasons.append(
+            f"已登记违反没有出现：{item.combo} {item.id}。"
+            "修好已登记违反的改动必须同时删掉登记，否则基线写不出来。"
+        )
+    for key, cell in sorted(result.cells.items()):
+        if cell.error:
+            reasons.append(f"组合运行失败：{key} {cell.error}")
+    if not result.ok or any(cell.error for cell in result.cells.values()):
+        if not reasons:
+            reasons.append("结果不合格。")
+        print("未写入基线：", file=sys.stderr)
+        for reason in reasons:
+            print(reason, file=sys.stderr)
+        raise BaselineWriteError("未写入基线：" + "；".join(reasons))
     directory.mkdir(parents=True, exist_ok=True)
     for scenario in SCENARIOS:
         payload = scenario_fingerprints(result, scenario)
