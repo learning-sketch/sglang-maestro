@@ -47,11 +47,12 @@ DIFF_LINE_LIMIT = 80
 SCENARIOS = ("adapt", "roofline", "features", "deploy")
 
 INVARIANTS: dict[str, str] = {
-    "commands": "每个节点的启动命令以及 router、bench、checks 的 problems 都为空",
+    "commands": "启动命令问题：每个节点的启动命令以及 router、bench、checks 的 problems 都为空",
     "placement": "同一节点上各实例的 GPU 区间不重叠、不超过 devices_per_node，且 port 与 bootstrap_port 不重复",
     "budget": "选出的方案超过 GPU 预算时，notes 里要有超预算说明",
     "slo": "有选出的方案时 meets_slo 为真",
     "no_plan": "没选出方案时 notes 或 bottlenecks 非空，且不能和「任何到达率下都满足不了 SLO」自相矛盾",
+    "error": "组合崩溃：运行抛出异常时单独记录，detail 带异常类型和消息，不是启动命令问题",
     "determinism": "同一组合跑两次的结果一致，且 --jobs 1 和 --jobs 2 的结果一致",
     "monotonicity": "到达率翻倍时选出的卡数不应变少（只报告，不算违反）",
 }
@@ -584,7 +585,7 @@ def _run_task(task: SweepTask) -> dict[str, Any]:
             key=task.key,
             seconds=round(time.perf_counter() - started, 3),
             fingerprints={},
-            violations=[_violation(task.key, "commands", f"组合运行失败：{error}")],
+            violations=[_violation(task.key, "error", f"{type(error).__name__}: {error}")],
             summary={},
             error=f"{type(error).__name__}: {error}",
         ).to_dict()
@@ -935,6 +936,8 @@ def render_sweep(result: SweepResult) -> str:
         "## 不变量",
         "",
         bullets(f"`{invariant_id}` {text}" for invariant_id, text in INVARIANTS.items()),
+        "",
+        "`error` 只表示这个组合在运行时抛了异常；`commands` 只表示启动命令的参数问题。两者不是一回事。",
         "",
         "## 不变量违反",
         "",

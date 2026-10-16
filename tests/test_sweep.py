@@ -20,14 +20,19 @@ from sglang_maestro.sweep import (
     BASELINE_SEED,
     BASELINE_VERIFY_SAMPLES,
     DIFF_LINE_LIMIT,
+    INVARIANTS,
     KNOWN_VIOLATIONS,
     SCENARIOS,
     BaselineWriteError,
     SweepCell,
     SweepResult,
+    SweepTask,
+    _cell_from_dict,
+    _run_task,
     default_jobs,
     fingerprint_diff,
     no_plan_detail,
+    render_sweep,
     scenario_fingerprints,
     sweep,
     write_baselines,
@@ -195,6 +200,28 @@ def test_repeat_and_jobs_do_not_change_decisions() -> None:
         for result in (first, second, pooled)
     ]
     assert fingerprints[0] == fingerprints[1] == fingerprints[2]
+
+
+def test_task_exception_is_not_a_command_problem() -> None:
+    task = SweepTask("no-such-model", "h20", "chat", 40, 120, 1, ("adapt",))
+    cell = _cell_from_dict(_run_task(task))
+    assert cell.error is not None
+    assert cell.violations
+    assert {item["id"] for item in cell.violations} == {"error"}
+    detail = cell.violations[0]["detail"]
+    assert detail == cell.error
+    assert detail.startswith("FileNotFoundError:")
+    assert "组合崩溃" in INVARIANTS["error"]
+    assert "启动命令问题" in INVARIANTS["commands"]
+    assert "异常" not in INVARIANTS["commands"]
+    report = render_sweep(
+        SweepResult(
+            cells={cell.key: cell},
+            options=_baseline_options(capacity_samples=240, verify_samples=1200, jobs=1, scenarios=["adapt"]),
+        )
+    )
+    assert "`error` 只表示这个组合在运行时抛了异常" in report
+    assert "`commands` 只表示启动命令的参数问题" in report
 
 
 def test_no_plan_contradiction_is_invariant_5() -> None:
