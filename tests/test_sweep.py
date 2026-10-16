@@ -12,6 +12,7 @@ import os
 from pathlib import Path
 
 import pytest
+import yaml
 
 from sglang_maestro.cli import main
 from sglang_maestro.hardware.spec import list_presets
@@ -114,6 +115,20 @@ def test_light_scenarios_match_baseline(light_matrix: SweepResult, scenario: str
     assert light_matrix.ok
     assert all(cell.error is None for cell in light_matrix.cells.values())
     _assert_matches(_load(scenario), scenario_fingerprints(light_matrix, scenario))
+
+
+def test_slow_ci_shards_match_bundled_hardware() -> None:
+    document = yaml.safe_load(
+        (Path(__file__).resolve().parents[1] / ".github/workflows/ci.yml").read_text(
+            encoding="utf-8"
+        )
+    )
+    shards = document["jobs"]["slow"]["strategy"]["matrix"]["hardware"]
+    expected = sorted(list_presets())
+    actual = sorted(shards)
+    missing = [name for name in expected if name not in set(actual)]
+    extra = [name for name in actual if name not in set(expected)]
+    assert actual == expected, f"CI slow 分片和内置硬件不一致：缺了 {missing}，多了 {extra}"
 
 
 def test_baseline_keys_are_the_full_bundled_matrix() -> None:
