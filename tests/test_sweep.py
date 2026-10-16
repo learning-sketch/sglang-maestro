@@ -91,6 +91,16 @@ def _cell(key: str, violations: list[dict[str, str]]) -> SweepCell:
     )
 
 
+def _finished_cell(key: str, violations: list[dict[str, str]]) -> SweepCell:
+    return SweepCell(
+        key=key,
+        seconds=0.0,
+        fingerprints={"deploy": {"chosen": None}},
+        violations=violations,
+        summary={},
+    )
+
+
 def _assert_matches(expected: dict, actual: dict) -> None:
     diff = fingerprint_diff(expected, actual)
     if diff:
@@ -176,7 +186,7 @@ def test_write_baselines_refuses_errors_and_missing_registrations(
     assert "boom" in capsys.readouterr().err
 
     missing = SweepResult(
-        cells={known.combo: _cell(known.combo, [])},
+        cells={known.combo: _finished_cell(known.combo, [])},
         options=_baseline_options(),
     )
     dest = tmp_path / "missing"
@@ -319,11 +329,18 @@ def test_registered_violation_does_not_fail_and_a_new_one_does() -> None:
     assert extra.unexpected_violations()[0]["combo"] == "qwen3-32b/h20/chat"
 
     gone = SweepResult(
-        cells={known.combo: _cell(known.combo, [])},
+        cells={known.combo: _finished_cell(known.combo, [])},
         options=_baseline_options(),
     )
     assert not gone.ok
     assert gone.missing_known() == [known]
+
+    unfinished = SweepResult(
+        cells={known.combo: _cell(known.combo, [])},
+        options=_baseline_options(),
+    )
+    assert unfinished.missing_known() == []
+    assert unfinished.ok
 
     # Default deploy samples are not the baseline, so a known violation that only
     # shows up at 40/120 must not be required there.
@@ -333,6 +350,31 @@ def test_registered_violation_does_not_fail_and_a_new_one_does() -> None:
     )
     assert default_samples.ok
     assert default_samples.missing_known() == []
+
+
+def test_crashed_registered_combo_is_not_a_fixed_violation(
+    tmp_path: Path, capsys: pytest.CaptureFixture[str]
+) -> None:
+    known = KNOWN_VIOLATIONS[0]
+    crashed = SweepResult(
+        cells={
+            known.combo: SweepCell(
+                key=known.combo,
+                seconds=0.0,
+                fingerprints={"deploy": {"chosen": None}},
+                violations=[{"combo": known.combo, "id": "error", "detail": "RuntimeError: boom"}],
+                summary={},
+                error="RuntimeError: boom",
+            )
+        },
+        options=_baseline_options(),
+    )
+    assert crashed.missing_known() == []
+    dest = tmp_path / "crashed-known"
+    with pytest.raises(BaselineWriteError):
+        write_baselines(crashed, dest)
+    assert not dest.exists()
+    assert "删掉登记" not in capsys.readouterr().err
 
 
 def test_fingerprint_diff_names_combo_field_and_truncates() -> None:

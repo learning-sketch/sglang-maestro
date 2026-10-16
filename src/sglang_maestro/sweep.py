@@ -227,19 +227,29 @@ class SweepResult:
         return [item for item in self.violations() if not _is_known(item)]
 
     def missing_known(self) -> list[KnownViolation]:
-        """Known violations that this run should have reproduced and did not."""
+        """Known violations absent after that combo's deployment actually finished.
+
+        A crash, or a cell with no deploy fingerprint, does not mean the violation
+        was fixed.
+        """
         if not _is_baseline_options(self.options):
             return []
         present = {(item["combo"], item["id"]) for item in self.violations()}
         return [
             item
             for item in KNOWN_VIOLATIONS
-            if item.combo in self.cells and (item.combo, item.id) not in present
+            if item.combo in self.cells
+            and _deploy_finished(self.cells[item.combo])
+            and (item.combo, item.id) not in present
         ]
 
     @property
     def ok(self) -> bool:
         return not self.unexpected_violations() and not self.missing_known()
+
+
+def _deploy_finished(cell: SweepCell) -> bool:
+    return cell.error is None and "deploy" in cell.fingerprints
 
 
 def _is_known(violation: dict[str, str]) -> bool:
