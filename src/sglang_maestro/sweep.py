@@ -13,6 +13,7 @@ from __future__ import annotations
 import json
 import math
 import os
+import re
 import sys
 import time
 from collections import defaultdict
@@ -28,7 +29,6 @@ from sglang_maestro.deploy.plan import (
     VERIFY_SAMPLES,
     DeployOptions,
     DeployPlan,
-    launch_commands,
     plan_deployment,
 )
 from sglang_maestro.features.report import advise_features
@@ -62,6 +62,7 @@ INVARIANTS: dict[str, str] = {
 _IMPOSSIBLE_AT_ANY_RATE = "任何到达率下都满足不了"
 _QUEUE_BOTTLENECK = "瓶颈是排队"
 _OVER_BUDGET = "超出 GPU 预算"
+_LAUNCH_TITLE = re.compile(r"^节点 (\d+)：(\S+) 实例 (\d+)（")
 
 
 @dataclass(frozen=True)
@@ -439,7 +440,7 @@ def _features_fingerprint(target: Target) -> dict[str, Any]:
     )
 
 
-def _deploy_fingerprint(plan: DeployPlan, knowledge: Any, options: DeployOptions) -> dict[str, Any]:
+def _deploy_fingerprint(plan: DeployPlan) -> dict[str, Any]:
     chosen = plan.chosen
 
     def chosen_body() -> dict[str, Any] | None:
@@ -473,18 +474,19 @@ def _deploy_fingerprint(plan: DeployPlan, knowledge: Any, options: DeployOptions
             },
         }
 
-    first: dict[str, Any] = {}
-    if chosen is not None:
-        for placement in plan.placements:
-            current = first.get(placement.role)
-            if current is None or placement.index < current.index:
-                first[placement.role] = placement
-    pools = {pool.role: pool for pool in chosen.pools.values()} if chosen is not None else {}
-    commands: dict[str, list[str]] = {}
-    for role, placement in sorted(first.items()):
-        launched = launch_commands(knowledge, pools[role], placement, options)
-        _node, command = min(launched, key=lambda item: item[0])
-        commands[role] = command.argv
+    # Lowest instance index of each role, then the smallest node that instance occupies.
+    picked: dict[str, tuple[int, int, list[str]]] = {}
+    for node in plan.nodes:
+        for command in node.commands:
+            match = _LAUNCH_TITLE.match(command.title)
+            if match is None:
+                continue
+            _title_node, role, index_text = match.groups()
+            rank = (int(index_text), node.node)
+            current = picked.get(role)
+            if current is None or rank < (current[0], current[1]):
+                picked[role] = (rank[0], rank[1], list(command.argv))
+    commands = {role: argv for role, (_index, _node, argv) in sorted(picked.items())}
     return _canon(
         {
             "mode": plan.mode,
@@ -500,6 +502,7 @@ def _deploy_fingerprint(plan: DeployPlan, knowledge: Any, options: DeployOptions
                 for candidate in plan.candidates
             ],
             "commands": commands,
+            "router": None if plan.router is None else list(plan.router.argv),
         }
     )
 
@@ -567,7 +570,7 @@ def _run_task(task: SweepTask) -> dict[str, Any]:
                 host_memory_gb=target.host_memory_gb,
                 calibration=target.calibration,
             )
-            fingerprints["deploy"] = _deploy_fingerprint(plan, target.knowledge, options)
+            fingerprints["deploy"] = _deploy_fingerprint(plan)
             violations = check_plan(plan, task.key)
             summary = _summary(plan)
             notes = list(plan.notes)
