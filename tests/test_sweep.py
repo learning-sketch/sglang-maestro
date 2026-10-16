@@ -8,6 +8,7 @@ values (at most 80 lines).
 from __future__ import annotations
 
 import json
+import os
 from pathlib import Path
 
 import pytest
@@ -29,6 +30,7 @@ from sglang_maestro.sweep import (
     SweepTask,
     _cell_from_dict,
     _run_task,
+    bundled_names,
     default_jobs,
     fingerprint_diff,
     no_plan_detail,
@@ -373,8 +375,18 @@ def test_sweep_cli_requires_an_output_and_baseline_samples(
 
 @pytest.mark.slow
 def test_deploy_baseline_full_matrix() -> None:
-    """All 90 deployment plans at the checked-in sample counts, one process pool."""
+    """Deployment plans at the checked-in sample counts.
+
+    Unset ``SGLANG_MAESTRO_SLOW_HARDWARE`` runs all 90 combos. CI sets it to one
+    hardware stem so each job runs that stem's 30 combos and its own monotonicity
+    check. The registered violation is only required on the shard that contains it.
+    """
+    shard = os.environ.get("SGLANG_MAESTRO_SLOW_HARDWARE")
+    models, hardware, workloads = bundled_names()
+    if shard and shard not in hardware:
+        raise AssertionError(f"未知硬件分片 {shard}")
     result = sweep(
+        hardware=[shard] if shard else None,
         scenarios=("deploy",),
         capacity_samples=BASELINE_CAPACITY_SAMPLES,
         verify_samples=BASELINE_VERIFY_SAMPLES,
@@ -382,17 +394,26 @@ def test_deploy_baseline_full_matrix() -> None:
         jobs=default_jobs(),
         check_monotonicity=True,
     )
-    _assert_matches(_load("deploy"), scenario_fingerprints(result, "deploy"))
+    expected = _load("deploy")
+    if shard:
+        expected = {key: value for key, value in expected.items() if key.split("/")[1] == shard}
+    assert len(result.cells) == len(models) * len(workloads) * (1 if shard else len(hardware))
+    _assert_matches(expected, scenario_fingerprints(result, "deploy"))
     assert result.unexpected_violations() == []
-    assert result.missing_known() == []
+    assert all(cell.error is None for cell in result.cells.values())
     known = KNOWN_VIOLATIONS[0]
-    matched = [
-        item
-        for item in result.violations()
-        if item["combo"] == known.combo and item["id"] == known.id
-    ]
-    assert matched, f"已登记的违反没有出现：{known.combo} {known.id}"
-    assert "瓶颈是排队" in matched[0]["detail"]
+    if shard is None or known.combo.split("/")[1] == shard:
+        assert result.missing_known() == []
+        matched = [
+            item
+            for item in result.violations()
+            if item["combo"] == known.combo and item["id"] == known.id
+        ]
+        assert matched, f"已登记的违反没有出现：{known.combo} {known.id}"
+        assert "瓶颈是排队" in matched[0]["detail"]
+    else:
+        assert result.missing_known() == []
+        assert known.combo not in result.cells
     assert len(result.monotonicity) == 2
     assert {row.key for row in result.monotonicity}.isdisjoint(
         # Throughput workloads have no arrival rate to double.

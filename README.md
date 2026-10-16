@@ -101,7 +101,7 @@ sglang-maestro adapt --model deepseek-v3 --hardware ./my-chip.yaml
 
 ```bash
 pytest            # 默认测试（不含 slow）：场景 1–3 全矩阵，场景 5 只跑一个小子集
-pytest -m slow    # 快照可复现，外加场景 5 全部 90 个组合
+pytest -m slow    # 不带分片参数时跑全部：快照可复现，外加场景 5 全部 90 个组合
 ruff check . && ruff format --check .
 ```
 
@@ -113,7 +113,7 @@ sglang-maestro sweep --write-baselines tests/baselines
 
 有组合运行失败、未登记的不变量违反，或已登记违反没有出现时，一个基线文件都不写，原因打在 stderr，退出码 1。修好已登记违反的改动必须同时删掉登记，否则基线写不出来。`adapt.json` 和 `roofline.json` 的 key 是「模型/硬件」（这两个分析不看负载，同一对只算一次）；`features.json` 和 `deploy.json` 的 key 是「模型/硬件/负载」。基线 JSON 要提交。改动让结论变了，就重新生成，并在 PR 描述里逐条解释每处变化为什么是对的；解释不了的变化就是回归。
 
-`pytest -m slow` 会对 `SGLANG_SRC` 运行 `sglang-maestro sync-knowledge`，要求输出和内置的 `sglang_capabilities.json` 逐字节一致；同时用多进程跑完全部部署组合，和 `tests/baselines/deploy.json` 对比。没设 `SGLANG_SRC` 时只有快照那一项会 skip，部署矩阵仍会跑。源码用 `scripts/fetch_sglang.sh` 准备（默认目录 `/tmp/sglang-src`，checkout 快照里的 `sglang_commit`）：
+`pytest -m slow` 在没设 `SGLANG_MAESTRO_SLOW_HARDWARE` 时跑全部。它对 `SGLANG_SRC` 运行 `sglang-maestro sync-knowledge`，要求输出和内置的 `sglang_capabilities.json` 逐字节一致；同时用多进程跑完全部部署组合，和 `tests/baselines/deploy.json` 对比，并检查单调性。没设 `SGLANG_SRC` 时只有快照那一项会 skip，部署矩阵仍会跑。CI 把这一步按硬件切成 `h20`、`h100-sxm`、`template-h20-class` 三片，每片只跑该硬件的 30 个部署组合并各自检查单调性；快照可复现只在 `h20` 那片跑。源码用 `scripts/fetch_sglang.sh` 准备（默认目录 `/tmp/sglang-src`，checkout 快照里的 `sglang_commit`）：
 
 - 目录不存在时按该 SHA 浅取；服务器不支持时回退到完整 fetch，并打印一行说明。
 - 目录已是 git 仓库时，commit 已在本地就直接 checkout、不联网；不在才 fetch，且不加 `--depth`，避免把完整 clone 变成浅克隆。

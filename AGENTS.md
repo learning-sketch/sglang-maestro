@@ -24,7 +24,7 @@
 - 默认测试要快。慢测试加 `@pytest.mark.slow`；`pytest` 默认带 `-m "not slow"`。
 - 决策基线在 `tests/baselines/`（`adapt.json`、`roofline.json`、`features.json`、`deploy.json`）。改动让基线变了，就用 `sglang-maestro sweep --write-baselines tests/baselines` 重新生成（必须是整矩阵，不能加 `--models`、`--hardware`、`--workloads`），并在 PR 描述里逐条解释每处变化为什么是对的；解释不了的变化就是回归。修好已登记违反的 PR 必须同时删掉登记，否则基线写不出来。
 - 部署仿真用 `tests/conftest.py` 里的 `SMALL_DEPLOY` 和 `dense_chat`、`oot_moe` fixture 缩短时间。
-- 快照可复现：`SGLANG_SRC` 指向 SGLang 源码时，`pytest -m slow` 运行 `sglang-maestro sync-knowledge`，结果必须和内置 `sglang_capabilities.json` 逐字节一致。没设 `SGLANG_SRC` 时该测试 skip。不一致时修 `sync.py` 的输出确定性（例如文件遍历顺序），不要放宽比较。
+- 快照可复现：`SGLANG_SRC` 指向 SGLang 源码时，`pytest -m slow` 运行 `sglang-maestro sync-knowledge`，结果必须和内置 `sglang_capabilities.json` 逐字节一致。没设 `SGLANG_SRC` 时该测试 skip。不一致时修 `sync.py` 的输出确定性（例如文件遍历顺序），不要放宽比较。CI 按硬件把 slow job 切成三片（`SGLANG_MAESTRO_SLOW_HARDWARE`）；本地不设这个变量时仍跑全部，快照只在 `h20` 那片跑。
 - 合成数据（`synth-trace`、`synth-log`、`run --demo`）只用于演示和测试，基于它的报告必须写明“不是实测”。
 
 ### 自检
