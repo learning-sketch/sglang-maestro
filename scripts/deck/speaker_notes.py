@@ -1,0 +1,213 @@
+"""Speaker script for the agent-loop deck: one entry per slide, plus a rough speaking-time estimate."""
+
+import re
+import sys
+import unicodedata
+
+WPM = 200
+"""Planning pace in spoken syllables per minute, pauses included (a measured technical talk)."""
+SLOW_WPM = 180
+
+NOTES = (
+    ("封面", (
+        ("各位好，今天汇报 sglang-maestro：一个帮 SGLang 在 M100 上做适配和调优的 Agent，目前面向单机部署。"
+         "核心一句话：从算子级做到模型级。"),
+        "下面分三个 Agent Loop，讲它怎么助力框架迭代、模型适配、算子绑定，最后挑一个难点讲透。",
+    )),
+    ("全局 · 三个 Agent Loop", (
+        "先看全局：三个 Loop 分层咬合，框架定规则，模型定目标，算子定成本。",
+        ("最上面的 Loop A 回答：这一版 SGLang 在 M100 上能开哪些特性、插件要补什么。"
+         "它向下提供启动参数、特性约束、平台 hook 和算子分发规则；下面两个 Loop 发现的缺口，再回传给它。"),
+        ("下面两个 Loop 互为输入：Loop B 看模型能不能上、怎么配、单机在 SLO 内能扛多少；"
+         "Loop C 看每个算子实际跑哪条实现、慢在哪、先优化谁。"
+         "B 把算子缺口和热点按占 step 的比例排好序交给 C，C 把实测耗时交回 B，校准成本模型、重新规划。"),
+        "三个 Loop 共用一套证据底座：源码静态分析、算子级成本模型和实测校准。图里虚线表示规划中。接下来逐个看。",
+    )),
+    ("Loop A · 助力框架迭代", (
+        "Loop A 助力框架迭代：SGLang 每升一版，Agent 就重算一遍 M100 能开哪些特性、怎么调。",
+        ("新版本、新特性或 M100 插件更新都会触发它。流程四步：同步知识，静态分析源码生成能力快照，不需要 GPU；"
+         "判可行，复用 SGLang 自己的校验规则，再核对插件 hook 和平台能力；"
+         "算收益，用成本模型估 KV 容量、decode 吞吐和时延；出配置，把能共存的特性合并成一条 launch。"),
+        ("以 10 月 14 号的快照为例，里面有 521 个启动参数、37 个平台 hook。"
+         "交给框架迭代的结论，比如 7 个子系统在 OOT 平台上会被直接拒绝，2 处必须由插件实现 hook 才能用，"
+         "这就是插件开发清单。"),
+    )),
+    ("Loop B · 助力模型适配与评估优化", (
+        "Loop B 助力模型适配与评估优化：把一个新模型从“能不能跑”，一路推到“单机在 SLO 内能扛多少请求”。",
+        ("左边这个环有六步：适配分析、精度路线、特性组合、仿真评估、压测验证、校准回灌。"
+         "其中压测目前还靠人工执行 Agent 给的命令。"),
+        ("右边是三个机制。候选方案怎么来：先套 Loop A 调好的 launch；TTFT 先超标，就试 prefill 更快的布局，"
+         "比如关掉 DP attention；TPOT 先超标、又没开投机解码，就试更小的 mixed chunk。"
+         "怎么算：仿真 SGLang 的调度，按 P90 判 SLO，二分搜索单机在 SLO 内的最大到达率。"
+         "怎么信：用 server 日志拟合系数，压测检查偏差是否在正负 20% 以内。"),
+        "和 Loop C 的接口：占 step 10% 以上的算子缺口标高优先级，3% 以上标中，交给 C。",
+    )),
+    ("Loop C · 助力算子绑定评估与优化", (
+        "Loop C 助力算子绑定评估与优化：先查绑没绑对，再查快不快，最后按模型占比排优先级。",
+        ("为什么先查绑定？因为生成了 kernel，不等于模型用上了它。左边从模型实际用到的算子族出发，"
+         "沿 SGLang 的分发入口，解析出每个算子在 M100 上实际走哪条路径：厂商实现、SGLang 内置实现，"
+         "还是回落到 torch、甚至没有可用实现。"),
+        ("典型陷阱是模型能跑通，注册的 kernel 却没被调用，比如 OOT 注册只认精确的类，子类不会继承。"
+         "Agent 从源码解析继承链，直接把这类路径标出来。"),
+        ("右边是性能评估：按真实 batch 形状算出各类 kernel 的期望耗时，对照实测找异常；"
+         "再匹配融合、通算重叠、多流、L2 预取等手段，每条发现都折算成每个 step 多少毫秒，交给 Loop B。"
+         "自动 A/B 复测还在规划中。"),
+    )),
+    ("差异 · 算子级 vs 模型级", (
+        "和平台算子 Agent 的区别，一句话：它把 kernel 做快，我们把模型跑好，两者互补。",
+        ("从下往上看：L1 是单个 kernel 怎么写最快，这是平台算子 Agent 的主场，我们以它的 kernel 为输入。"
+         "往上，L2 看算子分发到哪条实现，L3 看真实 batch 下 step 里谁占大头，L4 看调度和特性怎么开，"
+         "L5 看单机在 SLO 内能扛多少、先超标的是 TTFT 还是 TPOT。L2 到 L5 是我们做的。"),
+        ("所以评价口径也不同：算子级看 kernel 耗时和离屋顶线多远，模型级看单机容量和 SLO 达成率。"
+         "协作接口还在规划中：我们按模型级收益给平台排好算子需求，平台交回 kernel，我们做模型级复测。"),
+    )),
+    ("深挖 · 难点", (
+        "下面深挖一个难点：算子快 30%，单机容量涨多少？不能直接换算。",
+        ("先说明口径：这是推演，还没有实测校准，只用来说明方法；芯片参数暂用 H20 预设，M100 规格写进 YAML 就能重跑。"
+         "场景是 Qwen3-32B，单机一个 TP8 实例，launch 固定，只把一类算子的耗时减 30%，看单机容量怎么变。"),
+        ("结果差别很大：chat 负载下，attention 快 30%，容量只涨 1.7%；GEMM 快 30%，容量涨 40%。"
+         "长上下文 RAG 下，分别涨 21% 和 31%。"),
+        ("为什么不能直接换算？第一，占比随形状变：prefill 里 attention 的占比，4K 输入约 7%，32K 约 38%，"
+         "所以它在 RAG 上收益大得多。第二，先超标的指标决定哪段有用：chat 先超标的是 TTFT，而 prefill 约八成时间在 GEMM，"
+         "所以 GEMM 提速最管用；TTFT 里还有排队，提速还会被放大。"
+         "第三，瓶颈会转移：RAG 提速后，先超标的从 TTFT 变成了 TPOT，下一轮先优化谁，要按新瓶颈重排。"),
+        "结论：算子优化值不值得做、先做哪个，必须放到负载、SLO 和部署里算，这正是模型级 Agent 的工作。",
+    )),
+    ("深挖 · 解法", (
+        "怎么解？我们用一条换算链，从 kernel 一路算到单机容量。",
+        ("五层从左到右：kernel 层用 roofline 加 launch 间隙和通信算算子耗时，效率系数取自芯片 YAML；"
+         "step 层按真实 batch 形状逐层累加；调度层用离散事件仿真 SGLang，得到请求时延；"
+         "SLO 层按 P90 判定，标出先超标的指标；容量层二分搜索最大到达率，在候选配置里取容量最高的。"
+         "五层共用一套模型和参数，算子、特性、布局任何一处变了，都能一路传到单机容量。"
+         "底下是校准回路：压测偏差超过正负 20%，就用日志校准、重新规划。"),
+        ("Agent 用这条链做三件事：排优先级，已经实现；what-if，规划中，上一页就是手工跑的；"
+         "还有给 Loop C 和平台提需求，从“把 X 做快”变成“这些 shape 下快多少、单机容量涨多少”，也在规划中。"),
+    )),
+    ("现状与下一步", (
+        ("最后是现状：评估和决策已经打通。Loop A 有源码能力快照和特性顾问，Loop B 有适配分析、单机部署仿真和校准，"
+         "Loop C 有绑定解析、trace 诊断和优化评估。"
+         "下一步是把执行和复测自动化：自动拉起服务和压测、自动 A/B，以及 what-if 命令、对接平台算子 Agent。"),
+        "我们的定位是：不替代算子生成，而是把算子能力兑现为模型级收益。谢谢大家。",
+    )),
+)
+
+WORDS = {"Loop": 1, "GEMM": 1, "Agent": 2, "SGLang": 3, "sglang-maestro": 5, "Qwen": 1, "hook": 1, "launch": 1,
+         "kernel": 2, "prefill": 2, "decode": 2, "attention": 3, "chunk": 1, "mixed": 1, "step": 1, "batch": 1,
+         "torch": 1, "roofline": 2, "server": 2, "trace": 1, "shape": 1, "what-if": 2, "chat": 1}
+
+
+def number_syllables(token):
+    """How many syllables a number takes read aloud in Chinese: 14 is 十四, 100 is 一百, 521 is 五百二十一."""
+    if "." in token:
+        whole, frac = token.split(".", 1)
+        return number_syllables(whole) + 1 + len(frac)
+    value = int(token)
+    if value < 10:
+        return 1
+    if value < 100:
+        return 1 + (value // 10 > 1) + (value % 10 > 0)
+    if value < 1000:
+        rest = value % 100
+        if rest == 0:
+            return 2
+        return 2 + (number_syllables(str(rest)) + (rest < 20) if rest >= 10 else 2)
+    return 2 * len(token)
+
+
+def syllables(text):
+    count = 0
+    for token in re.findall(r"[A-Za-z][A-Za-z\-]*|\d+(?:\.\d+)?|%|.", text):
+        if token == "%":
+            count += 3
+        elif token[0].isdigit():
+            count += number_syllables(token)
+        elif token[0].isascii() and token[0].isalpha():
+            if token in WORDS:
+                count += WORDS[token]
+            elif token.upper() == token and len(token) <= 5:
+                count += sum(1 for ch in token if ch.isalpha())
+            else:
+                count += max(1, len(re.findall(r"[aeiouy]+", token.lower())))
+        elif unicodedata.east_asian_width(token) == "W" and unicodedata.category(token).startswith("L"):
+            count += 1
+    return count
+
+
+def seconds(text, wpm=WPM):
+    return syllables(text) * 60 / wpm
+
+
+def clock(total):
+    total = round(total)
+    return f"{total // 60}:{total % 60:02d}"
+
+
+def rounded(value, step=5):
+    return int(step * round(value / step))
+
+
+def timings():
+    """Per slide: index, title, Chinese characters, syllables, seconds (rounded to 5) and the running total."""
+    rows, elapsed = [], 0
+    for index, (title, paragraphs) in enumerate(NOTES, start=1):
+        text = "".join(paragraphs)
+        spoken = rounded(seconds(text))
+        elapsed += spoken
+        rows.append((index, title, len(re.findall(r"[\u4e00-\u9fff]", text)), syllables(text), spoken, elapsed))
+    return rows
+
+
+def spoken_clock(total):
+    minutes, rest = divmod(int(total), 60)
+    return f"{minutes} 分 {rest} 秒" if rest else f"{minutes} 分钟"
+
+
+def slow_total():
+    return rounded(sum(seconds("".join(paragraphs), SLOW_WPM) for _, paragraphs in NOTES))
+
+
+def notes_text(index):
+    title, paragraphs = NOTES[index - 1]
+    _, _, _, _, spoken, elapsed = timings()[index - 1]
+    head = f"【第 {index} 页 · {title} · 约 {spoken} 秒 · 讲完累计约 {clock(elapsed)}】"
+    return "\n".join((head, *paragraphs))
+
+
+def markdown():
+    rows = timings()
+    total = rows[-1][-1]
+    lines = [
+        "# sglang-maestro 方案评审 · 演说词",
+        "",
+        (f"- 目标：12 分钟内讲完。按每分钟约 {WPM} 字的语速估算，全稿约 {spoken_clock(total)}；"
+         f"语速放慢到每分钟 {SLOW_WPM} 字也只要 {spoken_clock(slow_total())}，留有翻页和停顿的余量。"),
+        "- 每页的演说词也写进了 PPT 备注，演示时打开演讲者视图即可看到。",
+        "- 第 7 页的数字是推演结果：芯片参数暂用 H20 预设、未经实测校准。讲的时候务必先交代这一点。",
+        "",
+        "| 页 | 内容 | 建议用时 | 讲完累计 |",
+        "|---|---|---|---|",
+    ]
+    lines += [f"| {index} | {title} | {spoken} 秒 | {clock(elapsed)} |"
+              for index, title, _, _, spoken, elapsed in rows]
+    for index, (title, paragraphs) in enumerate(NOTES, start=1):
+        lines += ["", f"## 第 {index} 页 · {title}（约 {rows[index - 1][4]} 秒）", ""]
+        lines += [paragraph + "\n" for paragraph in paragraphs]
+        lines[-1] = lines[-1].rstrip("\n")
+    lines += [
+        "",
+        "## 超时时可以压缩的地方",
+        "",
+        "- 第 3 页：快照里的数字可以不念，只说“7 个子系统被拒绝、2 处要插件实现 hook”。",
+        "- 第 5 页：右边的优化手段不必逐个列举，说“匹配优化手段并折算成每个 step 的耗时”即可。",
+        "- 第 8 页：五层不必逐层展开，指着图说“从算子耗时一路算到单机容量”，重点留给“Agent 怎么用这条链”。",
+    ]
+    return "\n".join(lines) + "\n"
+
+
+if __name__ == "__main__":
+    if len(sys.argv) > 1:
+        with open(sys.argv[1], "w", encoding="utf-8") as handle:
+            handle.write(markdown())
+    for index, title, chars, units, spoken, elapsed in timings():
+        print(f"{index}  {title:24s} 汉字 {chars:4d}  音节 {units:4d}  {spoken:4d}s  累计 {clock(elapsed)}")
+    print(f"total {clock(timings()[-1][-1])} at {WPM}/min, {clock(slow_total())} at {SLOW_WPM}/min")
