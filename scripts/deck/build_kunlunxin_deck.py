@@ -82,7 +82,7 @@ SHARE_GEMM, SHARE_ATTN, SHARE_OTHER = "2E72C8", BRAND_ORANGE, "A9C8DC"
 # The lockup's keep-out box, measured off the template.
 LOGO_X, LOGO_Y = 11.29, 1.16
 HEAD_W = LOGO_X - MX - 0.2
-TOTAL = 9
+TOTAL = 10
 
 # The three model-level gates. One vocabulary for the whole deck: the label states the
 # passing condition, the rule states the threshold, and the code name stays in the footer.
@@ -167,8 +167,8 @@ COVER_META = (("SGLang", MONO), ("　后端　·　昆仑芯 ", FONT), ("M100", 
 AGENDA = (
     ("1 - 2", "痛点与位置", "成本花在哪，Agent 在哪一层"),
     ("3 - 5", "模型层 Agent", "怎么跑完，收益凭什么可信"),
-    ("6", "算子层 Agent", "写与判分开，判的一侧无模型"),
-    ("7 - 9", "收益与现状", "算子快了值多少，哪些已跑通"),
+    ("6 - 7", "算子层 Agent", "写与判分开，一次实测迭代记录"),
+    ("8 - 10", "收益与现状", "算子快了值多少，哪些已跑通"),
 )
 
 
@@ -671,7 +671,187 @@ def operator_slide(slide):
     page_footer(slide, 6, "与算子团队协作，沉淀 Skills 与开发经验；真机实测为准，模拟器只用于定位")
 
 
-# ---------------------------------------------------------------- 7 local speedup to step gain
+# ------------------------------------------------------------ 7 batch_norm iteration record
+# Measured on M100 / houyi. The roofline here is a pure bandwidth bound -- no issue-slot
+# constraint and no fixed launch cost -- so it is an upper bound, not a reachable target.
+# Round 1 is what makes the page: it changed no code, it only measured how long a pure copy
+# of the same bytes takes. That answer (9.83us, 0.717) is the real ceiling, and everything
+# after it is read against that rather than against the roofline.
+WORKLOAD = (
+    ("工作负载　", 10, G900, True),
+    ("N=1 · C=256 · HW=4096 · fp32", 9.5, AGENT, True, MONO),
+    ("　1,048,576 元素，读写各 4 MB，总流量 8.39 MB　|　roofline ", 10, G700),
+    ("7.049 µs", 9.5, G900, True, MONO),
+    ("　按带宽上限计算，不含发射槽约束与固定开销", 10, G500),
+)
+ROUNDS = (
+    ("0", "batch_norm_v4 基线", "13.24", "基线", "base"),
+    ("1", "标定纯拷贝地板（探针）", "9.83", "探针", "probe"),
+    ("2", "换原生 rsqrt 指令", "11.72", "保留", "keep"),
+    ("3", "shared 广播系数", "15.06", "丢弃", "drop"),
+    ("4", "host 折系数 + 每次 H2D", "17.60", "丢弃", "drop"),
+    ("5", "修 copy 的寄存器 spill", "9.81", "保留", "keep"),
+    ("6", "fold 成 scale*x+shift", "9.82", "保留", "keep"),
+    ("7 · 8", "模拟器脚手架 · 修 ABI", "—", "基建", "infra"),
+    ("交付", "空闲卡复测 iters=200", "9.66", "交付", "ship"),
+)
+BEST = (0.532, 0.532, 0.601, 0.601, 0.601, 0.719, 0.719, 0.719, 0.719, 0.730)
+MARKS = (
+    (0, 0.532, "base", "0.532", False),
+    (2, 0.601, "keep", "0.601", True),
+    (3, 0.468, "drop", "0.468", True),
+    (5, 0.719, "keep", "0.719", True),
+    (6, 0.718, "keep", None, True),
+    (9, 0.730, "ship", "0.730", True),
+)
+X_TICKS = ("0", "1", "2", "3", "4", "5", "6", "7", "8", "交付")
+FLOOR, TARGET = 0.717, 0.700
+SHAPES = (
+    ("2 × 1600", "0.143", "0.344 → 2.407 µs", False),
+    ("32 × 6400", "0.364", "1.377 → 3.788 µs", False),
+    ("64 × 4096", "0.449", "1.762 → 3.925 µs", False),
+    ("256 × 4096", "0.724", "7.049 → 9.736 µs", True),
+)
+PLOT_X0, PLOT_X1 = 1.30, 7.15
+PLOT_Y0, PLOT_Y1 = 2.56, 4.70
+# Data is inset from the frame so the first marker's label clears the y-axis numbers.
+DATA_X0, DATA_X1 = 1.85, 6.85
+# Headroom above 0.73 leaves room for the delivery label without hitting the legend row.
+Y_LO, Y_HI = 0.44, 0.80
+Y_GRID = (0.45, 0.50, 0.55, 0.60, 0.65, 0.70, 0.75)
+# Named by meaning so each deck can bind the chart to its own accents. The delivery marker and
+# its legend dot must stay the same colour, which is why SHIP_C is used for both.
+LINE_C = SHIP_C = AGENT
+KEEP_C, DROP_C = "0E9A72", "D94A3D"
+TARGET_C, FLOOR_C = AGENT, MODEL_LEVEL
+VERDICT = {"keep": KEEP_C, "drop": DROP_C, "ship": SHIP_C,
+           "base": G500, "probe": G400, "infra": G400}
+
+
+def _px(index):
+    return DATA_X0 + index * (DATA_X1 - DATA_X0) / (len(X_TICKS) - 1)
+
+
+def _py(value):
+    return PLOT_Y1 - (value - Y_LO) / (Y_HI - Y_LO) * (PLOT_Y1 - PLOT_Y0)
+
+
+def swatch(slide, x, y, color, dash, text, width):
+    add_line(slide, x, y + 0.15, x + 0.26, y + 0.15, color, 1.25, dash=dash)
+    add_text(slide, x + 0.32, y, width - 0.32, 0.30, [P(text, 9, G500)], anchor=MIDDLE)
+
+
+def iteration_chart(slide, x, y, w, h):
+    add_box(slide, x, y, w, h, fill=G050)
+    add_text(slide, x + 0.22, y + 0.06, 2.85, 0.26, [runs([
+        ("achieved", 10, G900, True, MONO), (" = roofline 耗时 ÷ 实测耗时", 10, G700),
+    ])], anchor=MIDDLE)
+    swatch(slide, x + 3.17, y + 0.04, TARGET_C, DASH, "目标 0.70 · 10.07 µs", 1.80)
+    swatch(slide, x + 5.05, y + 0.04, FLOOR_C, DASH, "拷贝地板 0.717 · 9.83 µs", 2.10)
+
+    for value in Y_GRID:
+        gy = _py(value)
+        if value != TARGET:
+            add_line(slide, PLOT_X0, gy, PLOT_X1, gy, G200, 0.75)
+        add_text(slide, PLOT_X0 - 0.62, gy - 0.11, 0.5, 0.22,
+                 [P(f"{value:.2f}", 9, G400, align=RIGHT)], anchor=MIDDLE)
+    for value, color in ((TARGET, TARGET_C), (FLOOR, FLOOR_C)):
+        add_line(slide, PLOT_X0, _py(value), PLOT_X1, _py(value), color, 1.0, dash=DASH)
+    add_line(slide, PLOT_X0, PLOT_Y1, PLOT_X1, PLOT_Y1, G300, 1.0)
+
+    for index in range(len(BEST) - 1):
+        add_line(slide, _px(index), _py(BEST[index]), _px(index + 1), _py(BEST[index + 1]),
+                 LINE_C, 2.0)
+    for index, tick in enumerate(X_TICKS):
+        add_text(slide, _px(index) - 0.33, PLOT_Y1 + 0.04, 0.66, 0.22,
+                 [P(tick, 9.5, G500, align=CENTER)], anchor=MIDDLE)
+
+    for index, value, kind, label, above in MARKS:
+        color = VERDICT[kind]
+        size = 0.19 if kind == "ship" else 0.14
+        cx, cy = _px(index), _py(value)
+        add_box(slide, cx - size / 2, cy - size / 2, size, size, fill=color,
+                line=WHITE, line_w=1.25, kind=MSO_SHAPE.OVAL)
+        if label:
+            top = cy - 0.3 if above else cy + 0.1
+            add_text(slide, cx - 0.4, top, 0.8, 0.22,
+                     [P(label, 10.5 if kind == "ship" else 9.5, color, True, "Arial",
+                        align=CENTER)], anchor=MIDDLE)
+    add_text(slide, x + 0.22, y + h - 0.3, w - 0.44, 0.24, [runs([
+        ("●", 9, KEEP_C), (" 保留　", 9, G500),
+        ("●", 9, DROP_C), (" 真机测出更慢，当场丢弃　", 9, G500),
+        ("●", 9, SHIP_C), (" 交付复测", 9, G500),
+    ])], anchor=MIDDLE)
+
+
+def round_list(slide, x, y, w, h):
+    add_box(slide, x, y, w, h, fill=G050)
+    add_text(slide, x + 0.22, y + 0.08, w - 0.44, 0.28, [runs([
+        ("八轮迭代", 12.5, G900, True), ("　三轮保留，两轮丢弃", 10, G500),
+    ])], anchor=MIDDLE)
+    for index, (tag, what, micros, verdict, kind) in enumerate(ROUNDS):
+        top = y + 0.5 + index * 0.31
+        color = VERDICT[kind]
+        shipped = kind == "ship"
+        if shipped or kind == "drop":
+            add_box(slide, x + 0.14, top, w - 0.28, 0.29,
+                    fill=TINT if shipped else G100)
+        add_text(slide, x + 0.22, top, 0.52, 0.29,
+                 [P(tag, 9.5, color, True, MONO)], anchor=MIDDLE)
+        add_text(slide, x + 0.8, top, 2.3, 0.29, [P(what, 9.5, G900 if shipped else G700)],
+                 anchor=MIDDLE)
+        add_text(slide, x + 3.1, top, 0.74, 0.29,
+                 [P(micros, 9.5, G900, shipped, MONO, align=RIGHT)], anchor=MIDDLE)
+        add_text(slide, x + 3.98, top, 0.7, 0.29,
+                 [P(verdict, 9.5, color, True)], anchor=MIDDLE)
+
+
+def shape_strip(slide, y, h):
+    lead_w = 2.9
+    add_text(slide, MX, y, lead_w, h, [
+        P("同一实现，换个 shape", 11.5, G900, True, after=2),
+        P("固定 launch 开销约 1.95 µs，", 9.5, G500, after=0),
+        P("小 shape 整个被它吃掉", 9.5, G500),
+    ], anchor=MIDDLE)
+    gap = 0.16
+    x0 = MX + lead_w + 0.1
+    cell_w = (SW - MX - x0 - 3 * gap) / 4
+    for index, (shape, achieved, detail, hero) in enumerate(SHAPES):
+        x = x0 + index * (cell_w + gap)
+        add_box(slide, x, y, cell_w, h, fill=TINT if hero else WHITE,
+                line=None if hero else G200)
+        add_text(slide, x + 0.16, y + 0.05, cell_w - 0.32, 0.22,
+                 [P(shape, 9.5, AGENT if hero else G500, hero, MONO)], anchor=MIDDLE)
+        add_text(slide, x + 0.16, y + 0.25, cell_w - 0.32, 0.26,
+                 [P(achieved, 15, G900, True, "Arial")], anchor=MIDDLE)
+        add_text(slide, x + 0.16, y + 0.49, cell_w - 0.32, 0.18,
+                 [P(detail, 8.5, G400, False, MONO)], anchor=MIDDLE)
+
+
+def record_slide(slide):
+    page_header(
+        slide,
+        "算子层 · 一次完整的迭代记录",
+        "batch_norm：八轮迭代，achieved 从 0.532 到 0.730",
+        "判定全部来自真机测量——更慢的两轮当场丢弃，没有一轮是靠模型自己说好",
+    )
+    add_box(slide, MX, 1.78, CW, 0.32, fill=G050)
+    add_text(slide, MX + 0.2, 1.78, CW - 0.4, 0.32, [runs(WORKLOAD)], anchor=MIDDLE)
+
+    chart_w = 7.15
+    iteration_chart(slide, MX, 2.16, chart_w, 3.30)
+    list_x = MX + chart_w + 0.2
+    round_list(slide, list_x, 2.16, SW - MX - list_x, 3.30)
+    shape_strip(slide, 5.56, 0.68)
+
+    band(slide, 6.34, 0.52, "读数",
+         "roofline 只是上界，纯拷贝地板 9.83 µs 才是这张卡的天花板——交付已经打在上面")
+    page_footer(slide, 7, "第 4 轮的 17.60 µs 是 H2D 传输本身，不是 kernel 耗时；"
+                          "交付复测、地板探针、下排 shape 表各为独立批次，"
+                          "0.730 与 0.724 不应互相换算")
+
+
+# ---------------------------------------------------------------- 8 local speedup to step gain
 SCENARIOS = (
     ("场景 A", "短输入，GEMM 为主", (("GEMM", 0.80), ("Attention", 0.10), ("其他", 0.10))),
     ("场景 B", "长上下文，Attention 变重", (("GEMM", 0.50), ("Attention", 0.40), ("其他", 0.10))),
@@ -762,7 +942,7 @@ def gain_slide(slide):
              [P("假设占比", 9.5, G400, align=RIGHT)], anchor=MIDDLE)
 
     band(slide, 5.98, 0.58, "结论", "先按负载判断优化优先级，再用整模型压测确认最终收益")
-    page_footer(slide, 7, "表中四个数为按占比直接换算；真实服务还要叠加排队、批次与缓存的影响")
+    page_footer(slide, 8, "表中四个数为按占比直接换算；真实服务还要叠加排队、批次与缓存的影响")
 
 
 # ------------------------------------------------------------------- 8 kernel time to capacity
@@ -840,7 +1020,7 @@ def capacity_slide(slide):
                    inset=(0.02, 0, 0.02, 0))
         add_text(slide, x + 0.22, 5.82, use_w - 0.44, 0.56,
                  [P(first, 10.5, G700, after=2), P(second, 10.5, G500)])
-    page_footer(slide, 8, "换算链只用于排优先级；任何进入交付的收益，都以整模型实测为准")
+    page_footer(slide, 9, "换算链只用于排优先级；任何进入交付的收益，都以整模型实测为准")
 
 
 # ------------------------------------------------------------------------------- 9 where we are
@@ -848,7 +1028,7 @@ def capacity_slide(slide):
 # page it ends on page eight's list of unfinished items, which reads as a weak close rather
 # than as a plan. Three columns, honest about which is which.
 LEDGER = (
-    ("已经自动跑", "第 4 - 6 页", "done", (
+    ("已经自动跑", "第 4 - 7 页", "done", (
         "基线建立与全量评测",
         "候选迭代与三道条件验收",
         "Trace 采集与热点定位",
@@ -860,7 +1040,7 @@ LEDGER = (
         "未知缺陷的根因定位",
         "交付与否的最终决定",
     ), "这几项短期内不打算交出去"),
-    ("下一步补齐", "第 7 - 8 页", "todo", (
+    ("下一步补齐", "第 8 - 9 页", "todo", (
         "换算链在 M100 上校准",
         "模型层与算子层自动交接",
         "规则与补丁沉淀为可复用知识",
@@ -896,7 +1076,7 @@ def closing_slide(slide):
                  [P(note, 10, G500)], anchor=MIDDLE)
 
     band(slide, 5.72, 0.62, "命题", "把重复判断交给 Agent，一个模型一个模型往下压")
-    page_footer(slide, 9, "三列按当前进度如实分栏；左列已在 M100 上跑通，右列尚未开始")
+    page_footer(slide, 10, "三列按当前进度如实分栏；左列已在 M100 上跑通，右列尚未开始")
 
 
 # ------------------------------------------------------------------------------------ speech
@@ -947,7 +1127,7 @@ SPEECH = {
     ), (
         "最下面这句是整页的要点：同一个算子内核，既要通过算子验收，也要通过整模型复验。"
         "算子 bench 衡量的是局部收益，能不能交付由真实模型上的复测决定。"
-        "第 7 页会用一个算例说明这两者能差多少。"
+        "第 8 页会用一个算例说明这两者能差多少。"
     )),
     4: ((
         "这一页讲模型层的一次任务是怎么跑完的：人定目标，Agent 跑完四个阶段，结果交回人验收。"
@@ -1011,9 +1191,40 @@ SPEECH = {
         "右边是目前的实测样例，RMSNorm：固定 4096 乘 4096 的负载，相对基线加速 1.24 倍，"
         "741.2 微秒降到 595.6。最优版本重复测了两次，595.64 和 595.63，结果接近。"
         "这是单算子样例，还没有规模化统计，所以这里不报聚合指标。"
+    ), (
+        "下一页用 batch_norm 给一次完整的迭代记录，包括被丢弃的那两轮。"
     )),
     7: ((
-        "上一页说算子快了不等于模型快了，这一页用一个算例说明能差多少。"
+        "上一页讲 xpugen 怎么写、怎么判，这一页给一次完整的记录：batch_norm，从基线到交付。"
+    ), (
+        "工作负载先说清楚：N=1、C=256、HW=4096，fp32，一百零四万八千个元素，"
+        "读写各 4 MB，总流量 8.39 MB。按带宽上限算，roofline 是 7.05 微秒。"
+    ), (
+        "先看第 1 轮，它是这一页的关键。这一轮没有改任何实现，只做了一件事："
+        "测一个纯拷贝 kernel 搬同样多的字节要多久。答案是 9.83 微秒，achieved 0.717。"
+        "也就是说，roofline 算出来 7.05，但这张卡上光把数据搬一遍就要 9.83——"
+        "真实的天花板是 0.717，不是 1.0。先把天花板标出来，后面每一轮才知道还剩多少空间。"
+    ), (
+        "右边是五轮改动，表上都有，我只点两处。"
+        "第 3 轮想用 shared 广播系数，加了同步之后反而更慢，15.06 微秒，当场丢弃；"
+        "第 4 轮想把系数挪到 host 侧折好，但每次要 H2D 上传 2KB，光传输就 17.6 微秒，"
+        "比 kernel 本身还贵，也丢弃——注意这一轮丢的理由是整体变慢，不是 kernel 变慢。"
+    ), (
+        "真正有效的是第 2、5、6 轮：换原生 rsqrt 指令到 0.601，修 copy 路径的寄存器 spill 到 0.719，"
+        "再把折叠做成 scale 乘 x 加 shift 持平交付。第 7、8 轮是补脚手架和修 ABI，没有性能变化。"
+        "交付前在空闲卡上复测两百次，9.66 微秒，achieved 0.730。"
+    ), (
+        "两件事值得强调。第一，八轮里只有三轮带来收益，两轮被真机测量当场否掉——"
+        "这和第 5 页模型层是同一套做法：判定不听模型解释，只看测量。"
+        "第二，现在已经打在拷贝地板上，再怎么优化计算都不会有收益，要再快只能换访存方式。"
+    ), (
+        "最下面一条是同一个实现换 shape 的结果。256 乘 4096 能到 0.724，"
+        "但 2 乘 1600 只有 0.143——固定 launch 开销大约 1.95 微秒，小 shape 整个被它吃掉。"
+        "所以算子的 achieved 必须连着 shape 一起报，单拎一个数没有意义。"
+    )),
+    8: ((
+        "刚才那条 batch_norm 曲线最后停在 0.730。但那是算子自己的口径——"
+        "放到整个模型里值多少，这一页用一个算例说明。"
     ), (
         "先说清楚这是假设算例：固定总耗时 100 毫秒，其他部分不变，"
         "既不是模型实测，也不是 SLO 容量预测。"
@@ -1033,7 +1244,7 @@ SPEECH = {
     ), (
         "结论就是最下面这句：先按负载判断优化优先级，再用整模型压测确认最终收益。"
     )),
-    8: ((
+    9: ((
         "上一页留了个问题：怎么系统地判断该先优化哪个算子。"
         "这一页就是那个办法——从算子耗时一路算到单机容量。"
     ), (
@@ -1054,7 +1265,7 @@ SPEECH = {
     ), (
         "一句话过渡：这条链只用于排优先级；任何进入交付的收益，都以整模型实测为准。"
     )),
-    9: ((
+    10: ((
         "最后回到第 1 页的命题，如实对一次账。"
     ), (
         "左边这列已经能自动跑：基线建立与全量评测、候选迭代与三道条件验收、"
@@ -1090,7 +1301,7 @@ BACKUP = {
         "机制上算子层的产出可以直接作为模型层的候选：候选补丁允许的后缀里包含 .xpu，"
         "不需要额外的集成改造。"
     ), (
-        "两层提速之间的落差取决于该算子在端到端耗时中的占比，第 7 页有算例。"
+        "两层提速之间的落差取决于该算子在端到端耗时中的占比，第 8 页有算例。"
         "没有占比数据时，单算子的倍数不能外推为模型加速比。"
     )),
     4: ((
@@ -1126,6 +1337,20 @@ BACKUP = {
         "铁律是连续若干轮没有进展才允许下停滞结论。"
     )),
     7: ((
+        "roofline 的口径：按带宽上限算，不含发射槽约束，也不含约 1.95 微秒的固定开销。"
+        "所以它是上界，不是可达目标——这正是第 1 轮要去标定纯拷贝地板的原因。"
+    ), (
+        "交付复测的 9.66 微秒，略快于第 1 轮地板探针测到的 9.79 到 9.88。"
+        "两者不是同一次测量，卡的状态不同，应当理解为交付已经打在拷贝地板上，"
+        "不要解读成超过了地板。"
+    ), (
+        "第 4 轮的 17.60 微秒是 H2D 传输本身，不是 kernel 耗时，所以那一行没有 achieved；"
+        "它被丢弃的理由是整体变慢，而不是 kernel 变慢。"
+    ), (
+        "这是单算子的记录。它能说明迭代机制有效，不能说明模型级收益——"
+        "0.532 到 0.730 换到整模型值多少，取决于 batch_norm 在端到端耗时里的占比，下一页展开。"
+    )),
+    8: ((
         "四个数都是按占比直接换算：整步降幅等于该算子占比乘以提速幅度。"
         "场景 A 的 GEMM 是 80% × 30% = 24%，Attention 是 10% × 30% = 3%。"
     ), (
@@ -1135,7 +1360,7 @@ BACKUP = {
         "占比本身随输入形状变化：长上下文下 attention 的占比会显著上升，"
         "所以优先级要按目标负载重新算，不能套用别的场景的结论。"
     )),
-    8: ((
+    9: ((
         "这条链目前的预测偏差还没有在 M100 上标定，所以 What-if 那一格标的是待校准。"
         "在标定之前，它只用来比较候选的相对优劣，不对外报绝对数字。"
     ), (
@@ -1144,7 +1369,7 @@ BACKUP = {
     ), (
         "这条链按单实例算容量。多机与 PD 分离下还要叠加跨机通信与路由，不在本页范围内。"
     )),
-    9: ((
+    10: ((
         "左列那四项已经在 M100 上跑通，但样本是单模型；"
         "规模化之后哪些规则需要调整，现在没有数据，不要说成已经验证。"
     ), (
@@ -1159,6 +1384,7 @@ PAGES = (
     (iteration_slide, "模型层 · 一次任务怎么跑完"),
     (gate_slide, "模型层 · 候选验收与可信度"),
     (operator_slide, "算子层 · 生成与迭代"),
+    (record_slide, "算子层 · batch_norm 迭代记录"),
     (gain_slide, "回到模型层看收益"),
     (capacity_slide, "算子耗时到服务容量"),
     (closing_slide, "现状与下一步"),
@@ -1235,14 +1461,14 @@ def markdown(timings):
         "",
         "- 第 2 页软件栈：只讲两个框和实心模块的含义，底层一句带过，可省约 25 秒。",
         "- 第 6 页算子层：写与判的细分步骤不必逐条念，指图即可，可省约 20 秒。",
-        "- 第 8 页换算链：五层只讲两端和校准回环，中间三层略过，可省约 30 秒。",
-        "- 第 9 页对账：三列各念一句标题加最后那句命题即可，可省约 40 秒。",
+        "- 第 9 页换算链：五层只讲两端和校准回环，中间三层略过，可省约 30 秒。",
+        "- 第 10 页对账：三列各念一句标题加最后那句命题即可，可省约 40 秒。",
         "",
         "## 大概率会被问到的问题",
         "",
         "- 1.24 倍是相对什么基线？——见第 6 页备用问答，务必先讲清口径。",
         "- 两个 Agent 之间的交接自动化了吗？——见第 3 页备用问答，按实际情况回答。",
-        "- 第 7 页的数是实测吗？——不是，是按占比换算的假设算例，页面上已标注。",
+        "- 第 8 页的数是实测吗？——不是，是按占比换算的假设算例，页面上已标注。\n  第 7 页的 batch_norm 曲线才是实测。",
         "- 适配成本到底是多少人周？——第 1 页三个数待实测填入，目前只能定性回答。",
         "",
     ]
