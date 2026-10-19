@@ -119,7 +119,7 @@ def syllables(text):
     for token in re.findall(r"[A-Za-z][A-Za-z\-]*|\d+(?:\.\d+)?|%|.", text):
         if token == "%":
             count += 3
-        elif token[0].isdigit():
+        elif token[0].isascii() and token[0].isdigit():
             count += number_syllables(token)
         elif token[0].isascii() and token[0].isalpha():
             if token in WORDS:
