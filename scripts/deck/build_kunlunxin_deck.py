@@ -700,6 +700,7 @@ MARKS = (
     (0, 0.532, "base", "0.532", False),
     (2, 0.601, "keep", "0.601", True),
     (3, 0.468, "drop", "0.468", True),
+    (4, 0.401, "drop", "0.401", True),
     (5, 0.719, "keep", "0.719", True),
     (6, 0.718, "keep", None, True),
     (9, 0.730, "ship", "0.730", True),
@@ -717,8 +718,8 @@ PLOT_Y0, PLOT_Y1 = 2.56, 4.70
 # Data is inset from the frame so the first marker's label clears the y-axis numbers.
 DATA_X0, DATA_X1 = 1.85, 6.85
 # Headroom above 0.73 leaves room for the delivery label without hitting the legend row.
-Y_LO, Y_HI = 0.44, 0.80
-Y_GRID = (0.45, 0.50, 0.55, 0.60, 0.65, 0.70, 0.75)
+Y_LO, Y_HI = 0.38, 0.80
+Y_GRID = (0.40, 0.45, 0.50, 0.55, 0.60, 0.65, 0.70, 0.75)
 # Named by meaning so each deck can bind the chart to its own accents. The delivery marker and
 # its legend dot must stay the same colour, which is why SHIP_C is used for both.
 LINE_C = SHIP_C = AGENT
@@ -846,7 +847,7 @@ def record_slide(slide):
 
     band(slide, 6.34, 0.52, "读数",
          "roofline 只是上界，纯拷贝地板 9.83 µs 才是这张卡的天花板——交付已经打在上面")
-    page_footer(slide, 7, "第 4 轮的 17.60 µs 是 H2D 传输本身，不是 kernel 耗时；"
+    page_footer(slide, 7, "第 4 轮的 17.60 µs 含每次调用的 H2D 上传，不只是 kernel 本身；"
                           "交付复测、地板探针、下排 shape 表各为独立批次，"
                           "0.730 与 0.724 不应互相换算")
 
@@ -1206,9 +1207,9 @@ SPEECH = {
         "真实的天花板是 0.717，不是 1.0。先把天花板标出来，后面每一轮才知道还剩多少空间。"
     ), (
         "右边是五轮改动，表上都有，我只点两处。"
-        "第 3 轮想用 shared 广播系数，加了同步之后反而更慢，15.06 微秒，当场丢弃；"
-        "第 4 轮想把系数挪到 host 侧折好，但每次要 H2D 上传 2KB，光传输就 17.6 微秒，"
-        "比 kernel 本身还贵，也丢弃——注意这一轮丢的理由是整体变慢，不是 kernel 变慢。"
+        "第 3 轮想用 shared 广播系数，加了同步之后反而更慢，15.06 微秒、0.468，当场丢弃；"
+        "第 4 轮想把系数挪到 host 侧折好，但每次调用都要把系数 H2D 上传一遍，"
+        "连上传一起算 17.60 微秒、0.401，是八轮里最差的一个，也丢弃。"
     ), (
         "真正有效的是第 2、5、6 轮：换原生 rsqrt 指令到 0.601，修 copy 路径的寄存器 spill 到 0.719，"
         "再把折叠做成 scale 乘 x 加 shift 持平交付。第 7、8 轮是补脚手架和修 ABI，没有性能变化。"
@@ -1344,8 +1345,8 @@ BACKUP = {
         "两者不是同一次测量，卡的状态不同，应当理解为交付已经打在拷贝地板上，"
         "不要解读成超过了地板。"
     ), (
-        "第 4 轮的 17.60 微秒是 H2D 传输本身，不是 kernel 耗时，所以那一行没有 achieved；"
-        "它被丢弃的理由是整体变慢，而不是 kernel 变慢。"
+        "第 4 轮的 0.401 是按 17.60 微秒的整体耗时算的，里面含每次调用的 H2D 上传。"
+        "kernel 本身没有变慢，是这次上传把整体拖垮了，所以丢弃的理由是整体变慢。"
     ), (
         "这是单算子的记录。它能说明迭代机制有效，不能说明模型级收益——"
         "0.532 到 0.730 换到整模型值多少，取决于 batch_norm 在端到端耗时里的占比，下一页展开。"
