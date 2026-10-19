@@ -1,17 +1,15 @@
-"""Two candidate layouts for a model-layer page, drawn with every figure left blank.
+"""Two model-layer pages: a real candidate record, and a roofline layout still waiting for data.
 
 One script, two looks: the 1024 程序员节 template (build_kunlunxin_deck) and the original white
 deck (build_review_deck). Every page is drawn against a Theme taken from that deck's own
 module, so the two versions cannot drift apart and each line takes the accent its deck already
 gives the same meaning on page 7.
 
-Version A charts phases C and D of a model-agent run: every candidate forks from the baseline,
-so it plots each candidate against that baseline rather than a best-so-far line. Version B
-charts phase B: the Trace placed on a roofline, which answers "who is worth optimizing next"
-rather than "how far did we get".
-
-Every measured figure is written as __ and every schematic mark is drawn in grey and badged
-示意, so nothing here can be mistaken for data.
+Version A records the first model-layer run, Qwen3-VL-30B-A3B on one M100: what each candidate
+changed, what screening and re-testing measured, and what was shipped. Version B charts phase B
+-- the Trace placed on a roofline, which answers "who is worth optimizing next" rather than "how
+far did we get". It has no data yet, so every figure is __ and every schematic mark is grey and
+badged 示意.
 
     python build_model_layer_mock.py                    # both styles, default file names
     python build_model_layer_mock.py review out.pptx    # one style
@@ -31,8 +29,6 @@ import build_review_deck as review
 from build_agent_deck import (
     CENTER,
     CW,
-    DASH,
-    FONT,
     LEFT,
     MIDDLE,
     MONO,
@@ -65,10 +61,10 @@ class Theme:
     panel: str
     accent: str
     tint: str
-    gate: str
-    noise: str
     slope: str
     roof: str
+    ship: str
+    drop: str
     flag: str
     flag_tint: str
     page_header: Callable
@@ -78,12 +74,12 @@ class Theme:
 
 
 def _theme(deck, **own):
-    # The +3% gate is bound like page 7's target line, and the noise range and the bandwidth
-    # slope like its copy floor, so a reader moving between pages keeps one colour per meaning.
+    # The bandwidth slope is bound like page 7's copy floor, and shipped and dropped verdicts
+    # like its record table, so a reader moving between pages keeps one colour per meaning.
     return Theme(
         g900=deck.G900, g700=deck.G700, g500=deck.G500, g400=deck.G400, g300=deck.G300,
         g200=deck.G200, g100=deck.G100, panel=deck.G050, accent=deck.AGENT, tint=deck.TINT,
-        gate=deck.TARGET_C, noise=deck.FLOOR_C, slope=deck.FLOOR_C,
+        slope=deck.FLOOR_C, ship=deck.SHIP_C, drop=deck.DROP_C,
         page_header=deck.page_header, band=deck.band, swatch=deck.swatch, **own,
     )
 
@@ -119,127 +115,77 @@ def dot(slide, cx, cy, size, color, hollow=False):
             line_w=1.75 if hollow else 1.25, kind=MSO_SHAPE.OVAL)
 
 
-# ------------------------------------------------------------- A  candidates against baseline
-# (tick, gain found while screening in phase C, gain on the phase-D re-test, verdict, shipped).
-# A gain of None means the candidate stopped at gate ① or ② and was never timed.
-A_CANDIDATES = (
-    ("C1", 0.8, None, "③ 未过", False),
-    ("C2", 6.5, 5.0, "通过", False),
-    ("C3", None, None, "① 未过", False),
-    ("C4", 10.5, 8.6, "交付", True),
-    ("C5", -2.5, None, "③ 未过", False),
+# ------------------------------------------------------------------ A  a real candidate record
+# Qwen3-VL-30B-A3B on one M100, as the run reported it. Screening (C) was timed per kernel or
+# micro-benchmark and re-testing (D) per step or end to end, so each column keeps its own units:
+# converting one into the other would take a step breakdown the run did not record.
+A_BASELINE, A_SHIPPED = 1370, 1883
+A_ROWS = (
+    # (change, C screening, D re-test, verdict, kind); "\n" breaks a cell where it reads best,
+    # since PowerPoint sets CJK wider than LibreOffice and would otherwise wrap mid-phrase.
+    ("融合 swiglu + 动态量化\n替掉散点 elementwise 3.08 ms\n+ per-token quant 0.43 ms",
+     "单核 1.75 ms/步", "device 单步时间\n24.7 → 22.2 ms", "交付，全矩阵 +22~38%", "ship"),
+    ("量化 + shuffle 换 SDNN 恒定核\n现用核随 rows×hidden 从 20 涨到 141 µs",
+     "微基准 c128 5.43×，cos = 1.0", "E2E 吞吐 +3%\nTPOT −3.4%", "交付", "ship"),
+    ("grouped-GEMM group-mode 四个旋钮",
+     "四模式完全同速\nforce_nogroup −20%\nno_group cos 0.000", "—",
+     "① 挡掉一个，③ 挡掉其余\n判定为闭源核内在开销", "drop"),
+    ("FFN 输出合并换 shuffle_mul_sum_sdnn", "0.61×，更慢", "—", "③ 未过", "drop"),
+    ("路由 softmax + topk + renorm 融合", "内核 2×，数值对（Δ 3e-8）", "只占 ~0.9% TPOT",
+     "③ 过但不值当，未接线", "idle"),
 )
-A_CHANGES = (
-    "例：调大 batch 上限",
-    "例：换 attention 后端",
-    "例：接入算子层新内核",
-    "例：KV 缓存与复用策略",
-    "例：通信与计算重叠",
-)
-A_FUNNEL = ("候选", "过 ① 输出未变", "过 ② 质量达标", "过 ③ 确实更快", "过 D 独立复验")
-A_X0, A_X1 = 1.30, 7.15
-A_Y0, A_Y1 = 2.62, 4.70
-A_DX0, A_DX1 = 1.85, 6.75
-A_GAIN_LO, A_GAIN_HI = -5.0, 14.0
-A_GRID = (-4.0, 0.0, 4.0, 8.0, 12.0)
-A_GATE, A_NOISE = 3.0, 1.8
-A_PAIR = 0.12
+A_FUNNEL = (("候选", "10"), ("过三道门", "5"), ("交付", "2"))
 
 
-def _ax(index):
-    return A_DX0 + index * (A_DX1 - A_DX0) / (len(A_CANDIDATES) - 1)
-
-
-def _ay(gain):
-    return A_Y1 - (gain - A_GAIN_LO) / (A_GAIN_HI - A_GAIN_LO) * (A_Y1 - A_Y0)
-
-
-def a_chart(slide, t, x, y, w, h):
-    add_box(slide, x, y, w, h, fill=t.panel)
-    add_text(slide, x + 0.22, y + 0.06, 2.85, 0.26, [runs([
-        ("收益", 10, t.g900, True), (" = 候选 ÷ 基线 − 1　重复压测取中位", 10, t.g700),
-    ])], anchor=MIDDLE)
-    t.swatch(slide, x + 3.17, y + 0.04, t.gate, DASH, "性能门 +3%", 1.50)
-    t.swatch(slide, x + 4.80, y + 0.04, t.noise, DASH, f"噪声极差 {BLANK}%", 1.80)
-
-    for gain in A_GRID:
-        gy = _ay(gain)
-        baseline = gain == 0.0
-        add_line(slide, A_X0, gy, A_X1, gy, t.g400 if baseline else t.g200,
-                 1.0 if baseline else 0.75)
-        add_text(slide, A_X0 - 0.62, gy - 0.11, 0.5, 0.22,
-                 [P("基线" if baseline else BLANK, 9, t.g500 if baseline else t.g400,
-                    font=FONT if baseline else MONO, align=RIGHT)], anchor=MIDDLE)
-    for gain, color in ((A_GATE, t.gate), (A_NOISE, t.noise)):
-        add_line(slide, A_X0, _ay(gain), A_X1, _ay(gain), color, 1.0, dash=DASH)
-    add_line(slide, A_X0, A_Y1, A_X1, A_Y1, t.g300, 1.0)
-
-    for index, (tick, screened, retested, _verdict, shipped) in enumerate(A_CANDIDATES):
-        cx = _ax(index)
-        add_text(slide, cx - 0.33, A_Y1 + 0.04, 0.66, 0.22,
-                 [P(tick, 9.5, t.g500, False, MONO, align=CENTER)], anchor=MIDDLE)
-        if screened is None:
-            arm = 0.06
-            add_line(slide, cx - arm, A_Y1 - arm, cx + arm, A_Y1 + arm, t.g400, 1.5)
-            add_line(slide, cx - arm, A_Y1 + arm, cx + arm, A_Y1 - arm, t.g400, 1.5)
-            add_text(slide, cx - 0.45, A_Y1 - 0.34, 0.9, 0.22,
-                     [P(f"停在 {BLANK}", 9, t.g400, align=CENTER)], anchor=MIDDLE)
-            continue
-        if retested is None:
-            dot(slide, cx, _ay(screened), 0.14, t.g300)
-            add_text(slide, cx + 0.12, _ay(screened) - 0.11, 0.5, 0.22,
-                     [P(BLANK, 9.5, t.g400, True, MONO)], anchor=MIDDLE)
-            continue
-        left, right = cx - A_PAIR, cx + A_PAIR
-        add_line(slide, left, _ay(screened), right, _ay(retested), t.g300, 1.25)
-        dot(slide, left, _ay(screened), 0.14, t.g300)
-        dot(slide, right, _ay(retested), 0.20 if shipped else 0.16,
-            t.g500 if shipped else t.g300, hollow=True)
-        add_text(slide, cx - 0.55, _ay(max(screened, retested)) - 0.33, 1.1, 0.22,
-                 [P(f"{BLANK} → {BLANK}", 9.5, t.g400, True, MONO, align=CENTER)],
-                 anchor=MIDDLE)
-        if shipped:
-            add_text(slide, right - 0.3, _ay(retested) + 0.13, 0.6, 0.22,
-                     [P("交付", 9.5, t.g700, True, align=CENTER)], anchor=MIDDLE)
-
-    badge(slide, t, x + w - 1.40, y + h - 0.34)
-    add_text(slide, x + 0.22, y + h - 0.34, w - 1.70, 0.24, [runs([
-        ("●", 9, t.g400), (" C 阶段筛选　", 9, t.g500),
-        ("○", 9, t.g400), (" D 阶段独立复验　", 9, t.g500),
-        ("×", 9, t.g400), (" 停在 ① 或 ②，未测性能", 9, t.g500),
-    ])], anchor=MIDDLE)
-
-
-def a_candidates(slide, t, x, y, w, h):
+def a_peak(slide, t, x, y, w, h):
     add_box(slide, x, y, w, h, fill=t.panel)
     add_text(slide, x + 0.22, y + 0.08, w - 0.44, 0.28, [runs([
-        (f"{BLANK} 个候选", 12.5, t.g900, True),
-        (f"　{BLANK} 个过三道门，复验后交付 1 个", 10, t.g500),
+        ("峰值吞吐", 12.5, t.g900, True), ("　持续输出 tok/s", 10, t.g500),
     ])], anchor=MIDDLE)
-    columns = ((x + 0.66, 2.0, "改动", LEFT), (x + 2.70, 0.62, "C 筛选", RIGHT),
-               (x + 3.38, 0.62, "D 复验", RIGHT), (x + 4.10, 0.56, "结论", LEFT))
-    for cell_x, cell_w, head, align in columns:
-        add_text(slide, cell_x, y + 0.44, cell_w, 0.24,
-                 [P(head, 9, t.g400, align=align)], anchor=MIDDLE)
-    add_line(slide, x + 0.22, y + 0.70, x + w - 0.22, y + 0.70, t.g200, 0.75)
+    add_text(slide, x + 0.22, y + 0.40, w - 0.44, 0.52,
+             [P(f"+{A_SHIPPED / A_BASELINE - 1:.0%}", 28, t.ship, True, "Arial")],
+             anchor=MIDDLE)
+    floor, tallest = y + 2.58, 1.38
+    for index, (label, value, color) in enumerate(
+        (("基线", A_BASELINE, t.g300), ("交付", A_SHIPPED, t.ship))
+    ):
+        bx, bar_h = x + 0.50 + index * 1.30, tallest * value / A_SHIPPED
+        add_box(slide, bx, floor - bar_h, 0.70, bar_h, fill=color)
+        add_text(slide, bx - 0.25, floor - bar_h - 0.28, 1.20, 0.24,
+                 [P(str(value), 11.5, t.g900, True, "Arial", align=CENTER)], anchor=MIDDLE)
+        add_text(slide, bx - 0.25, floor + 0.07, 1.20, 0.22,
+                 [P(label, 9.5, t.g700, align=CENTER)], anchor=MIDDLE)
+    add_line(slide, x + 0.30, floor, x + w - 0.30, floor, t.g300, 1.0)
+    add_text(slide, x + 0.22, y + h - 0.34, w - 0.44, 0.24,
+             [P("基线峰值在 c128，1K/1K", 9, t.g500)], anchor=MIDDLE)
 
-    rows = [("基线", "A 阶段建立，D 阶段重测", BLANK, BLANK, "—", False)]
-    for (tick, screened, retested, verdict, shipped), change in zip(A_CANDIDATES, A_CHANGES):
-        rows.append((tick, change, "—" if screened is None else BLANK,
-                     "—" if retested is None else BLANK, verdict, shipped))
-    for index, (tick, change, screened, retested, verdict, shipped) in enumerate(rows):
-        top = y + 0.76 + index * 0.40
-        if shipped or index == 0:
-            add_box(slide, x + 0.14, top, w - 0.28, 0.36, fill=t.tint if shipped else t.g100)
-        add_text(slide, x + 0.22, top, 0.44, 0.36,
-                 [P(tick, 9.5, t.g500, True, MONO)], anchor=MIDDLE)
-        add_text(slide, columns[0][0], top, columns[0][1], 0.36,
-                 [P(change, 9.5, t.g900 if shipped else t.g700)], anchor=MIDDLE)
-        for (cell_x, cell_w, _head, align), value in zip(columns[1:3], (screened, retested)):
-            add_text(slide, cell_x, top, cell_w, 0.36,
-                     [P(value, 9.5, t.g400, False, MONO, align=align)], anchor=MIDDLE)
-        add_text(slide, columns[3][0], top, columns[3][1], 0.36,
-                 [P(verdict, 9.5, t.g700 if shipped else t.g400, shipped)], anchor=MIDDLE)
+
+def a_table(slide, t, x, y, w, h):
+    add_box(slide, x, y, w, h, fill=t.panel)
+    add_text(slide, x + 0.22, y + 0.08, w - 0.44, 0.28, [runs([
+        ("候选明细", 12.5, t.g900, True), ("　五组，全部为单卡 TP1 口径", 10, t.g500),
+    ])], anchor=MIDDLE)
+    columns = ((x + 0.22, 2.90), (x + 3.22, 2.19), (x + 5.51, 1.40), (x + 7.01, 1.70))
+    for (cell_x, cell_w), head in zip(columns, ("改动", "C 筛选", "D 复验", "结论")):
+        add_text(slide, cell_x, y + 0.40, cell_w, 0.24, [P(head, 9, t.g400)], anchor=MIDDLE)
+    add_line(slide, x + 0.22, y + 0.66, x + w - 0.22, y + 0.66, t.g200, 0.75)
+
+    verdict_color = {"ship": t.ship, "drop": t.drop, "idle": t.g500}
+    top = y + 0.72
+    for change, screened, retested, verdict, kind in A_ROWS:
+        cells = (change, screened, retested, verdict)
+        row_h = 0.14 + 0.16 * max(cell.count("\n") + 1 for cell in cells)
+        shipped = kind == "ship"
+        if shipped:
+            add_box(slide, x + 0.14, top, w - 0.28, row_h, fill=t.tint)
+        colors = (t.g900 if shipped else t.g700, t.g700, t.g700, verdict_color[kind])
+        for (cell_x, cell_w), cell, color, bold in zip(
+            columns, cells, colors, (False, False, False, shipped)
+        ):
+            ink = t.g400 if cell == "—" else color
+            add_text(slide, cell_x, top, cell_w, row_h,
+                     [P(line, 9.5, ink, bold) for line in cell.split("\n")], anchor=MIDDLE)
+        top += row_h + 0.04
 
 
 def a_funnel(slide, t, y, h):
@@ -247,48 +193,48 @@ def a_funnel(slide, t, y, h):
     add_text(slide, MX, y, lead_w, h, [
         P("三道门的漏斗", 11.5, t.g900, True, after=2),
         P("由便宜到贵，任一道不过即停，", 9.5, t.g500, after=0),
-        P("越靠前的门越省设备时间", 9.5, t.g500),
+        P("数值不对、更慢的当场挡掉", 9.5, t.g500),
     ], anchor=MIDDLE)
-    gap = 0.16
+    gap = 0.46
     x0 = MX + lead_w + 0.1
     cell_w = (SW - MX - x0 - (len(A_FUNNEL) - 1) * gap) / len(A_FUNNEL)
-    for index, name in enumerate(A_FUNNEL):
-        x = x0 + index * (cell_w + gap)
-        add_box(slide, x, y, cell_w, h, fill=WHITE, line=t.g200)
-        add_text(slide, x + 0.16, y + 0.04, cell_w - 0.32, 0.20,
-                 [P(name, 9.5, t.g500)], anchor=MIDDLE)
-        add_text(slide, x + 0.16, y + 0.26, cell_w - 0.32, 0.22,
-                 [P(BLANK, 15, t.g400, True, MONO)], anchor=MIDDLE)
-        add_text(slide, x + 0.16, y + 0.50, cell_w - 0.32, 0.18,
-                 [P(f"设备时间 {BLANK}", 8.5, t.g400)], anchor=MIDDLE)
+    for index, (name, count) in enumerate(A_FUNNEL):
+        cx = x0 + index * (cell_w + gap)
+        last = index == len(A_FUNNEL) - 1
+        add_box(slide, cx, y, cell_w, h, fill=t.tint if last else WHITE,
+                line=None if last else t.g200)
+        add_text(slide, cx + 0.2, y + 0.08, cell_w - 0.4, 0.22,
+                 [P(name, 9.5, t.accent if last else t.g500, last)], anchor=MIDDLE)
+        add_text(slide, cx + 0.2, y + 0.32, cell_w - 0.4, 0.30,
+                 [P(count, 16, t.g900, True, "Arial")], anchor=MIDDLE)
+        if index:
+            add_arrow(slide, cx - gap + 0.1, y + h / 2, cx - 0.1, y + h / 2, t.g400, 1.25)
 
 
 def version_a(slide, t):
     t.page_header(
         slide,
         "模型层 · 一次完整的候选迭代",
-        f"{BLANK} 模型：{BLANK} 个候选，{BLANK} 个过三道门，交付收益 +{BLANK}%",
-        "候选都从基线分叉、收益不叠加——交付的是 D 阶段独立复验后最好的那一个",
+        "30B-A3B 单卡：10 个候选，5 个过三道门，峰值吞吐 +37%",
+        "判定全部来自 M100 真机——数值不对、更慢的当场挡掉，占比太小的不接线",
     )
     strip(slide, t, 1.78, (
         ("冻结口径　", 10, t.g900, True),
-        (f"{BLANK} · {BLANK} 精度 · TP{BLANK} · 并发 {BLANK} · 输入 {BLANK} / 输出 {BLANK}",
-         9.5, t.accent, True, MONO),
-        ("　主指标 ", 10, t.g700),
-        (BLANK, 9.5, t.g900, True, MONO),
-        ("　基线 ", 10, t.g700),
-        (f"A 阶段 {BLANK} → D 阶段重测 {BLANK}", 9.5, t.g900, True, MONO),
-        ("　两者之差即设备漂移", 10, t.g500),
+        ("Qwen3-VL-30B-A3B-Instruct-channel-fp8", 9.5, t.accent, True, MONO),
+        ("　128 专家 / top-8 · 48 层 · M100 单卡 TP1 · qsx8_lever2 env · 1K/1K · "
+         "CG-on + overlap-on", 9.5, t.g700),
+        ("　主指标 持续输出 tok/s", 10, t.g500),
     ))
-    chart_w = 7.15
-    a_chart(slide, t, MX, 2.16, chart_w, 3.30)
-    list_x = MX + chart_w + 0.2
-    a_candidates(slide, t, list_x, 2.16, SW - MX - list_x, 3.30)
+    peak_w = 3.0
+    a_peak(slide, t, MX, 2.16, peak_w, 3.30)
+    table_x = MX + peak_w + 0.2
+    a_table(slide, t, table_x, 2.16, SW - MX - table_x, 3.30)
     a_funnel(slide, t, 5.56, 0.68)
-    t.band(slide, 6.34, 0.52, "读数", "待填：交付了哪个候选、复验收益多少、哪道门挡掉的最多")
-    mock_footer(slide, t, "方案 A",
-                "与第 7 页同骨架，但候选都从基线分叉、收益不叠加，所以画逐个候选而不画爬升曲线；"
-                "要一次跑完 A–D 的任务才能填满")
+    t.band(slide, 6.34, 0.52, "读数",
+           "两个交付都在替换小核；闭源 grouped-GEMM 的旋钮调不动，占比不到 1% 的核再快也不接线")
+    add_text(slide, MX, Y_FOOT, CW, 0.28, [P(
+        "C 列是内核或微基准读数，D 列是整步或端到端读数，两列口径不同、不能互相换算；"
+        "表中全部为 M100 单卡 TP1", 10, t.g500)], anchor=MIDDLE)
 
 
 # -------------------------------------------------------------------- B  roofline placement
