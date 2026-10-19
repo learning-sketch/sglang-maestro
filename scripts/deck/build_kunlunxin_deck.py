@@ -526,12 +526,58 @@ TRUST = (
     "测的是同一个候选：隔离副本、记录产物身份，启动时核对端口与模型路径",
     "不能靠少干活变快：输入、精度、上下文与缓存全部冻结，诊断与正式压测分开",
 )
-FIGURE_HINT = (
-    ("待补充实际效果", 13, G500, True),
-    ("建议：优化收益曲线", 10.5, G400),
-    ("横轴为候选轮次，纵轴为收益；复验通过者单独标注", 10.5, G400),
-    ("5.0 × 4.18 in", 9.5, G400, False, MONO),
+# What the three gates actually did on the 30B-A3B run. One gate stopped a single mode inside
+# a candidate rather than the whole candidate, so its tally is counted in modes: five groups in,
+# three stopped by the performance gate, two delivered.
+GATE_RESULT = (
+    ("①", "输出未变", "挡掉 1 个模式", True,
+     ("分组关掉后 cos 0.000，算出来直接是错的",)),
+    ("②", "质量达标", "本轮没拦下", False,
+     ("过了 ① 的候选输出逐位一致，不必再看质量",)),
+    ("③", "确实更快", "挡掉 3 组", True,
+     ("强制不分组 −20%；换现成核 0.61× 更慢；",
+      "路由融合最多只值 0.9%，够不着 3% 的门槛")),
 )
+GATE_SHIPPED = ("激活与量化合成一个核", "换成耗时不随规模涨的核")
+GATE_PEAK = (1370.0, 1883.0)
+
+
+def verdict_panel(slide, x, y, w, h):
+    """The left half says how a candidate is judged; this says what that judging produced."""
+    card(slide, x, y, w, h, fill=G050)
+    add_box(slide, x, y, 0.05, h, fill=MODEL_LEVEL)
+    add_text(slide, x + 0.22, y + 0.06, w - 0.44, 0.28, [runs([
+        ("本轮实际判定", 12.5, G900, True), ("　30B-A3B 单卡", 10, G500),
+    ])], anchor=MIDDLE)
+
+    add_box(slide, x + 0.22, y + 0.38, w - 0.44, 0.32, fill=G100)
+    add_text(slide, x + 0.40, y + 0.38, w - 0.80, 0.32, [runs([
+        ("送进验收", 11, G900, True), ("　五组候选，由便宜到贵逐道验", 10, G500),
+    ])], anchor=MIDDLE)
+
+    for index, (mark, name, tally, stopped, reasons) in enumerate(GATE_RESULT):
+        top = y + 0.78 + index * 0.72
+        number_dot(slide, x + 0.26, top + 0.03, 0.3, AGENT, mark, 11)
+        add_text(slide, x + 0.66, top, 1.3, 0.28, [P(name, 11.5, G900, True)], anchor=MIDDLE)
+        add_text(slide, x + w - 1.72, top, 1.5, 0.28,
+                 [P(tally, 11, DROP_C if stopped else G500, stopped, align=RIGHT)],
+                 anchor=MIDDLE)
+        add_text(slide, x + 0.66, top + 0.28, w - 0.88, 0.40,
+                 [P(line, 10, G700 if stopped else G500) for line in reasons], anchor=MIDDLE)
+
+    ship_y = y + 2.96
+    add_box(slide, x + 0.22, ship_y, w - 0.44, 0.78, fill=TINT)
+    add_text(slide, x + 0.40, ship_y + 0.04, w - 0.80, 0.26, [runs([
+        ("三道全过", 11, G900, True), (f"　{len(GATE_SHIPPED)} 组 · 交付", 11, SHIP_C, True),
+    ])], anchor=MIDDLE)
+    for index, item in enumerate(GATE_SHIPPED):
+        add_text(slide, x + 0.40, ship_y + 0.30 + index * 0.22, w - 0.80, 0.22,
+                 [P(f"· {item}", 10, G700)], anchor=MIDDLE)
+    base, shipped = GATE_PEAK
+    add_text(slide, x + 0.22, y + 3.82, w - 0.44, 0.26, [runs([
+        ("峰值吞吐 ", 10, G500), (f"{base:.0f} → {shipped:.0f} tok/s", 10, G900, True, MONO),
+        (f"　+{shipped / base - 1:.0%}", 11, SHIP_C, True, MONO),
+    ])], anchor=MIDDLE)
 
 
 def gate_slide(slide):
@@ -569,9 +615,7 @@ def gate_slide(slide):
     ])], anchor=MIDDLE)
     bullets(slide, MX + 0.22, 5.10, w - 0.44, TRUST, size=10.5, pitch=0.32)
 
-    slot = add_box(slide, fig_x, 1.88, fig_w, 4.18, fill=G100, line=G300, dash=DASH)
-    boxed_text(slot, [P(text, size, color, *rest, align=CENTER)
-                      for text, size, color, *rest in FIGURE_HINT], anchor=MIDDLE)
+    verdict_panel(slide, fig_x, 1.88, fig_w, 4.18)
     band(slide, 6.16, 0.52, "口径", "只有独立复验通过的收益，才进入最终交付")
     page_footer(slide, 5, "代码中三道条件分别为数值门、质量门与性能门；阈值随任务冻结，候选无权修改")
 
@@ -1173,7 +1217,13 @@ SPEECH = {
         "第三，不能靠少干活变快：输入、精度、上下文与缓存全部冻结，"
         "prompt 的 token 数必须等于冻结值，诊断和正式压测分开跑。"
     ), (
-        "右边放这条流水线判出来的实际结果。最后一条口径：只有独立复验通过的收益才进入最终交付，"
+        "右边是这条流水线在 30B-A3B 上判出来的实际结果。五组候选送进去："
+        "第一道挡掉一个模式——分组关掉之后 cos 直接是 0，算出来就是错的；"
+        "第二道这一轮没拦下任何一个，因为过了第一道的候选输出逐位一致，不必再看质量；"
+        "第三道挡掉三组——强制不分组慢 20%，换现成核只有 0.61 倍更慢，"
+        "路由融合算到头也只值 0.9%，够不着 3% 的门槛。"
+        "三道全过的两组交付，峰值吞吐从 1370 涨到 1883。"
+        "最后一条口径：只有独立复验通过的收益才进入最终交付，"
         "筛选阶段看起来有收益、复验没过的，一个都不算。"
     )),
     6: ((
