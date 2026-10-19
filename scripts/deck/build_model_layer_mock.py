@@ -1,4 +1,4 @@
-"""Two model-layer pages: a real candidate record, and a roofline layout still waiting for data.
+"""Model-layer pages: a real candidate record, a roofline layout, and a draft merging the two.
 
 One script, two looks: the 1024 程序员节 template (build_kunlunxin_deck) and the original white
 deck (build_review_deck). Every page is drawn against a Theme taken from that deck's own
@@ -9,7 +9,8 @@ Version A records the first model-layer run, Qwen3-VL-30B-A3B on one M100: what 
 changed, what screening and re-testing measured, and what was shipped. Version B charts phase B
 -- the Trace placed on a roofline, which answers "who is worth optimizing next" rather than "how
 far did we get". It has no data yet, so every figure is __ and every schematic mark is grey and
-badged 示意.
+badged 示意. Version C merges the two into page 7's shape and comes first: it keeps A's
+candidates and replaces B's roofline scatter with a per-category bar of time against bound.
 
     python build_model_layer_mock.py                    # both styles, default file names
     python build_model_layer_mock.py review out.pptx    # one style
@@ -390,11 +391,156 @@ def version_b(slide, t):
                                    "它回答「下一轮该优化谁」，不回答「优化到哪了」")
 
 
+# ----------------------------------------------------------- C  trace and candidates, one page
+# Page 7's shape at the model layer. Left: where one decode step's time goes, and how far each
+# category sits from its own roofline bound -- the sum of the bounds over the measured step is
+# the whole-step achieved, read like batch_norm's. Right: A's candidates, numbered so the left
+# column can point at them. Bottom: the delivery across concurrency, as page 7's shape strip.
+# The Trace has not arrived, so its figures are __ and its bars are grey and badged 示意.
+C_KINDS = (
+    # (category, candidates aimed at it, schematic step time, schematic bound), as fractions of
+    # the bar width. A bound of None marks time with no roofline: only time and share are shown.
+    ("专家 GEMM（闭源核）", "3", 0.92, 0.56),
+    ("专家重排与合并", "2 · 4", 0.46, 0.15),
+    ("逐元素 + 量化", "1", 0.55, 0.11),
+    ("Attention", "—", 0.44, 0.29),
+    ("稠密 GEMM（QKV / O 等）", "—", 0.36, 0.26),
+    ("路由 softmax / topk", "5", 0.09, 0.03),
+    ("Norm 与其他小核", "—", 0.22, 0.07),
+    ("device 空闲（host / 调度）", "—", 0.62, None),
+)
+C_CANDIDATES = (
+    # (number, change, screening and re-test on one line, verdict, kind)
+    ("1", "融合 swiglu + 动态量化",
+     "C 单核 1.75 ms/步（原 3.08 + 0.43 ms）· D device 24.7 → 22.2 ms", "交付，全矩阵 +22~38%",
+     "ship"),
+    ("2", "量化 + shuffle 换 SDNN 恒定核",
+     "C 微基准 c128 5.43×，cos = 1.0 · D E2E 吞吐 +3%，TPOT −3.4%", "交付", "ship"),
+    ("3", "grouped-GEMM group-mode 四个旋钮",
+     "C 四模式同速；force_nogroup −20%；no_group cos 0.000", "① 挡 1，③ 挡其余", "drop"),
+    ("4", "FFN 输出合并换 shuffle_mul_sum_sdnn", "C 0.61×，更慢", "③ 未过", "drop"),
+    ("5", "路由 softmax + topk + renorm 融合",
+     "C 内核 2×，Δ 3e-8 · D 只占 ~0.9% TPOT", "③ 过但不值当，未接线", "idle"),
+)
+C_CONCURRENCY = (("c__", None), ("c__", None), ("c__", None), ("c128", (A_BASELINE, A_SHIPPED)))
+
+
+def c_trace(slide, t, x, y, w, h):
+    add_box(slide, x, y, w, h, fill=t.panel)
+    add_text(slide, x + 0.22, y + 0.06, w - 0.44, 0.26, [runs([
+        ("achieved", 10, t.g900, True, MONO), (" = 上界耗时 ÷ 实测耗时", 10, t.g700),
+        (f"　上界按峰值 {BLANK} TFLOPS、带宽 {BLANK} GB/s 逐类计算", 9.5, t.g500),
+    ])], anchor=MIDDLE)
+    name_x, bar_x, bar_w = x + 0.22, x + 2.25, 2.10
+    columns = ((x + 4.40, 0.48), (x + 4.94, 0.64), (x + 5.62, 0.36))
+    add_text(slide, name_x, y + 0.38, 1.95, 0.24, [P("类别", 9, t.g400)], anchor=MIDDLE)
+    add_text(slide, bar_x, y + 0.38, bar_w, 0.24, [runs([
+        ("每步耗时　", 9, t.g400), ("■", 9, t.g400), (" 上界内　", 9, t.g400),
+        ("■", 9, t.g200), (" 超出上界", 9, t.g400),
+    ])], anchor=MIDDLE)
+    for (cell_x, cell_w), head in zip(columns, ("占比", "achieved", "候选")):
+        add_text(slide, cell_x, y + 0.38, cell_w, 0.24,
+                 [P(head, 9, t.g400, align=RIGHT if head != "候选" else CENTER)], anchor=MIDDLE)
+    add_line(slide, x + 0.22, y + 0.64, x + w - 0.22, y + 0.64, t.g200, 0.75)
+
+    for index, (name, aimed, measured, bound) in enumerate(C_KINDS):
+        top = y + 0.70 + index * 0.285
+        add_text(slide, name_x, top, 1.95, 0.25,
+                 [P(name, 9.5, t.g700)], anchor=MIDDLE)
+        add_box(slide, bar_x, top + 0.05, bar_w * measured, 0.15, fill=t.g200)
+        if bound is not None:
+            add_box(slide, bar_x, top + 0.05, bar_w * bound, 0.15, fill=t.g400)
+        for (cell_x, cell_w), value in zip(columns, (f"{BLANK}%", BLANK if bound else "—")):
+            add_text(slide, cell_x, top, cell_w, 0.25,
+                     [P(value, 9.5, t.g400, False, MONO, align=RIGHT)], anchor=MIDDLE)
+        add_text(slide, columns[2][0], top, columns[2][1], 0.25,
+                 [P(aimed, 9.5, t.g400 if aimed == "—" else t.g700, aimed != "—",
+                    align=CENTER)], anchor=MIDDLE)
+
+    add_text(slide, x + 0.22, y + h - 0.32, w - 1.70, 0.24, [runs([
+        ("整步　", 9, t.g700, True),
+        (f"Σ 上界 {BLANK} ms ÷ 实测 {BLANK} ms = achieved {BLANK}", 9, t.g500),
+    ])], anchor=MIDDLE)
+    badge(slide, t, x + w - 1.40, y + h - 0.34)
+
+
+def c_candidates(slide, t, x, y, w, h):
+    add_box(slide, x, y, w, h, fill=t.panel)
+    add_text(slide, x + 0.22, y + 0.08, w - 0.44, 0.28, [runs([
+        ("候选明细", 12.5, t.g900, True), ("　五组，全部为单卡 TP1 口径", 10, t.g500),
+    ])], anchor=MIDDLE)
+    verdict_color = {"ship": t.ship, "drop": t.drop, "idle": t.g500}
+    verdict_w = 1.62
+    for index, (number, change, evidence, verdict, kind) in enumerate(C_CANDIDATES):
+        top = y + 0.46 + index * 0.56
+        shipped = kind == "ship"
+        if shipped:
+            add_box(slide, x + 0.14, top, w - 0.28, 0.52, fill=t.tint)
+        add_text(slide, x + 0.22, top + 0.03, 0.30, 0.24,
+                 [P(number, 10, verdict_color[kind], True, "Arial")], anchor=MIDDLE)
+        add_text(slide, x + 0.56, top + 0.03, w - 0.78 - verdict_w, 0.24,
+                 [P(change, 9.5, t.g900 if shipped else t.g700, shipped)], anchor=MIDDLE)
+        add_text(slide, x + w - 0.22 - verdict_w, top + 0.03, verdict_w, 0.24,
+                 [P(verdict, 9.5, verdict_color[kind], shipped, align=RIGHT)], anchor=MIDDLE)
+        add_text(slide, x + 0.56, top + 0.27, w - 0.78, 0.22,
+                 [P(evidence, 9, t.g500)], anchor=MIDDLE)
+
+
+def c_concurrency(slide, t, y, h):
+    lead_w = 2.9
+    add_text(slide, MX, y, lead_w, h, [
+        P("同一交付，换个并发", 11.5, t.g900, True, after=2),
+        P("每格是基线 → 交付的持续输出，", 9.5, t.g500, after=0),
+        P("峰值点在 c128", 9.5, t.g500),
+    ], anchor=MIDDLE)
+    gap = 0.16
+    x0 = MX + lead_w + 0.1
+    cell_w = (SW - MX - x0 - (len(C_CONCURRENCY) - 1) * gap) / len(C_CONCURRENCY)
+    for index, (label, pair) in enumerate(C_CONCURRENCY):
+        cx = x0 + index * (cell_w + gap)
+        hero = pair is not None
+        add_box(slide, cx, y, cell_w, h, fill=t.tint if hero else WHITE,
+                line=None if hero else t.g200)
+        add_text(slide, cx + 0.16, y + 0.04, cell_w - 0.32, 0.20,
+                 [P(label, 9.5, t.accent if hero else t.g500, hero, MONO)], anchor=MIDDLE)
+        gain = f"+{pair[1] / pair[0] - 1:.0%}" if hero else f"+{BLANK}%"
+        detail = f"{pair[0]} → {pair[1]} tok/s" if hero else f"{BLANK} → {BLANK} tok/s"
+        add_text(slide, cx + 0.16, y + 0.25, cell_w - 0.32, 0.24,
+                 [P(gain, 15, t.g900 if hero else t.g400, True, "Arial")], anchor=MIDDLE)
+        add_text(slide, cx + 0.16, y + 0.50, cell_w - 0.32, 0.16,
+                 [P(detail, 8.5, t.g500 if hero else t.g400, False, MONO)], anchor=MIDDLE)
+
+
+def version_c(slide, t):
+    t.page_header(
+        slide,
+        "模型层 · 一次完整的候选迭代",
+        "30B-A3B 单卡：10 个候选，5 个过三道门，峰值吞吐 +37%",
+        "先用 Trace 量出每类算子离上界多远、占多少，再决定对谁下手——判定全部来自 M100 真机",
+    )
+    strip(slide, t, 1.78, (
+        ("冻结口径　", 10, t.g900, True),
+        ("Qwen3-VL-30B-A3B-Instruct-channel-fp8", 9.5, t.accent, True, MONO),
+        ("　128 专家 / top-8 · 48 层 · M100 单卡 TP1 · qsx8_lever2 env · 1K/1K · "
+         "CG-on + overlap-on", 9.5, t.g700),
+        ("　主指标 持续输出 tok/s", 10, t.g500),
+    ))
+    trace_w = 6.2
+    c_trace(slide, t, MX, 2.16, trace_w, 3.30)
+    list_x = MX + trace_w + 0.2
+    c_candidates(slide, t, list_x, 2.16, SW - MX - list_x, 3.30)
+    c_concurrency(slide, t, 5.56, 0.68)
+    t.band(slide, 6.34, 0.52, "读数",
+           "待填：离上界最远、占比又大的是谁——五组候选是不是都打在它上面")
+    mock_footer(slide, t, "合并版", "左图要一次 c128 decode 的 Trace 加每类 FLOP 与访存字节；"
+                                   "右表沿用上一版；下排要吞吐全矩阵")
+
+
 def build(path, t):
     prs = Presentation()
     prs.slide_width = Inches(SW)
     prs.slide_height = Inches(SH)
-    for make in (version_a, version_b):
+    for make in (version_c, version_a, version_b):
         slide = prs.slides.add_slide(prs.slide_layouts[6])
         if t.background:
             t.background(slide)
