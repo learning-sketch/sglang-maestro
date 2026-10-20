@@ -73,7 +73,7 @@ BAD = "B4382F"
 # The lockup's keep-out box, measured off the template.
 LOGO_X, LOGO_Y = 11.29, 1.16
 HEAD_W = LOGO_X - MX - 0.2
-TOTAL = 14
+TOTAL = 15
 
 
 # ----------------------------------------------------------------------- shared furniture
@@ -1208,6 +1208,159 @@ def page_nine(slide):
              anchor=MIDDLE)
 
 
+# ------------------------------------------------------------- 11  Agent 内部组件
+P11_TITLE = "M100 Agent：Agent 的内部组件与内外交互"
+P11_SUB = "两层 Agent 由同一套组件拼成：记忆 → 观察 → 思考 → 行动；差别只在订阅哪些消息、调用哪些工具、由谁判决"
+P11_ENV = (("环境（Environment）", "消息总线"), "源码工作区 · 设备锁 · Trial 逐次落盘", (
+    ("瓶颈算子 + Shape 规格", "模型层 → 算子层"),
+    ("新算子内核", "算子层 → 模型层"),
+    ("Trace 与耗时归因", "工具 → 本层"),
+    ("评测报告与判定结论", "判决侧 → 两层"),
+    ("新基线", "判定通过后整体更新"),
+), ("两层 Agent 都挂在这条总线上，", "各自订阅自己关心的消息类型"))
+# (名称, 英文, 一句定义, 落地细节)
+P11_INNER = (
+    ("记忆", "Memory", "把任务约束与历史带进每一轮",
+     "契约锁定评测条件；被拒原因与历次 Trial 逐轮回灌"),
+    ("观察", "Observation", "只接收消息与证据，不自行解释成败",
+     "订阅本层关心的消息：Trace 归因、评测报告、Shape 规格"),
+    ("思考", "Thought", "全流程唯一调用模型的环节",
+     "看证据写代码：结合源码与锁定证据提出优化假设"),
+    ("行动", "Action", "产出一律是候选，不是结论",
+     "模型层出代码补丁；算子层出算子实现（显式规划 DMA 与流水）"),
+)
+# (对接方, 两行说明, 外部供给内部 = True)
+P11_OUTER = (
+    ("任务契约与知识库", ("optimization-task.json 锁定模型、精度、负载、准入门槛",
+                  "调优知识库与 Skills：只读目录索引，每轮最多调取 2 份"), True),
+    ("工具采集的证据", ("profile 接口采 Trace，golden 比对数值，真机重复计时",
+                 "证据先锁定再进入下一环，观察环节不改写证据"), True),
+    ("大模型 + 人按需介入", ("全流程唯一的模型；复杂场景由人直接改或与之协同",
+                    "人工介入同样走下方那道判定，不另开通道"), True),
+    ("工具（Tools）", ("编译构建 · 运行 · 性能采集 · 数值比对 · 模拟器定位",
+                 "与硬件耦合的只有 backend/ 这一层"), False),
+)
+P11_VERDICT = ("判决侧 · 规则驱动，无模型", "Agent 无权自行宣告成功：行动的产出必须先过这里",
+               ("模型层＝控制器：单算子初筛 → 质量评估 → 端到端 A/B",
+                "算子层＝Harness：L0 编译运行 → L1 数值验证 → Bench 计时"))
+P11_OBSERVE, P11_PUBLISH, P11_SUBMIT = "订阅", "回写", "提交候选"
+P11_HEADS = ("Agent 内部组件", "外部对接")
+P11_BAND = ("与通用 Agent 框架的唯一差别", "「行动」不能直接产生新消息，必须先过一道确定性判决")
+
+P11_ENV_X, P11_ENV_W = MX, 2.86
+P11_IN_X, P11_IN_W = 3.92, 4.34
+P11_OUT_X = 8.56
+P11_OUT_W = SW - MX - P11_OUT_X
+P11_TOP, P11_ROW_H, P11_PITCH = 1.58, 0.82, 0.96
+P11_VER_Y, P11_VER_H = 5.58, 0.82
+
+
+def p11_row_mid(index):
+    return P11_TOP + index * P11_PITCH + P11_ROW_H / 2
+
+
+def p11_environment(slide):
+    x, w = P11_ENV_X, P11_ENV_W
+    y, h = 1.32, 5.06
+    card(slide, x, y, w, h, fill=PALE, line=None)
+    add_box(slide, x, y, w, 0.06, fill=AGENT)
+    head, sub, messages, foot = P11_ENV
+    add_text(slide, x + 0.18, y + 0.1, w - 0.32, 0.26, [runs([
+        (head[0], 11.5, AGENT, True), (f"　{head[1]}", 9.5, G700, True),
+    ])], anchor=MIDDLE)
+    add_text(slide, x + 0.18, y + 0.36, w - 0.32, 0.22, [P(sub, 8.5, G500)], anchor=MIDDLE)
+    for index, (message, route) in enumerate(messages):
+        top = y + 0.64 + index * 0.72
+        card(slide, x + 0.18, top, w - 0.36, 0.62, fill=WHITE, line=G200)
+        add_text(slide, x + 0.3, top + 0.04, w - 0.6, 0.54, [
+            P(message, 9.5, G900, True, after=2),
+            P(route, 8, G500, font=MONO),
+        ], anchor=MIDDLE)
+    add_text(slide, x + 0.18, y + h - 0.64, w - 0.36, 0.52,
+             [P(line, 8.5, G500) for line in foot], anchor=TOP)
+
+
+def p11_components(slide):
+    add_text(slide, P11_IN_X, 1.32, P11_IN_W, 0.24, [P(P11_HEADS[0], 10, G500, True)],
+             anchor=MIDDLE)
+    add_text(slide, P11_OUT_X, 1.32, P11_OUT_W, 0.24, [P(P11_HEADS[1], 10, G500, True)],
+             anchor=MIDDLE)
+    for index, (name, english, idea, detail) in enumerate(P11_INNER):
+        top = P11_TOP + index * P11_PITCH
+        card(slide, P11_IN_X, top, P11_IN_W, P11_ROW_H, fill=WHITE, line=G200)
+        add_box(slide, P11_IN_X, top, 0.07, P11_ROW_H, fill=ORANGE_FILL)
+        add_text(slide, P11_IN_X + 0.22, top + 0.05, P11_IN_W - 0.4, P11_ROW_H - 0.1, [
+            runs([(name, 12.5, G900, True), (f"　{english}", 9.5, ORANGE, True, MONO),
+                  (f"　{idea}", 9.5, G700)], after=2),
+            P(detail, 9, G500),
+        ], anchor=MIDDLE)
+
+        partner, lines, inbound = P11_OUTER[index]
+        card(slide, P11_OUT_X, top, P11_OUT_W, P11_ROW_H, fill=G050, line=G200)
+        add_text(slide, P11_OUT_X + 0.18, top + 0.05, P11_OUT_W - 0.36, P11_ROW_H - 0.1, [
+            P(partner, 10.5, G800, True, after=2),
+            *[P(line, 8.5, G700) for line in lines],
+        ], anchor=MIDDLE)
+
+        mid = p11_row_mid(index)
+        gap_left, gap_right = P11_IN_X + P11_IN_W + 0.04, P11_OUT_X - 0.04
+        if inbound:
+            add_arrow(slide, gap_right, mid, gap_left, mid, G400, 1.25)
+        else:
+            add_arrow(slide, gap_left, mid, gap_right, mid, ORANGE_FILL, 1.25)
+
+    spine = P11_IN_X + P11_IN_W / 2
+    for index in range(len(P11_INNER) - 1):
+        top = P11_TOP + index * P11_PITCH + P11_ROW_H
+        add_arrow(slide, spine, top + 0.01, spine, top + P11_PITCH - P11_ROW_H - 0.01,
+                  ORANGE_FILL, 1.25)
+
+
+def p11_verdict(slide):
+    x = P11_IN_X
+    w = SW - MX - x
+    card(slide, x, P11_VER_Y, w, P11_VER_H, fill=WHITE, line=AGENT, line_w=1.5)
+    add_box(slide, x, P11_VER_Y, 0.08, P11_VER_H, fill=AGENT)
+    head, rule, layers = P11_VERDICT
+    add_text(slide, x + 0.3, P11_VER_Y + 0.05, w - 0.5, 0.26, [runs([
+        (head, 11.5, AGENT, True), ("　｜　", 10.5, G300), (rule, 10.5, G900, True),
+    ])], anchor=MIDDLE)
+    for index, line in enumerate(layers):
+        add_text(slide, x + 0.3 + index * (w - 0.6) / 2, P11_VER_Y + 0.36, (w - 0.6) / 2, 0.38,
+                 [P(line, 9, G700)], anchor=MIDDLE)
+
+
+def page_eleven(slide):
+    add_background(slide)
+    page_header(slide, P11_TITLE, P11_SUB, sub_size=11.5)
+    p11_environment(slide)
+    p11_components(slide)
+    p11_verdict(slide)
+
+    env_right, in_left = P11_ENV_X + P11_ENV_W + 0.04, P11_IN_X - 0.04
+    observe_y = p11_row_mid(1)
+    add_arrow(slide, env_right, observe_y, in_left, observe_y, AGENT, 1.5)
+    add_text(slide, env_right, observe_y - 0.24, in_left - env_right, 0.2,
+             [P(P11_OBSERVE, 8, AGENT, True, align=CENTER)], anchor=MIDDLE)
+    publish_y = P11_VER_Y + P11_VER_H / 2
+    add_arrow(slide, in_left, publish_y, env_right, publish_y, AGENT, 1.5)
+    add_text(slide, env_right, publish_y - 0.24, in_left - env_right, 0.2,
+             [P(P11_PUBLISH, 8, AGENT, True, align=CENTER)], anchor=MIDDLE)
+
+    submit_x = P11_IN_X + P11_IN_W / 2
+    action_bottom = P11_TOP + (len(P11_INNER) - 1) * P11_PITCH + P11_ROW_H
+    add_arrow(slide, submit_x, action_bottom + 0.01, submit_x, P11_VER_Y - 0.01,
+              ORANGE_FILL, 1.5)
+    add_text(slide, submit_x + 0.1, action_bottom, 1.2, P11_VER_Y - action_bottom,
+             [P(P11_SUBMIT, 8, ORANGE, True)], anchor=MIDDLE)
+
+    add_box(slide, MX, 6.48, CW, 0.56, fill=TINT)
+    add_box(slide, MX, 6.48, 0.08, 0.56, fill=AGENT)
+    add_text(slide, MX + 0.36, 6.48, CW - 0.72, 0.56, [runs([
+        (P11_BAND[0], 12, AGENT, True), ("　→　", 12, G400), (P11_BAND[1], 13, G900, True),
+    ])], anchor=MIDDLE)
+
+
 # ----------------------------------------------------------------------- 10  模型Roofline
 P10_TITLE = "M100 Agent：全栈模型 Roofline 协同优化体系"
 P10_SUB = ("演进目标（Target State）：算子 · 计算图 · 引擎三层协同寻优；优化目标由约束条件正向推导，"
@@ -1248,7 +1401,7 @@ P10_REAL = ("真机实测 · 唯一准入终审（一票否决）", (
 ))
 P10_CLOSE = (("闭环演进", "验证通过即晋升为最新基线，回流目标层重新核算差距"),
              ("收敛条件", "候选收益无法跨越系统噪声门限时，迭代自动收敛终止"))
-P10_NOTE = "第 7 页是单步口径（ms/步），本页是服务口径（约束下的吞吐），两页的数不能直接对齐"
+P10_NOTE = "第 7–8 页是单步口径（ms/步），本页是服务口径（约束下的吞吐），两种口径的数不能直接对齐"
 
 P10_SPINE_X = 0.66
 P10_CX = 0.88
@@ -1580,12 +1733,13 @@ PAGES = (
     (8, page_seven),
     (9, page_eight),
     (10, page_nine),
-    (11, page_ten),
-    (12, lambda slide: divider_slide(slide, "从『我们自己做生态』到『合作伙伴共建生态飞轮』")),
-    (13, page_twelve),
-    (14, page_thirteen),
+    (11, page_eleven),
+    (12, page_ten),
+    (13, lambda slide: divider_slide(slide, "从『我们自己做生态』到『合作伙伴共建生态飞轮』")),
+    (14, page_twelve),
+    (15, page_thirteen),
 )
-DIVIDERS = {2, 12}
+DIVIDERS = {2, 13}
 
 
 def build(path):
