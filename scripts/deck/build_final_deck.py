@@ -1210,149 +1210,177 @@ def page_nine(slide):
 
 # ------------------------------------------------------------- 11  Agent 内部组件
 P11_TITLE = "M100 Agent：Agent 的内部组件与内外交互"
-P11_SUB = "两层 Agent 由同一套组件拼成：记忆 → 观察 → 思考 → 行动；差别只在订阅哪些消息、调用哪些工具、由谁判决"
-P11_ENV = (("环境（Environment）", "消息总线"), "源码工作区 · 设备锁 · Trial 逐次落盘", (
-    ("瓶颈算子 + Shape 规格", "模型层 → 算子层"),
-    ("新算子内核", "算子层 → 模型层"),
-    ("Trace 与耗时归因", "工具 → 本层"),
-    ("评测报告与判定结论", "判决侧 → 两层"),
-    ("新基线", "判定通过后整体更新"),
-), ("两层 Agent 都挂在这条总线上，", "各自订阅自己关心的消息类型"))
-# (名称, 英文, 一句定义, 落地细节)
-P11_INNER = (
-    ("记忆", "Memory", "把任务约束与历史带进每一轮",
-     "契约锁定评测条件；被拒原因与历次 Trial 逐轮回灌"),
-    ("观察", "Observation", "只接收消息与证据，不自行解释成败",
-     "订阅本层关心的消息：Trace 归因、评测报告、Shape 规格"),
-    ("思考", "Thought", "全流程唯一调用模型的环节",
-     "看证据写代码：结合源码与锁定证据提出优化假设"),
-    ("行动", "Action", "产出一律是候选，不是结论",
-     "模型层出代码补丁；算子层出算子实现（显式规划 DMA 与流水）"),
+P11_SUB = "两层 Agent 同构：同一套内部组件，差别只在订阅哪些消息、调用哪些工具"
+P11_PEERS = (("模型层 Agent", 2.06), ("算子层 Agent", 4.26))
+P11_ENV = ("环境（Environment）", "两层 Agent 在此发布与订阅")
+# (文字, 跨层路由, 产出方是模型 = True, 是文件类 = True)
+P11_MSGS = (
+    ("Trace 与耗时归因", None, False, True),
+    ("瓶颈算子 + Shape 规格", "模型层 → 算子层", True, False),
+    ("新算子内核", "算子层 → 模型层", True, True),
+    ("评测报告与判定", None, False, True),
+    ("新基线", None, False, False),
 )
-# (对接方, 两行说明, 外部供给内部 = True)
-P11_OUTER = (
-    ("任务契约与知识库", ("optimization-task.json 锁定模型、精度、负载、准入门槛",
-                  "调优知识库与 Skills：只读目录索引，每轮最多调取 2 份"), True),
-    ("工具采集的证据", ("profile 接口采 Trace，golden 比对数值，真机重复计时",
-                 "证据先锁定再进入下一环，观察环节不改写证据"), True),
-    ("大模型 + 人按需介入", ("全流程唯一的模型；复杂场景由人直接改或与之协同",
-                    "人工介入同样走下方那道判定，不另开通道"), True),
-    ("工具（Tools）", ("编译构建 · 运行 · 性能采集 · 数值比对 · 模拟器定位",
-                 "与硬件耦合的只有 backend/ 这一层"), False),
-)
-P11_VERDICT = ("判决侧 · 规则驱动，无模型", "Agent 无权自行宣告成功：行动的产出必须先过这里",
-               ("模型层＝控制器：单算子初筛 → 质量评估 → 端到端 A/B",
-                "算子层＝Harness：L0 编译运行 → L1 数值验证 → Bench 计时"))
-P11_OBSERVE, P11_PUBLISH, P11_SUBMIT = "订阅", "回写", "提交候选"
-P11_HEADS = ("Agent 内部组件", "外部对接")
+P11_AGENT = "Agent（两层同构）"
+P11_STAGES = (("记忆", "Memory"), ("观察", "Observation"), ("思考", "Thought"),
+              ("行动", "Action"))
+P11_HUMAN = "人 · 按需介入"
+P11_LLM = ("大模型", "全流程唯一")
+P11_TOOLS = ("工具", "编译 · 运行 · 采集 · 比对 · 仿真")
+P11_VERDICT = ("判决侧", "规则驱动 · 无模型", "模型层＝控制器 · 算子层＝Harness")
+P11_EDGES = ("订阅", "调用", "提交候选", "判定通过")
+P11_PEER_EDGE = "发布 ⇄ 订阅"
 P11_BAND = ("与通用 Agent 框架的唯一差别", "「行动」不能直接产生新消息，必须先过一道确定性判决")
 
-P11_ENV_X, P11_ENV_W = MX, 2.86
-P11_IN_X, P11_IN_W = 3.92, 4.34
-P11_OUT_X = 8.56
-P11_OUT_W = SW - MX - P11_OUT_X
-P11_TOP, P11_ROW_H, P11_PITCH = 1.58, 0.82, 0.96
-P11_VER_Y, P11_VER_H = 5.58, 0.82
+P11_PEER_CX = 1.16
+P11_ENV_X, P11_ENV_W = 1.92, 2.96
+P11_BOX_X, P11_BOX_W = 5.82, 3.50
+P11_SIDE_X = 10.00
+P11_SIDE_W = SW - MX - P11_SIDE_X
+P11_TOP, P11_BOT = 1.34, 6.34
+P11_MSG_TOP, P11_MSG_H, P11_MSG_PITCH = 2.00, 0.58, 0.84
+P11_ST_X, P11_ST_W, P11_ST_H, P11_ST_PITCH = 6.62, 1.90, 0.62, 0.84
+P11_ST_TOP = 1.84
+P11_VER_Y, P11_VER_H = 5.72, 0.62
 
 
-def p11_row_mid(index):
-    return P11_TOP + index * P11_PITCH + P11_ROW_H / 2
+def p11_msg_mid(index):
+    return P11_MSG_TOP + index * P11_MSG_PITCH + P11_MSG_H / 2
+
+
+def p11_stage_mid(index):
+    return P11_ST_TOP + index * P11_ST_PITCH + P11_ST_H / 2
+
+
+def p11_robot(slide, cx, cy, tone):
+    """A small agent glyph: antenna, head with two eyes, body bar."""
+    add_line(slide, cx, cy - 0.38, cx, cy - 0.27, tone, 1.25)
+    add_box(slide, cx - 0.055, cy - 0.49, 0.11, 0.11, fill=tone, kind=MSO_SHAPE.OVAL)
+    add_box(slide, cx - 0.27, cy - 0.26, 0.54, 0.44, fill=WHITE, line=tone, line_w=1.5,
+            kind=MSO_SHAPE.ROUNDED_RECTANGLE, radius=0.24)
+    for offset in (-0.10, 0.10):
+        add_box(slide, cx + offset - 0.045, cy - 0.12, 0.09, 0.09, fill=tone,
+                kind=MSO_SHAPE.OVAL)
+    add_box(slide, cx - 0.33, cy + 0.23, 0.66, 0.11, fill=tone,
+            kind=MSO_SHAPE.ROUNDED_RECTANGLE, radius=0.5)
+
+
+def p11_peers(slide):
+    for name, cy in P11_PEERS:
+        p11_robot(slide, P11_PEER_CX, cy, G500)
+        add_text(slide, P11_PEER_CX - 0.72, cy + 0.42, 1.44, 0.22,
+                 [P(name, 9.5, G800, True, align=CENTER)], anchor=MIDDLE)
+        add_arrow(slide, P11_PEER_CX + 0.31, cy - 0.04, P11_ENV_X - 0.04, cy - 0.04,
+                  G500, 1.25, both=True)
+    add_text(slide, P11_PEER_CX - 0.58, P11_TOP, 1.16, 0.22,
+             [P(P11_PEER_EDGE, 8.5, G500, True, align=CENTER)], anchor=MIDDLE)
 
 
 def p11_environment(slide):
     x, w = P11_ENV_X, P11_ENV_W
-    y, h = 1.32, 5.06
-    card(slide, x, y, w, h, fill=PALE, line=None)
-    add_box(slide, x, y, w, 0.06, fill=AGENT)
-    head, sub, messages, foot = P11_ENV
-    add_text(slide, x + 0.18, y + 0.1, w - 0.32, 0.26, [runs([
-        (head[0], 11.5, AGENT, True), (f"　{head[1]}", 9.5, G700, True),
-    ])], anchor=MIDDLE)
-    add_text(slide, x + 0.18, y + 0.36, w - 0.32, 0.22, [P(sub, 8.5, G500)], anchor=MIDDLE)
-    for index, (message, route) in enumerate(messages):
-        top = y + 0.64 + index * 0.72
-        card(slide, x + 0.18, top, w - 0.36, 0.62, fill=WHITE, line=G200)
-        add_text(slide, x + 0.3, top + 0.04, w - 0.6, 0.54, [
-            P(message, 9.5, G900, True, after=2),
-            P(route, 8, G500, font=MONO),
-        ], anchor=MIDDLE)
-    add_text(slide, x + 0.18, y + h - 0.64, w - 0.36, 0.52,
-             [P(line, 8.5, G500) for line in foot], anchor=TOP)
+    card(slide, x, P11_TOP, w, P11_BOT - P11_TOP, fill=WHITE, line=G300)
+    label, caption = P11_ENV
+    add_text(slide, x + 0.15, P11_TOP + 0.08, w - 0.3, 0.26,
+             [P(label, 11.5, G900, True, align=CENTER)], anchor=MIDDLE)
+    add_text(slide, x + 0.15, P11_TOP + 0.34, w - 0.3, 0.2,
+             [P(caption, 8, G500, align=CENTER)], anchor=MIDDLE)
+    for index, (text, route, from_model, is_file) in enumerate(P11_MSGS):
+        top = P11_MSG_TOP + index * P11_MSG_PITCH
+        tone = ORANGE if from_model else AGENT
+        fill = ORANGE_TINT if from_model else PALE
+        kind = MSO_SHAPE.FLOWCHART_DOCUMENT if is_file else MSO_SHAPE.ROUNDED_RECTANGLE
+        shape = add_box(slide, x + 0.2, top, w - 0.4, P11_MSG_H, fill=fill, line=tone,
+                        kind=kind, radius=None if is_file else 0.4)
+        boxed_text(shape, [
+            P(text, 10, G900, True, align=CENTER, after=1),
+            *([P(route, 7.5, tone, font=MONO, align=CENTER)] if route else []),
+        ], inset=(0.06, 0.02, 0.06, 0.1 if is_file else 0.02))
 
 
-def p11_components(slide):
-    add_text(slide, P11_IN_X, 1.32, P11_IN_W, 0.24, [P(P11_HEADS[0], 10, G500, True)],
-             anchor=MIDDLE)
-    add_text(slide, P11_OUT_X, 1.32, P11_OUT_W, 0.24, [P(P11_HEADS[1], 10, G500, True)],
-             anchor=MIDDLE)
-    for index, (name, english, idea, detail) in enumerate(P11_INNER):
-        top = P11_TOP + index * P11_PITCH
-        card(slide, P11_IN_X, top, P11_IN_W, P11_ROW_H, fill=WHITE, line=G200)
-        add_box(slide, P11_IN_X, top, 0.07, P11_ROW_H, fill=ORANGE_FILL)
-        add_text(slide, P11_IN_X + 0.22, top + 0.05, P11_IN_W - 0.4, P11_ROW_H - 0.1, [
-            runs([(name, 12.5, G900, True), (f"　{english}", 9.5, ORANGE, True, MONO),
-                  (f"　{idea}", 9.5, G700)], after=2),
-            P(detail, 9, G500),
-        ], anchor=MIDDLE)
+def p11_agent(slide):
+    x, w = P11_BOX_X, P11_BOX_W
+    card(slide, x, P11_TOP, w, 4.12, fill=WHITE, line=G300)
+    add_text(slide, x + 0.15, P11_TOP + 0.08, w - 0.3, 0.26,
+             [P(P11_AGENT, 11.5, G900, True, align=CENTER)], anchor=MIDDLE)
+    for index, (name, english) in enumerate(P11_STAGES):
+        top = P11_ST_TOP + index * P11_ST_PITCH
+        shape = add_box(slide, P11_ST_X, top, P11_ST_W, P11_ST_H, fill=PALE, line=AGENT,
+                        kind=MSO_SHAPE.ROUNDED_RECTANGLE, radius=0.18)
+        boxed_text(shape, [runs([
+            (name, 11, G900, True), (f"　{english}", 9, AGENT, True, MONO),
+        ], align=CENTER)])
+        if index:
+            add_arrow(slide, P11_ST_X + P11_ST_W / 2, top - P11_ST_PITCH + P11_ST_H + 0.01,
+                      P11_ST_X + P11_ST_W / 2, top - 0.01, AGENT, 1.5)
 
-        partner, lines, inbound = P11_OUTER[index]
-        card(slide, P11_OUT_X, top, P11_OUT_W, P11_ROW_H, fill=G050, line=G200)
-        add_text(slide, P11_OUT_X + 0.18, top + 0.05, P11_OUT_W - 0.36, P11_ROW_H - 0.1, [
-            P(partner, 10.5, G800, True, after=2),
-            *[P(line, 8.5, G700) for line in lines],
-        ], anchor=MIDDLE)
 
-        mid = p11_row_mid(index)
-        gap_left, gap_right = P11_IN_X + P11_IN_W + 0.04, P11_OUT_X - 0.04
-        if inbound:
-            add_arrow(slide, gap_right, mid, gap_left, mid, G400, 1.25)
-        else:
-            add_arrow(slide, gap_left, mid, gap_right, mid, ORANGE_FILL, 1.25)
-
-    spine = P11_IN_X + P11_IN_W / 2
-    for index in range(len(P11_INNER) - 1):
-        top = P11_TOP + index * P11_PITCH + P11_ROW_H
-        add_arrow(slide, spine, top + 0.01, spine, top + P11_PITCH - P11_ROW_H - 0.01,
-                  ORANGE_FILL, 1.25)
+def p11_side(slide):
+    x, w = P11_SIDE_X, P11_SIDE_W
+    human = add_box(slide, x, 2.68, w, 0.56, fill=WHITE, line=G400, dash=DASH,
+                    kind=MSO_SHAPE.ROUNDED_RECTANGLE, radius=0.3)
+    boxed_text(human, [P(P11_HUMAN, 10.5, G800, True, align=CENTER)])
+    llm = add_box(slide, x, 3.46, w, 0.70, fill=ORANGE_TINT, line=ORANGE_FILL,
+                  kind=MSO_SHAPE.ROUNDED_RECTANGLE, radius=0.3)
+    boxed_text(llm, [
+        P(P11_LLM[0], 12, G900, True, align=CENTER, after=1),
+        P(P11_LLM[1], 8.5, ORANGE, True, align=CENTER),
+    ])
+    tools = add_box(slide, x, 4.30, w, 0.78, fill=WHITE, line=G500, dash=DASH)
+    boxed_text(tools, [
+        P(P11_TOOLS[0], 11, G900, True, align=CENTER, after=2),
+        P(P11_TOOLS[1], 8.5, G700, align=CENTER),
+    ])
 
 
 def p11_verdict(slide):
-    x = P11_IN_X
+    x = P11_BOX_X
     w = SW - MX - x
     card(slide, x, P11_VER_Y, w, P11_VER_H, fill=WHITE, line=AGENT, line_w=1.5)
     add_box(slide, x, P11_VER_Y, 0.08, P11_VER_H, fill=AGENT)
-    head, rule, layers = P11_VERDICT
-    add_text(slide, x + 0.3, P11_VER_Y + 0.05, w - 0.5, 0.26, [runs([
-        (head, 11.5, AGENT, True), ("　｜　", 10.5, G300), (rule, 10.5, G900, True),
+    head, rule, who = P11_VERDICT
+    add_text(slide, x + 0.3, P11_VER_Y, w - 0.5, P11_VER_H, [runs([
+        (head, 12.5, AGENT, True), ("　｜　", 10.5, G300), (rule, 10.5, G900, True),
+        ("　｜　", 10.5, G300), (who, 9.5, G500),
     ])], anchor=MIDDLE)
-    for index, line in enumerate(layers):
-        add_text(slide, x + 0.3 + index * (w - 0.6) / 2, P11_VER_Y + 0.36, (w - 0.6) / 2, 0.38,
-                 [P(line, 9, G700)], anchor=MIDDLE)
 
 
 def page_eleven(slide):
     add_background(slide)
     page_header(slide, P11_TITLE, P11_SUB, sub_size=11.5)
+    p11_peers(slide)
     p11_environment(slide)
-    p11_components(slide)
+    p11_agent(slide)
+    p11_side(slide)
     p11_verdict(slide)
 
-    env_right, in_left = P11_ENV_X + P11_ENV_W + 0.04, P11_IN_X - 0.04
-    observe_y = p11_row_mid(1)
-    add_arrow(slide, env_right, observe_y, in_left, observe_y, AGENT, 1.5)
-    add_text(slide, env_right, observe_y - 0.24, in_left - env_right, 0.2,
-             [P(P11_OBSERVE, 8, AGENT, True, align=CENTER)], anchor=MIDDLE)
-    publish_y = P11_VER_Y + P11_VER_H / 2
-    add_arrow(slide, in_left, publish_y, env_right, publish_y, AGENT, 1.5)
-    add_text(slide, env_right, publish_y - 0.24, in_left - env_right, 0.2,
-             [P(P11_PUBLISH, 8, AGENT, True, align=CENTER)], anchor=MIDDLE)
+    observe, use, submit, pass_back = P11_EDGES
+    env_right = P11_ENV_X + P11_ENV_W - 0.04
+    watch_x, watch_y = P11_ST_X - 0.04, p11_stage_mid(1)
+    for index in (0, 1, 3):
+        add_arrow(slide, env_right, p11_msg_mid(index), watch_x, watch_y, G500, 1.25)
+    add_text(slide, 4.98, watch_y - 0.65, 0.80, 0.2,
+             [P(observe, 8.5, G500, True, align=CENTER)], anchor=MIDDLE)
 
-    submit_x = P11_IN_X + P11_IN_W / 2
-    action_bottom = P11_TOP + (len(P11_INNER) - 1) * P11_PITCH + P11_ROW_H
-    add_arrow(slide, submit_x, action_bottom + 0.01, submit_x, P11_VER_Y - 0.01,
+    think_right = P11_ST_X + P11_ST_W + 0.04
+    add_arrow(slide, P11_SIDE_X - 0.04, 2.96, think_right, p11_stage_mid(2) - 0.14,
+              G500, 1.25)
+    add_arrow(slide, P11_SIDE_X - 0.04, 3.81, think_right, p11_stage_mid(2) + 0.10,
               ORANGE_FILL, 1.5)
-    add_text(slide, submit_x + 0.1, action_bottom, 1.2, P11_VER_Y - action_bottom,
-             [P(P11_SUBMIT, 8, ORANGE, True)], anchor=MIDDLE)
+    add_line(slide, think_right, p11_stage_mid(3), P11_SIDE_X - 0.04, p11_stage_mid(3),
+             G500, 1.25, tail=True, dash=DASH)
+    add_text(slide, 9.00, p11_stage_mid(3) - 0.26, 0.9, 0.2,
+             [P(use, 8.5, G500, True, align=CENTER)], anchor=MIDDLE)
+
+    spine = P11_ST_X + P11_ST_W / 2
+    action_bottom = P11_ST_TOP + 3 * P11_ST_PITCH + P11_ST_H
+    add_arrow(slide, spine, action_bottom + 0.01, spine, P11_VER_Y - 0.01, ORANGE_FILL, 1.5)
+    add_text(slide, spine + 0.12, P11_VER_Y - 0.26, 1.2, 0.22,
+             [P(submit, 8.5, ORANGE, True)], anchor=MIDDLE)
+
+    back_y = P11_VER_Y + P11_VER_H / 2
+    add_arrow(slide, P11_BOX_X - 0.04, back_y, P11_ENV_X + P11_ENV_W + 0.04, back_y, AGENT, 1.5)
+    add_text(slide, 4.96, back_y - 0.26, 0.82, 0.2,
+             [P(pass_back, 8.5, AGENT, True, align=CENTER)], anchor=MIDDLE)
 
     add_box(slide, MX, 6.48, CW, 0.56, fill=TINT)
     add_box(slide, MX, 6.48, 0.08, 0.56, fill=AGENT)
