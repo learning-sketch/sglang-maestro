@@ -979,178 +979,231 @@ def page_nine(slide):
 
 
 # ----------------------------------------------------------------------- 10  模型Roofline
-P10_TITLE = "M100 Agent：模型Roofline"
-P10_SUB = "目标态：算子 · 计算图 · 引擎三层协同；目标由约束推导，判决仍交给真机实测"
-P10_AIM = ("目标层", "定靶子 · 拆差距", AGENT, (
-    (1.90, "人", ("流量画像", "时延约束")),
-    (3.55, "上限核算器 · 无模型", ("只用模型配置 + 硬件规格", "上限不用实测去凑")),
-    (3.66, "总差距拆成三项", ("工作点 × 单步 × 步间", "每一项都有明确的主人")),
+P10_TITLE = "M100 Agent：全栈模型 Roofline 协同优化体系"
+P10_SUB = ("演进目标（Target State）：算子 · 计算图 · 引擎三层协同寻优；优化目标由约束条件正向推导，"
+           "最终准入交由真机实测一锤定音")
+P10_AIM = ("目标层", "锚定上限 · 拆解差距")
+P10_AIM_HUMAN = (2.30, "人（输入约束）", ("业务流量画像", "服务时延约束（SLO）"))
+P10_AIM_CEIL = (4.40, "上限核算器 · 纯理论推导（无模型）",
+                ("仅依据模型配置与硬件物理规格直接推算",
+                 "理论上限不含实测校准项，不靠实测数据反向拼凑"))
+P10_AIM_GAP = (4.23, "总差距拆解为三个维度", "（三个倍率相乘，不是耗时相加）",
+               ("工作点", "步间调度", "单步执行"), "责任到层，每一项差距均有明确的优化归属")
+P10_DISPATCH = "↓　任务派发：按理论差距大小排序，明确标注归属层级"
+P10_PLAN = ("规划层", "外环寻优工作点 · 内环逼近硬件上限")
+P10_LEGEND = "方括号标签表示当前能力成熟度"
+P10_OUTER = ("外环 · 推理引擎", "探索中", (
+    ("工作点", "显存切分策略 · 单步批大小（Batch Size） · 投机解码（Speculative Decoding）"),
+    ("步间调度", "调度与执行重叠（Overlap Scheduler） · 分块预填充（Chunked Prefill）与混跑 · "
+              "前缀缓存 · PD 分离部署"),
 ))
-P10_DISPATCH = "↓　派单：按差距排序，标明归属尺度"
-P10_PLAN = ("规划层", "外环定工作点 · 内环逼近屋顶", ORANGE_FILL)
-P10_OUTER = ("外环 · 引擎", "种子", (
-    ("工作点", "显存切分 · 每步请求数 · 投机解码", "工作点"),
-    ("步间", "overlap 调度 · chunk 与混跑 · 前缀缓存 · PD", "步间"),
+P10_CONTRACT = ("↓　下发：张量形状（Shape）分布 + 新算子需求",
+                "↑　反馈：单步耗时代价曲线 + 时延余量（Budget）")
+P10_INNER = ("内环 · 计算图 + 算子：在锁定工作点上逼近硬件极限", "单步执行", (
+    ("计算图", "部分就绪", "算子融合 · 多流并发（Multi-Stream） · 通信窗口预取"),
+    ("算子", "已就绪", "聚焦单个算子内核（Kernel）的极致代码实现"),
 ))
-P10_CONTRACT = ("↓　形状分布 + 新算子需求", "↑　单步代价曲线 + 时延余量")
-P10_INNER = ("内环 · 图 + 算子：在工作点上逼近屋顶", "单步", (
-    ("图", "部分已有", "融合 · 多流并发 · 通信窗口预取"),
-    ("算子", "已有", "一个 kernel 怎么写"),
+P10_INNER_EDGE = ("↓　下发：算子融合规范（契约）", "↑　反馈：新算子内核 + 实测耗时")
+P10_SUBMIT = ("↓　提交候选方案（附带层级标签）", "↑　淘汰打回：附带失败原因退回重改")
+P10_VERDICT = ("判决层", "规则驱动（无大模型） · 真机实测终审")
+P10_SIM = ("仿真器 · 仅做初筛淘汰，不作准入放行",
+           ("快速筛除明显劣化的候选方案", "（主要用于引擎层策略初筛）"))
+P10_SIM_EDGE = ("→　初筛送测", "←　实测校准")
+P10_REAL = ("真机实测 · 唯一准入终审（一票否决）", (
+    ("算子级", ("L0（编译）/ L1（精度）/ Bench（测速），严格按引擎下发的真实 Shape 评测",)),
+    ("计算图级", ("整模型端到端 A/B 性能压测 + 生成质量门禁评测",)),
+    ("引擎级", ("真实流量回放 · 约束下的吞吐与 P99 · 实测接受长度 · OOM 与抢占 · 长稳 · 多画像不退化",
+             "重叠开关前后一致性校验：固定批次逐位一致，混合负载按质量门禁容差判定；",
+             "高负载长稳压测排查并发竞态（Race Condition）")),
 ))
-P10_INNER_EDGE = ("↓　融合契约", "↑　新内核 + 实测代价")
-P10_SUBMIT = ("↓　候选（带尺度标签）", "↑　淘汰：带原因退回")
-P10_VERDICT = ("判决层", "不含模型 · 真机实测", AGENT)
-P10_SIM = ("仿真 · 只淘汰不放行", ("筛掉明显差的候选", "（主要用于引擎候选）"))
-P10_SIM_EDGE = ("──→　送测", "←──　校准")
-P10_REAL = ("真机 · 唯一的判决", (
-    ("算子", "L0 / L1 / Bench，按引擎给的形状测"),
-    ("图", "整模型 A/B + 质量评测"),
-    ("引擎", "流量回放 · 约束下吞吐与 p99 · 实测接受长度 · OOM 与抢占 · 长稳 · 多画像不退化"),
-    ("overlap", "与关闭时输出一致 · 长压测抓竞态"),
-))
-P10_RETURN = ("通", "过：成为新基线，回目标层重算差距　·　提不出跨过噪声门槛的候选即收敛")
+P10_CLOSE = (("闭环演进", "验证通过即晋升为最新基线，回流目标层重新核算差距"),
+             ("收敛条件", "候选收益无法跨越系统噪声门限时，迭代自动收敛终止"))
 P10_NOTE = "第 7 页是单步口径（ms/步），本页是服务口径（约束下的吞吐），两页的数不能直接对齐"
 
-P10_SPINE_X = 0.70
-P10_CX = 1.04
-P10_LABEL_W = 1.60
-P10_INNER_X = P10_CX + P10_LABEL_W + 0.18
-P10_INNER_W = SW - MX - P10_INNER_X
+P10_SPINE_X = 0.66
+P10_CX = 0.88
+P10_IX = P10_CX + 0.20
+P10_IW = SW - MX - P10_IX
 
 
-def p10_layer(slide, y, h, name, detail, tone):
-    """A layer band: light panel, coloured left edge, name and one-line role in the left strip."""
+def p10_width(parts):
+    """Inches one line of styled runs needs, with the margin the fit checker keeps in reserve."""
+    points = sum(char_em(ch, bold) * size for text, size, bold in parts for ch in text)
+    return points / 72 / 0.95
+
+
+def p10_layer(slide, y, h, name, role, tone):
+    """A layer panel whose name rides a pill straddling its top edge, so content keeps full width."""
     card(slide, P10_CX, y, SW - MX - P10_CX, h, fill=G050, line=None)
-    add_box(slide, P10_CX, y, 0.07, h, fill=tone)
-    add_text(slide, P10_CX + 0.24, y + 0.08, P10_LABEL_W - 0.3, h - 0.16, [
-        P(name, 14, G900, True, after=3),
-        P(detail, 9, G500),
-    ], anchor=MIDDLE)
+    add_box(slide, P10_CX, y, 0.06, h, fill=tone)
+    parts = ((name, 11, True), (f"　{role}", 9.5, False))
+    width = p10_width(parts) + 0.34
+    shape = add_box(slide, P10_IX, y - 0.13, width, 0.26, fill=tone,
+                    kind=MSO_SHAPE.ROUNDED_RECTANGLE, radius=0.5)
+    boxed_text(shape, [runs([
+        (name, 11, WHITE, True), (f"　{role}", 9.5, G050),
+    ])], inset=(0.16, 0, 0.12, 0))
+    return width
 
 
-def p10_rule(slide, y, labels):
-    """A dashed hand-off between two layers, captioned with what travels in each direction."""
-    add_line(slide, P10_INNER_X, y + 0.13, SW - MX, y + 0.13, G300, 0.75, dash=DASH)
+def p10_rule(slide, y, labels, fill=G050, size=9.5):
+    """A hand-off between layers: a hairline captioned with what travels in each direction."""
+    add_line(slide, P10_IX, y + 0.11, SW - MX, y + 0.11, G300, 0.75, dash=DASH)
     for index, label in enumerate(labels):
-        add_box(slide, P10_INNER_X + index * 3.30, y, 2.90, 0.26, fill=G050)
-        add_text(slide, P10_INNER_X + index * 3.30, y, 2.90, 0.26,
-                 [P(label, 9.5, G500, align=CENTER)], anchor=MIDDLE)
+        width = p10_width(((label, size, False),)) + 0.40
+        add_box(slide, P10_IX + index * 4.40, y, width, 0.22, fill=fill)
+        add_text(slide, P10_IX + index * 4.40, y, width, 0.22,
+                 [P(label, size, G500, align=CENTER)], anchor=MIDDLE)
 
 
-def p10_tag(slide, x, y, w, h, label, tone=AGENT, fill=PALE, size=9):
+def p10_capsules(slide, y, h, labels, size=9):
+    """The two directions of one ring-to-ring contract, each in its own capsule."""
+    tones = ((ORANGE_TINT, ORANGE), (G100, G500))
+    left = P10_IX + 0.22
+    for label, (fill, tone) in zip(labels, tones):
+        width = p10_width(((label, size, False),)) + 0.46
+        shape = add_box(slide, left, y, width, h, fill=fill,
+                        kind=MSO_SHAPE.ROUNDED_RECTANGLE, radius=0.5)
+        boxed_text(shape, [P(label, size, tone, align=CENTER)], inset=(0.04, 0, 0.04, 0))
+        left += width + 0.26
+
+
+def p10_tag(slide, x, y, w, h, label, tone=AGENT, fill=PALE, size=9, bold=True):
     shape = add_box(slide, x, y, w, h, fill=fill, kind=MSO_SHAPE.ROUNDED_RECTANGLE, radius=0.5)
-    boxed_text(shape, [P(label, size, tone, True, align=CENTER)], inset=(0.02, 0, 0.02, 0))
+    boxed_text(shape, [P(label, size, tone, bold, align=CENTER)], inset=(0.02, 0, 0.02, 0))
     return shape
 
 
 def page_ten(slide):
     add_background(slide)
-    page_header(slide, P10_TITLE, P10_SUB)
+    page_header(slide, P10_TITLE, P10_SUB, sub_size=11.5)
 
-    # ---- 目标层：人给约束 → 核算上限 → 把总差距拆成三项，拆法就是派单规则
-    aim_y, aim_h = 1.36, 1.00
-    name, detail, tone, boxes = P10_AIM
-    p10_layer(slide, aim_y, aim_h, name, detail, tone)
-    box_x = P10_INNER_X
-    for index, (width, head, lines) in enumerate(boxes):
-        if index:
-            add_arrow(slide, box_x - 0.32, aim_y + aim_h / 2, box_x - 0.06,
-                      aim_y + aim_h / 2, AGENT, 1.25)
-        card(slide, box_x, aim_y + 0.10, width, aim_h - 0.20, fill=WHITE, line=G200)
-        add_text(slide, box_x + 0.22, aim_y + 0.16, width - 0.4, aim_h - 0.32, [
+    # ---- 目标层：约束进来，上限算出来，差距按维度拆开——拆法本身就是派单规则
+    aim_y, aim_h = 1.38, 0.86
+    p10_layer(slide, aim_y, aim_h, *P10_AIM, AGENT)
+    box_y, box_h = aim_y + 0.14, aim_h - 0.16
+    box_x = P10_IX
+    for width, head, lines in (P10_AIM_HUMAN, P10_AIM_CEIL):
+        card(slide, box_x, box_y, width, box_h, fill=WHITE, line=G200)
+        add_text(slide, box_x + 0.22, box_y + 0.04, width - 0.4, box_h - 0.08, [
             P(head, 11.5, G900, True, after=4),
-            *[P(line, 9.5, G700, after=2) for line in lines],
+            *[P(line, 9, G700, after=2) for line in lines],
         ], anchor=MIDDLE)
-        box_x += width + 0.40
+        add_arrow(slide, box_x + width + 0.05, aim_y + aim_h / 2, box_x + width + 0.31,
+                  aim_y + aim_h / 2, AGENT, 1.25)
+        box_x += width + 0.36
 
-    p10_rule(slide, 2.42, (P10_DISPATCH,))
+    width, head, qualifier, terms, note = P10_AIM_GAP
+    card(slide, box_x, box_y, width, box_h, fill=WHITE, line=G200)
+    add_text(slide, box_x + 0.22, box_y + 0.04, width - 0.4, 0.22,
+             [runs([(head, 11.5, G900, True), (qualifier, 8.5, G500)])], anchor=MIDDLE)
+    term_x = box_x + 0.22
+    for index, term in enumerate(terms):
+        if index:
+            add_text(slide, term_x, box_y + 0.26, 0.22, 0.22,
+                     [P("×", 10, G500, align=CENTER)], anchor=MIDDLE)
+            term_x += 0.22
+        term_w = p10_width(((term, 9, True),)) + 0.22
+        p10_tag(slide, term_x, box_y + 0.27, term_w, 0.20, term)
+        term_x += term_w
+    add_text(slide, box_x + 0.22, box_y + 0.50, width - 0.4, 0.20,
+             [P(note, 9, G700)], anchor=MIDDLE)
 
-    # ---- 规划层：外环挑工作点，内环在这个工作点上逼近屋顶，两环互相放大
-    plan_y, plan_h = 2.74, 2.18
-    p10_layer(slide, plan_y, plan_h, *P10_PLAN)
+    p10_rule(slide, 2.28, (P10_DISPATCH,))
 
-    outer_y, outer_h = plan_y + 0.08, 0.74
+    # ---- 规划层：外环挑工作点，内环在锁定的工作点上逼近物理上限，两环互相放大
+    plan_y, plan_h = 2.68, 2.02
+    p10_layer(slide, plan_y, plan_h, *P10_PLAN, ORANGE_FILL)
+    legend_w = p10_width(((P10_LEGEND, 8, False),)) + 0.30
+    add_box(slide, SW - MX - legend_w, plan_y - 0.13, legend_w, 0.26, fill=G050)
+    add_text(slide, SW - MX - legend_w, plan_y - 0.13, legend_w, 0.26,
+             [P(P10_LEGEND, 8, G500, align=CENTER)], anchor=MIDDLE)
+
+    outer_y, outer_h = plan_y + 0.14, 0.64
     head, status, rows = P10_OUTER
-    card(slide, P10_INNER_X, outer_y, P10_INNER_W, outer_h, fill=WHITE, line=G200)
-    add_text(slide, P10_INNER_X + 0.22, outer_y + 0.04, 2.0, 0.26,
+    card(slide, P10_IX, outer_y, P10_IW, outer_h, fill=WHITE, line=G200)
+    head_w = p10_width(((head, 11, True),))
+    add_text(slide, P10_IX + 0.22, outer_y + 0.03, head_w + 0.1, 0.22,
              [P(head, 11, G900, True)], anchor=MIDDLE)
-    p10_tag(slide, P10_INNER_X + 2.26, outer_y + 0.06, 0.72, 0.22, status,
+    p10_tag(slide, P10_IX + head_w + 0.40, outer_y + 0.04, 0.80, 0.20, f"[ {status} ]",
             tone=ORANGE, fill=ORANGE_TINT, size=8.5)
-    for index, (lead, text, term) in enumerate(rows):
-        top = outer_y + 0.32 + index * 0.22
-        add_text(slide, P10_INNER_X + 0.22, top, P10_INNER_W - 1.3, 0.22, [runs([
-            (f"{lead}：", 9.5, ORANGE, True), (text, 9.5, G700),
-        ])], anchor=MIDDLE)
-        p10_tag(slide, SW - MX - 0.94, top + 0.01, 0.72, 0.20, term)
+    for index, (term, text) in enumerate(rows):
+        top = outer_y + 0.25 + index * 0.20
+        p10_tag(slide, P10_IX + 0.22, top, 0.84, 0.18, term, size=8.5)
+        add_text(slide, P10_IX + 1.16, top, P10_IW - 1.38, 0.18,
+                 [P(text, 9, G700)], anchor=MIDDLE)
 
-    edge_y = outer_y + outer_h + 0.02
-    for index, label in enumerate(P10_CONTRACT):
-        add_text(slide, P10_INNER_X + 0.22 + index * 3.30, edge_y, 3.10, 0.22,
-                 [P(label, 9, G500)], anchor=MIDDLE)
+    p10_capsules(slide, outer_y + outer_h + 0.02, 0.22, P10_CONTRACT)
 
-    inner_y, inner_h = edge_y + 0.24, 1.02
+    inner_y, inner_h = outer_y + outer_h + 0.28, 0.92
     head, term, rows = P10_INNER
-    card(slide, P10_INNER_X, inner_y, P10_INNER_W, inner_h, fill=WHITE, line=ORANGE_FILL,
-         line_w=1.25)
-    add_text(slide, P10_INNER_X + 0.22, inner_y + 0.04, 4.6, 0.26,
+    card(slide, P10_IX, inner_y, P10_IW, inner_h, fill=WHITE, line=ORANGE_FILL, line_w=1.25)
+    add_text(slide, P10_IX + 0.22, inner_y + 0.03, 5.6, 0.22,
              [P(head, 11, G900, True)], anchor=MIDDLE)
-    p10_tag(slide, SW - MX - 0.94, inner_y + 0.07, 0.72, 0.20, term)
+    term_w = p10_width(((term, 9, True),)) + 0.22
+    p10_tag(slide, SW - MX - 0.22 - term_w, inner_y + 0.04, term_w, 0.20, term)
     for index, (lead, status, text) in enumerate(rows):
-        top = inner_y + 0.32 + index * 0.46
-        add_text(slide, P10_INNER_X + 0.22, top, 0.60, 0.22,
+        top = inner_y + 0.26 + index * 0.42
+        add_text(slide, P10_IX + 0.22, top, 0.84, 0.20,
                  [P(lead, 9.5, ORANGE, True)], anchor=MIDDLE)
-        p10_tag(slide, P10_INNER_X + 0.84, top + 0.01, 0.86, 0.20, status,
-                tone=G500, fill=G100, size=8.5)
-        add_text(slide, P10_INNER_X + 1.82, top, P10_INNER_W - 2.9, 0.22,
-                 [P(text, 9.5, G700)], anchor=MIDDLE)
-    for index, label in enumerate(P10_INNER_EDGE):
-        add_text(slide, P10_INNER_X + 1.82 + index * 2.20, inner_y + 0.56, 2.10, 0.20,
-                 [P(label, 8.5, G500)], anchor=MIDDLE)
+        p10_tag(slide, P10_IX + 1.08, top + 0.01, 0.88, 0.18, f"[ {status} ]",
+                tone=G500, fill=G100, size=8.5, bold=False)
+        add_text(slide, P10_IX + 2.06, top, P10_IW - 2.28, 0.20,
+                 [P(text, 9, G700)], anchor=MIDDLE)
+    p10_capsules(slide, inner_y + 0.48, 0.18, P10_INNER_EDGE, size=8.5)
 
-    p10_rule(slide, 4.96, P10_SUBMIT)
+    p10_rule(slide, 4.74, P10_SUBMIT)
 
-    # ---- 判决层：仿真只负责淘汰，放行只认真机；量具按候选的尺度挑
-    ver_y, ver_h = 5.26, 1.32
-    p10_layer(slide, ver_y, ver_h, *P10_VERDICT)
-
-    sim_x, sim_w = P10_INNER_X, 2.60
-    real_x = sim_x + sim_w + 0.84
+    # ---- 判决层：仿真只负责淘汰，放行只认真机；量具按候选所属的尺度挑
+    ver_y, ver_h = 5.14, 1.46
+    p10_layer(slide, ver_y, ver_h, *P10_VERDICT, AGENT)
+    box_y, box_h = ver_y + 0.14, 1.28
+    sim_w = (P10_IW - 0.86) * 0.35
+    real_x = P10_IX + sim_w + 0.86
     real_w = SW - MX - real_x
-    box_y, box_h = ver_y + 0.10, 1.12
+
     head, lines = P10_SIM
-    card(slide, sim_x, box_y, sim_w, box_h, fill=WHITE, line=G200)
-    add_text(slide, sim_x + 0.2, box_y + 0.06, sim_w - 0.36, box_h - 0.12, [
-        P(head, 10.5, G900, True, after=4),
+    card(slide, P10_IX, box_y, sim_w, box_h, fill=WHITE, line=G200)
+    add_text(slide, P10_IX + 0.22, box_y + 0.06, sim_w - 0.4, box_h - 0.12, [
+        P(head, 10.5, G900, True, after=5),
         *[P(line, 9, G700, after=2) for line in lines],
     ], anchor=MIDDLE)
     for index, label in enumerate(P10_SIM_EDGE):
-        add_text(slide, sim_x + sim_w, box_y + 0.32 + index * 0.26, 0.84, 0.24,
+        add_text(slide, P10_IX + sim_w, box_y + 0.40 + index * 0.26, 0.86, 0.24,
                  [P(label, 8.5, G500, align=CENTER)], anchor=MIDDLE)
 
     head, rows = P10_REAL
     card(slide, real_x, box_y, real_w, box_h, fill=WHITE, line=AGENT, line_w=1.25)
-    add_text(slide, real_x + 0.22, box_y + 0.04, real_w - 0.4, 0.24,
+    add_text(slide, real_x + 0.22, box_y + 0.04, real_w - 0.4, 0.22,
              [P(head, 10.5, G900, True)], anchor=MIDDLE)
-    for index, (lead, text) in enumerate(rows):
-        top = box_y + 0.30 + index * 0.20
-        add_text(slide, real_x + 0.22, top, 0.78, 0.22,
-                 [P(lead, 9, AGENT, True, MONO)], anchor=MIDDLE)
-        add_text(slide, real_x + 1.00, top, real_w - 1.22, 0.22,
-                 [P(text, 9, G700)], anchor=MIDDLE)
+    top = box_y + 0.26
+    for lead, lines in rows:
+        height = 0.20 * len(lines)
+        add_text(slide, real_x + 0.22, top, 0.94, 0.20,
+                 [P(lead, 9, AGENT, True)], anchor=MIDDLE)
+        add_text(slide, real_x + 1.20, top, real_w - 1.42, height,
+                 [P(line, 9, G700) for line in lines], anchor=MIDDLE)
+        top += height
 
-    # ---- 回边：判决结果回到目标层，差距重算，队列重排
-    band_y, band_h = 6.64, 0.36
-    add_box(slide, P10_CX, band_y, SW - MX - P10_CX, band_h, fill=PALE)
-    add_text(slide, P10_CX + 0.3, band_y, SW - MX - P10_CX - 0.5, band_h, [runs([
-        (P10_RETURN[0], 11, AGENT, True), (P10_RETURN[1], 11, G900, True),
-    ])], anchor=MIDDLE)
+    # ---- 回边：判决结果回到目标层，差距重算；队列见底即收敛
+    band_y, band_h = 6.64, 0.34
+    band_w = SW - MX - P10_CX
+    add_box(slide, P10_CX, band_y, band_w, band_h, fill=PALE)
+    add_box(slide, P10_CX, band_y, 0.06, band_h, fill=AGENT)
+    half = band_w / 2
+    add_line(slide, P10_CX + half, band_y + 0.06, P10_CX + half, band_y + band_h - 0.06,
+             G300, 0.75)
+    for index, (lead, text) in enumerate(P10_CLOSE):
+        add_text(slide, P10_CX + 0.24 + index * half, band_y, half - 0.3, band_h, [runs([
+            (f"{lead}　", 11, AGENT, True), (text, 10.5, G900),
+        ])], anchor=MIDDLE)
 
     spine_top, spine_bottom = aim_y + 0.44, band_y + band_h / 2
     polyline(slide, [(P10_CX, spine_bottom), (P10_SPINE_X, spine_bottom),
                      (P10_SPINE_X, spine_top)], AGENT, 1.5)
     add_arrow(slide, P10_SPINE_X, spine_top, P10_CX - 0.02, spine_top, AGENT, 1.5)
 
-    add_text(slide, MX, 7.06, 9.4, 0.28, [P(P10_NOTE, 9, G500)], anchor=MIDDLE)
+    add_text(slide, MX, 7.02, 9.4, 0.28, [P(P10_NOTE, 9, G500)], anchor=MIDDLE)
 
 
 # ------------------------------------------------------------------------- 12  产品化
