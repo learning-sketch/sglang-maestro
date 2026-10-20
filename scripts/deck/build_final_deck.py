@@ -669,53 +669,53 @@ def page_six(slide):
 
 
 # ------------------------------------------------------- 7  模型层 Agent 内部组件
-P6B_TITLE = "M100 Agent：模型层内部组件与交互机制"
-P6B_SUB = "控制器确定性调度，规划器唯一引入大模型；人只在合同、介入、验收三处与 Agent 交互"
+P6B_TITLE = "M100 Agent：模型层内部组件与人机交互机制"
+P6B_SUB = "控制器确定性调度，规划器唯一引入大模型；人仅在契约下发、协同介入、终审验收三处交互"
 # (标题, 英文, 色条)
-P6B_HEADS = (("人 · 合同与验收", "Human in the Loop", G500),
-             ("模型层 Agent 内部", "控制器定规则 · 规划器出方案", ORANGE_FILL),
-             ("执行与被测系统", "确定性执行 · 无模型", AGENT))
+P6B_HEADS = (("人机交互边界", "Human in the Loop", G500),
+             ("模型层 Agent 核心架构", "控制器定规则 · 规划器出方案", ORANGE_FILL),
+             ("被测系统与落盘库", "SUT & Local Artifacts", AGENT))
 # (标题, 英文, 条目, 顶, 高)
 P6B_HUMAN = (
-    ("冻结下发", "人 → Agent", ("任务合同：精度 · 负载 · 门限", "质量合同：数值探针 + 评测集",
-                              "调优知识库：10 份 Skill", "授权边界：测哪些 · 跳过哪些"), 1.72, 1.12),
-    ("判决回报", "Agent → 人", ("最优版本与优化报告", "逐轮可溯源的全量证据",
-                              "账本自检异常与失败分类", "结论边界：哪些不能外推"), 3.10, 1.16),
-    ("按需介入", "人 ⇄ 规划器", ("复杂改动由人直接实现", "人工补丁同样走全部门禁"), 5.24, 0.78),
+    ("冻结下发", "人 → Agent", ("优化配置：模型 · 负载 · 门限", "质量契约：数值探针 + 评测集",
+                              "调优知识库：10 份 Skill", "授权与跳过边界"), 1.70, 1.26),
+    ("判决回报", "Agent → 人", ("最优版本与优化报告", "全量可溯源证据链",
+                              "账本自检异常说明", "结论适用边界声明"), 3.12, 1.26),
+    ("按需介入", "人 ⇄ 规划器", ("复杂改动由人工操刀", "与规划器结对写补丁",
+                               "人工补丁同样走四道门禁", "不改变准入判定路径"), 4.54, 1.48),
 )
 P6B_BACK = (
-    ("构建与被测系统", "SUT", ("原仓库原位建版本，隔离补丁", "只编译登记组件 + 身份校验",
-                             "服务启停与孤儿回收", "SGLang · xInfer · M100 物理卡"), 1.72, 1.12),
-    ("四道门禁", "由便宜到贵", ("C 单算子隔离链提速 ≥ 2%", "① 数值 |Δlogprob| ≤ 0.03",
-                             "② 冻结评测集正确率不降", "D 整模型三方 A/B 过噪声门"), 3.10, 1.16),
-    ("证据与产物", "全部落盘", ("每次 Trial 独立成目录", "账本 · trace · probe 结果",
-                             "规划器每轮完整往来", "被拒原因带回下一轮",
-                             "控制器快照防中途换实现"), 4.52, 1.50),
+    ("被测系统", "SUT", ("SGLang 原仓库原位建版本", "增量编译登记的算子组件",
+                        "M100 物理卡 · 服务启停", "回传 Trace · Logprob · 吞吐"), 1.70, 1.40),
+    ("证据与产物库", "Artifacts", ("35 次 Trial 独立成目录", "冻结快照与组件 SHA",
+                                 "账本 · Trace · Probe 结果", "规划器往来全量报文",
+                                 "完整证据留本地，按需调取"), 3.78, 1.76),
 )
-P6B_CTRL = ("控制器", "Python 确定性调度 · 无模型")
-# (标题, 模块, 一行职责)
-P6B_CHIPS = (
-    ("状态机与恢复", "optimization.py", "状态流转 · 中断恢复"),
-    ("账本与 Trace 归因", "roofline.py", "采样 · 归因 · 下界核算"),
-    ("工作区与构建", "git_workspace.py", "原位版本 · 隔离补丁"),
-    ("服务与评测", "benchmark.py", "启停 · 压测 · 数值与质量"),
-    ("门禁与晋升", "selfiterate_gates.py", "噪声门 · 叠加 · 晋升"),
-    ("有界取证", "planner_diagnostics.py", "独立进程 probe · 有界产物"),
+P6B_CTRL = ("Python 控制器", "确定性中枢 · 无模型")
+# (编号, 标题, 模块, 两行职责)
+P6B_CELLS = (
+    ("①", "状态与工作区", "optimization.py", ("设备锁 · 状态机 · 恢复", "原位构建 · 精确重测")),
+    ("②", "采样与账本", "roofline.py", ("一次性服务 Trace 采样", "对齐源码 · 下界核算")),
+    ("③", "四道门禁流水", "selfiterate_gates.py", ("C 算子微测 ≥ 2% · 数值门",
+                                                 "评测集不降 · D 三方 A/B")),
+    ("④", "有界取证", "planner_diagnostics.py", ("独立进程探针 ≤ 64 KiB", "账本异常自检与隔离")),
 )
-P6B_BUS = ("规划器接口 · mailbox", "planner_mailbox.py",
-           "UUID + 请求 SHA + 动作 schema　·　上下文 ≤ 18 KB　·　往来落盘")
-P6B_BUS_FLOW = ("请求：账本 + 最近证据", "提案：假设 + 补丁")
-P6B_PLANNER = ("规划器", "外部托管会话", ("读模型源码与冻结证据，提出优化假设与补丁",
-                                      "动作受限：read / search / probe / patch / stop"))
-P6B_PLANNER_BADGE = "不能自行宣告成功"
-# (人→控制器, 控制器→人, 人⇄规划器, 控制器→被测, 被测→门禁, 门禁→控制器, 证据→mailbox)
-P6B_EDGES = (("合同 · 授权", 0.80), ("报告 · 证据", 0.80), ("协同实现", 0.68),
-             ("补丁 · 构建", 0.80), ("trace · 数值 · 质量 · 吞吐", 0.0),
-             ("判据结果", 0.68), ("账本 · 证据", 0.80))
+P6B_BUS = ("可审计通信与记忆层", "planner_mailbox.py · planner_memory.py", (
+    ("mailbox", "UUID + 请求 SHA 校验　·　单条消息 ≤ 28 KB"),
+    ("memory", "滚动压缩：提案摘要 + 修改指纹 + 拒绝原因"),
+))
+P6B_BUS_FLOW = ("下发：账本 + 被拒记忆", "提交：假设 + 补丁")
+P6B_PLANNER = ("规划器", "Codex 外部托管会话", ("读源码与冻结证据，提假设写补丁",
+                                            "动作受限：read / search / probe / patch"))
+P6B_PLANNER_BADGE = "硬约束：不能自行宣告成功"
+# (标签, 胶囊宽度)
+P6B_EDGES = (("契约 · 授权", 0.78), ("报告 · 证据", 0.78), ("协同写补丁", 0.78),
+             ("补丁 · 构建", 0.78), ("实测数据", 0.68), ("按需调取", 0.68))
+P6B_FALL = "结果与报文落盘"
 P6B_BAND = ("核心设计", "规划器只提假设与补丁；数值、质量与性能收益全部由控制器独立核验")
 
-P6B_LX, P6B_LW = MX, 2.70
-P6B_CX, P6B_CW_ = 4.30, 4.40
+P6B_LX, P6B_LW = MX, 2.60
+P6B_CX, P6B_CW_ = 4.05, 4.80
 P6B_RX = 9.70
 P6B_RW = SW - MX - P6B_RX
 P6B_IW = P6B_CW_ * 0.94
@@ -723,21 +723,25 @@ P6B_IX = P6B_CX + (P6B_CW_ - P6B_IW) / 2
 P6B_SPINE = P6B_IX + P6B_IW / 2
 P6B_HEAD_Y, P6B_HEAD_H = 1.32, 0.32
 P6B_PANEL_TOP, P6B_PANEL_BOT = 1.66, 6.02
-# 控制器分组：标题 + 两列三行模块卡
-P6B_GY, P6B_GH = 1.70, 2.56
-P6B_CHIP_Y, P6B_CHIP_H, P6B_CHIP_PITCH = 2.06, 0.64, 0.70
-P6B_BUS_Y, P6B_BUS_H = 4.52, 0.54
+# 控制器 → 通信记忆层 → 规划器，三块垂直串起来，两段 0.24 的缝留给双向箭头
+P6B_GY, P6B_GH = 1.70, 2.38
+P6B_CELL_Y, P6B_CELL_H, P6B_CELL_PITCH = 2.08, 0.94, 0.98
+P6B_BUS_Y, P6B_BUS_H = 4.32, 0.68
 P6B_PLAN_Y, P6B_PLAN_H = 5.24, 0.78
-# 两条邮箱竖线左右对称，中间留给 mailbox 正文
-P6B_FLOW_DX = 1.34
+P6B_FLOW_DX = 1.46
+# 左栏三条连线：前两条进控制器，第三条平进规划器
+P6B_LINKS = (2.33, 3.75, 5.63)
+# 右栏：下发与回传各走一条，落盘竖线贴着卡片左侧
+P6B_SUT_OUT, P6B_SUT_BACK = 2.22, 2.78
+P6B_FALL_X = 10.20
 
 
-def p6b_chip(slide, x, y, w, h, title, module, detail):
+def p6b_cell(slide, x, y, w, h, number, title, module, lines):
     card(slide, x, y, w, h, fill=WHITE, line=G200)
-    add_text(slide, x + 0.14, y + 0.04, w - 0.24, h - 0.08, [
-        P(title, 10, G900, True, after=1),
-        P(module, 7, AGENT, False, MONO, after=1),
-        P(detail, 8, G700),
+    add_text(slide, x + 0.14, y + 0.05, w - 0.26, h - 0.1, [
+        runs([(f"{number} ", 9.5, AGENT, True), (title, 9.5, G900, True)], after=1),
+        P(module, 7, AGENT, False, MONO, after=2),
+        *[P(line, 8, G700) for line in lines],
     ], anchor=MIDDLE)
 
 
@@ -750,33 +754,35 @@ def p6b_centre(slide):
     add_text(slide, P6B_IX + 0.16, P6B_GY + 0.08, P6B_IW - 0.32, 0.26, [runs([
         (P6B_CTRL[0], 11.5, AGENT, True), (f"　{P6B_CTRL[1]}", 8.5, G700),
     ])], anchor=MIDDLE)
-    chip_w = (P6B_IW - 0.16 * 2 - 0.14) / 2
-    for index, (title, module, detail) in enumerate(P6B_CHIPS):
+    cell_w = (P6B_IW - 0.32 - 0.14) / 2
+    for index, (number, title, module, lines) in enumerate(P6B_CELLS):
         row, column = divmod(index, 2)
-        p6b_chip(slide, P6B_IX + 0.16 + column * (chip_w + 0.14),
-                 P6B_CHIP_Y + row * P6B_CHIP_PITCH, chip_w, P6B_CHIP_H, title, module, detail)
+        p6b_cell(slide, P6B_IX + 0.16 + column * (cell_w + 0.14),
+                 P6B_CELL_Y + row * P6B_CELL_PITCH, cell_w, P6B_CELL_H,
+                 number, title, module, lines)
 
-    bus = add_box(slide, P6B_IX, P6B_BUS_Y, P6B_IW, P6B_BUS_H, fill=G050, line=G500,
-                  line_w=1.0, dash=DASH)
-    boxed_text(bus, [
-        runs([(P6B_BUS[0], 10, G900, True), (f"　{P6B_BUS[1]}", 7.5, G500, False, MONO)],
-             align=CENTER, after=2),
-        P(P6B_BUS[2], 8, G700, align=CENTER),
-    ])
+    # 通信与记忆层属于控制器侧，用同色底板标明：规划器拿到的是压缩后的上下文
+    add_box(slide, P6B_IX, P6B_BUS_Y, P6B_IW, P6B_BUS_H, fill=PALE, line=AGENT, line_w=1.0,
+            dash=DASH)
+    add_text(slide, P6B_IX + 0.16, P6B_BUS_Y + 0.04, P6B_IW - 0.32, 0.22, [runs([
+        (P6B_BUS[0], 10, AGENT, True), (f"　{P6B_BUS[1]}", 7, G500, False, MONO),
+    ])], anchor=MIDDLE)
+    for index, (name, detail) in enumerate(P6B_BUS[2]):
+        add_text(slide, P6B_IX + 0.16, P6B_BUS_Y + 0.27 + index * 0.18, P6B_IW - 0.32, 0.18,
+                 [runs([(name, 8, G900, True, MONO), (f"　{detail}", 8, G700)])], anchor=MIDDLE)
 
     title, english, lines = P6B_PLANNER
     add_box(slide, P6B_IX, P6B_PLAN_Y, P6B_IW, P6B_PLAN_H, fill=ORANGE_TINT, line=ORANGE_FILL,
             kind=MSO_SHAPE.ROUNDED_RECTANGLE, radius=0.08 / min(P6B_IW, P6B_PLAN_H))
-    head_w = P6B_IW - 1.44
-    add_text(slide, P6B_IX + 0.16, P6B_PLAN_Y + 0.06, head_w, 0.26, [runs([
+    badge_w = 1.64
+    add_text(slide, P6B_IX + 0.16, P6B_PLAN_Y + 0.05, P6B_IW - badge_w - 0.4, 0.26, [runs([
         (title, 11.5, G900, True), (f"　{english}", 8.5, ORANGE, True, MONO),
     ])], anchor=MIDDLE)
-    pill(slide, P6B_IX + P6B_IW - 1.36, P6B_PLAN_Y + 0.09, 1.20, 0.22, P6B_PLANNER_BADGE,
-         ORANGE_FILL, size=7.5)
+    pill(slide, P6B_IX + P6B_IW - badge_w - 0.16, P6B_PLAN_Y + 0.08, badge_w, 0.22,
+         P6B_PLANNER_BADGE, ORANGE_FILL, size=7.5)
     add_text(slide, P6B_IX + 0.16, P6B_PLAN_Y + 0.34, P6B_IW - 0.32, P6B_PLAN_H - 0.4,
              [P(line, 8.5, G700) for line in lines], anchor=MIDDLE)
 
-    # 控制器 ↓ 请求 → mailbox ↓ → 规划器，提案沿对称的另一侧回到控制器
     group_bottom, bus_bottom = P6B_GY + P6B_GH, P6B_BUS_Y + P6B_BUS_H
     for x, (top_a, top_b), (bottom_a, bottom_b) in (
         (P6B_SPINE - P6B_FLOW_DX, (group_bottom, P6B_BUS_Y), (bus_bottom, P6B_PLAN_Y)),
@@ -784,7 +790,7 @@ def p6b_centre(slide):
     ):
         add_arrow(slide, x, top_a + 0.02, x, top_b - 0.02, ORANGE_FILL, 1.5)
         add_arrow(slide, x, bottom_a + 0.02, x, bottom_b - 0.02, ORANGE_FILL, 1.5)
-    label_w = 1.28
+    label_w = 1.36
     for x, text, align in ((P6B_SPINE - P6B_FLOW_DX + 0.07, P6B_BUS_FLOW[0], LEFT),
                            (P6B_SPINE + P6B_FLOW_DX - 0.07 - label_w, P6B_BUS_FLOW[1], RIGHT)):
         add_text(slide, x, group_bottom + 0.02, label_w, P6B_BUS_Y - group_bottom - 0.04,
@@ -797,8 +803,9 @@ def page_six_inside(slide):
     column_heads(slide, [(x, w, *head) for x, w, head in
                          ((P6B_LX, P6B_LW, P6B_HEADS[0]), (P6B_CX, P6B_CW_, P6B_HEADS[1]),
                           (P6B_RX, P6B_RW, P6B_HEADS[2]))], P6B_HEAD_Y, P6B_HEAD_H)
-    for title, english, items, y, h in P6B_HUMAN:
-        side_card(slide, P6B_LX, y, P6B_LW, h, title, english, items, G500)
+    for index, (title, english, items, y, h) in enumerate(P6B_HUMAN):
+        side_card(slide, P6B_LX, y, P6B_LW, h, title, english, items,
+                  ORANGE_FILL if index == 2 else G500)
     for title, english, items, y, h in P6B_BACK:
         side_card(slide, P6B_RX, y, P6B_RW, h, title, english, items, AGENT)
     p6b_centre(slide)
@@ -807,42 +814,39 @@ def page_six_inside(slide):
     inner_left, inner_right = P6B_IX - 0.04, P6B_IX + P6B_IW + 0.04
     left_lane = (P6B_LX + P6B_LW + P6B_CX) / 2
     right_lane = (P6B_CX + P6B_CW_ + P6B_RX) / 2
-    mid = [y + h / 2 for *_, y, h in P6B_HUMAN]
-    back_mid = [y + h / 2 for *_, y, h in P6B_BACK]
 
-    # 人 ⇄ 控制器：上行下发合同，下行回报判决
-    add_arrow(slide, left_edge, mid[0], inner_left, mid[0], G500, 1.5)
-    add_arrow(slide, inner_left, mid[1], left_edge, mid[1], G500, 1.5)
-    # 人 ⇄ 规划器：唯一与大模型直接协同的位置
-    add_arrow(slide, left_edge, mid[2], inner_left, mid[2], ORANGE_FILL, 1.5, both=True)
-    for index, lane, centre in ((0, left_lane, mid[0]), (1, left_lane, mid[1]),
-                                (2, left_lane, mid[2]), (3, right_lane, back_mid[0]),
-                                (5, right_lane, back_mid[1])):
+    # 人 ⇄ 控制器：下发契约、回报判决；人 ⇄ 规划器：唯一直接碰大模型的位置
+    add_arrow(slide, left_edge, P6B_LINKS[0], inner_left, P6B_LINKS[0], G500, 1.5)
+    add_arrow(slide, inner_left, P6B_LINKS[1], left_edge, P6B_LINKS[1], G500, 1.5)
+    add_arrow(slide, left_edge, P6B_LINKS[2], inner_left, P6B_LINKS[2], ORANGE_FILL, 1.5,
+              both=True)
+    for index, centre in enumerate(P6B_LINKS):
         label, width = P6B_EDGES[index]
-        edge_tag(slide, lane, centre - 0.17, label, ORANGE if index == 2 else G500, width)
+        edge_tag(slide, left_lane, centre - 0.17, label,
+                 ORANGE if index == 2 else G500, width)
 
-    # 控制器 → 被测系统 → 四道门禁 → 控制器
-    add_arrow(slide, inner_right, back_mid[0], right_edge, back_mid[0], AGENT, 1.5)
-    add_arrow(slide, right_edge, back_mid[1], inner_right, back_mid[1], AGENT, 1.5)
-    gate_x = P6B_RX + 0.5
+    # 控制器 ⇄ 被测系统：下发补丁与构建，回传实测数据
+    add_arrow(slide, inner_right, P6B_SUT_OUT, right_edge, P6B_SUT_OUT, AGENT, 1.5)
+    add_arrow(slide, right_edge, P6B_SUT_BACK, inner_right, P6B_SUT_BACK, AGENT, 1.5)
+    for centre, (label, width) in ((P6B_SUT_OUT, P6B_EDGES[3]), (P6B_SUT_BACK, P6B_EDGES[4])):
+        edge_tag(slide, right_lane, centre - 0.17, label, AGENT, width)
+
     sut_bottom = P6B_BACK[0][3] + P6B_BACK[0][4]
-    add_arrow(slide, gate_x, sut_bottom + 0.02, gate_x, P6B_BACK[1][3] - 0.02, AGENT, 1.5)
-    add_text(slide, gate_x + 0.12, sut_bottom, P6B_RW - 0.62, P6B_BACK[1][3] - sut_bottom,
-             [P(P6B_EDGES[4][0], 7.5, AGENT, True)], anchor=MIDDLE)
-    # 证据回到 mailbox，再由 mailbox 带给规划器
+    store_top = P6B_BACK[1][3]
+    add_arrow(slide, P6B_FALL_X, sut_bottom + 0.02, P6B_FALL_X, store_top - 0.02, AGENT, 1.5)
+    add_text(slide, P6B_FALL_X + 0.12, sut_bottom, P6B_RW - 0.62, store_top - sut_bottom,
+             [P(P6B_FALL, 7.5, AGENT, True)], anchor=MIDDLE)
+
+    # 产物只回到控制器侧的记忆层，规划器拿不到全量目录
     bus_mid = P6B_BUS_Y + P6B_BUS_H / 2
-    turn_x = P6B_CX + P6B_CW_ + 0.14
-    add_path_arrow(slide, [(right_edge, back_mid[2]), (turn_x, back_mid[2]),
-                           (turn_x, bus_mid), (inner_right, bus_mid)], G500, 1.25)
-    add_text(slide, turn_x + 0.06, back_mid[2] - 0.26, right_edge - turn_x - 0.12, 0.22,
-             [P(P6B_EDGES[6][0], 7.5, G500, True, align=CENTER)], anchor=MIDDLE)
+    add_arrow(slide, right_edge, bus_mid, inner_right, bus_mid, G500, 1.25)
+    edge_tag(slide, right_lane, bus_mid - 0.17, P6B_EDGES[5][0], G500, P6B_EDGES[5][1])
 
     add_box(slide, MX, 6.46, CW, 0.58, fill=TINT)
     add_box(slide, MX, 6.46, 0.08, 0.58, fill=AGENT)
     add_text(slide, MX + 0.36, 6.46, CW - 0.72, 0.58, [runs([
         (P6B_BAND[0], 12, AGENT, True), ("　｜　", 12, G400), (P6B_BAND[1], 13, G900, True),
     ])], anchor=MIDDLE)
-
 
 # --------------------------------------------------------------- 8  理论上限核算
 P7B_TITLE = "M100 Agent： 单算子理论下界与逐层核算"
