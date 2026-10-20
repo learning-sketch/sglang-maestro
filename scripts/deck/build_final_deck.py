@@ -74,7 +74,7 @@ BAD = "B4382F"
 # The lockup's keep-out box, measured off the template.
 LOGO_X, LOGO_Y = 11.29, 1.16
 HEAD_W = LOGO_X - MX - 0.2
-TOTAL = 15
+TOTAL = 16
 
 
 # ----------------------------------------------------------------------- shared furniture
@@ -150,6 +150,32 @@ def pill(slide, x, y, w, h, text, fill, size=11, color=WHITE):
     shape = add_box(slide, x, y, w, h, fill=fill, kind=MSO_SHAPE.ROUNDED_RECTANGLE, radius=0.5)
     boxed_text(shape, [P(text, size, color, True, align=CENTER)], inset=(0.04, 0, 0.04, 0))
     return shape
+
+
+def side_card(slide, x, y, w, h, title, english, items, tone):
+    """A white card with a coloured spine: title + english gloss over a dotted list."""
+    card(slide, x, y, w, h, fill=WHITE, line=G200)
+    add_box(slide, x, y, 0.07, h, fill=tone)
+    add_text(slide, x + 0.2, y + 0.05, w - 0.36, h - 0.1, [
+        runs([(title, 10.5, G900, True), (f"　{english}", 8, tone, True, MONO)], after=3),
+        *[P(f"·　{item}", 9, G700) for item in items],
+    ], anchor=MIDDLE)
+
+
+def column_heads(slide, columns, y, h):
+    """Column titles parked outside their panels, each behind a short colour bar."""
+    for x, w, title, english, tone in columns:
+        add_box(slide, x, y + 0.03, 0.06, h - 0.06, fill=tone)
+        add_text(slide, x + 0.16, y, w - 0.16, h, [
+            runs([(title, 11, G900, True), (f"　{english}", 8.5, tone, True)]),
+        ], anchor=MIDDLE)
+
+
+def edge_tag(slide, cx, cy, text, tone, w, size=7.5):
+    """A capsule label centred on a connector, so the line reads through it."""
+    shape = add_box(slide, cx - w / 2, cy - 0.11, w, 0.22, fill=WHITE, line=tone,
+                    kind=MSO_SHAPE.ROUNDED_RECTANGLE, radius=0.5)
+    boxed_text(shape, [P(text, size, tone, True, align=CENTER)], inset=(0.02, 0, 0.02, 0))
 
 
 def metric(slide, x, y, w, h, label, value, detail, tone=G900, fill=WHITE, line=G200,
@@ -642,7 +668,183 @@ def page_six(slide):
              anchor=MIDDLE)
 
 
-# --------------------------------------------------------------- 7  理论上限核算
+# ------------------------------------------------------- 7  模型层 Agent 内部组件
+P6B_TITLE = "M100 Agent：模型层内部组件与交互机制"
+P6B_SUB = "控制器确定性调度，规划器唯一引入大模型；人只在合同、介入、验收三处与 Agent 交互"
+# (标题, 英文, 色条)
+P6B_HEADS = (("人 · 合同与验收", "Human in the Loop", G500),
+             ("模型层 Agent 内部", "控制器定规则 · 规划器出方案", ORANGE_FILL),
+             ("执行与被测系统", "确定性执行 · 无模型", AGENT))
+# (标题, 英文, 条目, 顶, 高)
+P6B_HUMAN = (
+    ("冻结下发", "人 → Agent", ("任务合同：精度 · 负载 · 门限", "质量合同：数值探针 + 评测集",
+                              "调优知识库：10 份 Skill", "授权边界：测哪些 · 跳过哪些"), 1.72, 1.12),
+    ("判决回报", "Agent → 人", ("最优版本与优化报告", "逐轮可溯源的全量证据",
+                              "账本自检异常与失败分类", "结论边界：哪些不能外推"), 3.10, 1.16),
+    ("按需介入", "人 ⇄ 规划器", ("复杂改动由人直接实现", "人工补丁同样走全部门禁"), 5.24, 0.78),
+)
+P6B_BACK = (
+    ("构建与被测系统", "SUT", ("原仓库原位建版本，隔离补丁", "只编译登记组件 + 身份校验",
+                             "服务启停与孤儿回收", "SGLang · xInfer · M100 物理卡"), 1.72, 1.12),
+    ("四道门禁", "由便宜到贵", ("C 单算子隔离链提速 ≥ 2%", "① 数值 |Δlogprob| ≤ 0.03",
+                             "② 冻结评测集正确率不降", "D 整模型三方 A/B 过噪声门"), 3.10, 1.16),
+    ("证据与产物", "全部落盘", ("每次 Trial 独立成目录", "账本 · trace · probe 结果",
+                             "规划器每轮完整往来", "被拒原因带回下一轮",
+                             "控制器快照防中途换实现"), 4.52, 1.50),
+)
+P6B_CTRL = ("控制器", "Python 确定性调度 · 无模型")
+# (标题, 模块, 一行职责)
+P6B_CHIPS = (
+    ("状态机与恢复", "optimization.py", "状态流转 · 中断恢复"),
+    ("账本与 Trace 归因", "roofline.py", "采样 · 归因 · 下界核算"),
+    ("工作区与构建", "git_workspace.py", "原位版本 · 隔离补丁"),
+    ("服务与评测", "benchmark.py", "启停 · 压测 · 数值与质量"),
+    ("门禁与晋升", "selfiterate_gates.py", "噪声门 · 叠加 · 晋升"),
+    ("有界取证", "planner_diagnostics.py", "独立进程 probe · 有界产物"),
+)
+P6B_BUS = ("规划器接口 · mailbox", "planner_mailbox.py",
+           "UUID + 请求 SHA + 动作 schema　·　上下文 ≤ 18 KB　·　往来落盘")
+P6B_BUS_FLOW = ("请求：账本 + 最近证据", "提案：假设 + 补丁")
+P6B_PLANNER = ("规划器", "外部托管会话", ("读模型源码与冻结证据，提出优化假设与补丁",
+                                      "动作受限：read / search / probe / patch / stop"))
+P6B_PLANNER_BADGE = "不能自行宣告成功"
+# (人→控制器, 控制器→人, 人⇄规划器, 控制器→被测, 被测→门禁, 门禁→控制器, 证据→mailbox)
+P6B_EDGES = (("合同 · 授权", 0.80), ("报告 · 证据", 0.80), ("协同实现", 0.68),
+             ("补丁 · 构建", 0.80), ("trace · 数值 · 质量 · 吞吐", 0.0),
+             ("判据结果", 0.68), ("账本 · 证据", 0.80))
+P6B_BAND = ("核心设计", "规划器只提假设与补丁；数值、质量与性能收益全部由控制器独立核验")
+
+P6B_LX, P6B_LW = MX, 2.70
+P6B_CX, P6B_CW_ = 4.30, 4.40
+P6B_RX = 9.70
+P6B_RW = SW - MX - P6B_RX
+P6B_IW = P6B_CW_ * 0.94
+P6B_IX = P6B_CX + (P6B_CW_ - P6B_IW) / 2
+P6B_SPINE = P6B_IX + P6B_IW / 2
+P6B_HEAD_Y, P6B_HEAD_H = 1.32, 0.32
+P6B_PANEL_TOP, P6B_PANEL_BOT = 1.66, 6.02
+# 控制器分组：标题 + 两列三行模块卡
+P6B_GY, P6B_GH = 1.70, 2.56
+P6B_CHIP_Y, P6B_CHIP_H, P6B_CHIP_PITCH = 2.06, 0.64, 0.70
+P6B_BUS_Y, P6B_BUS_H = 4.52, 0.54
+P6B_PLAN_Y, P6B_PLAN_H = 5.24, 0.78
+# 两条邮箱竖线左右对称，中间留给 mailbox 正文
+P6B_FLOW_DX = 1.34
+
+
+def p6b_chip(slide, x, y, w, h, title, module, detail):
+    card(slide, x, y, w, h, fill=WHITE, line=G200)
+    add_text(slide, x + 0.14, y + 0.04, w - 0.24, h - 0.08, [
+        P(title, 10, G900, True, after=1),
+        P(module, 7, AGENT, False, MONO, after=1),
+        P(detail, 8, G700),
+    ], anchor=MIDDLE)
+
+
+def p6b_centre(slide):
+    card(slide, P6B_CX, P6B_PANEL_TOP, P6B_CW_, P6B_PANEL_BOT - P6B_PANEL_TOP,
+         fill=WHITE, line=G300)
+
+    add_box(slide, P6B_IX, P6B_GY, P6B_IW, P6B_GH, fill=PALE)
+    add_box(slide, P6B_IX, P6B_GY, P6B_IW, 0.06, fill=AGENT)
+    add_text(slide, P6B_IX + 0.16, P6B_GY + 0.08, P6B_IW - 0.32, 0.26, [runs([
+        (P6B_CTRL[0], 11.5, AGENT, True), (f"　{P6B_CTRL[1]}", 8.5, G700),
+    ])], anchor=MIDDLE)
+    chip_w = (P6B_IW - 0.16 * 2 - 0.14) / 2
+    for index, (title, module, detail) in enumerate(P6B_CHIPS):
+        row, column = divmod(index, 2)
+        p6b_chip(slide, P6B_IX + 0.16 + column * (chip_w + 0.14),
+                 P6B_CHIP_Y + row * P6B_CHIP_PITCH, chip_w, P6B_CHIP_H, title, module, detail)
+
+    bus = add_box(slide, P6B_IX, P6B_BUS_Y, P6B_IW, P6B_BUS_H, fill=G050, line=G500,
+                  line_w=1.0, dash=DASH)
+    boxed_text(bus, [
+        runs([(P6B_BUS[0], 10, G900, True), (f"　{P6B_BUS[1]}", 7.5, G500, False, MONO)],
+             align=CENTER, after=2),
+        P(P6B_BUS[2], 8, G700, align=CENTER),
+    ])
+
+    title, english, lines = P6B_PLANNER
+    add_box(slide, P6B_IX, P6B_PLAN_Y, P6B_IW, P6B_PLAN_H, fill=ORANGE_TINT, line=ORANGE_FILL,
+            kind=MSO_SHAPE.ROUNDED_RECTANGLE, radius=0.08 / min(P6B_IW, P6B_PLAN_H))
+    head_w = P6B_IW - 1.44
+    add_text(slide, P6B_IX + 0.16, P6B_PLAN_Y + 0.06, head_w, 0.26, [runs([
+        (title, 11.5, G900, True), (f"　{english}", 8.5, ORANGE, True, MONO),
+    ])], anchor=MIDDLE)
+    pill(slide, P6B_IX + P6B_IW - 1.36, P6B_PLAN_Y + 0.09, 1.20, 0.22, P6B_PLANNER_BADGE,
+         ORANGE_FILL, size=7.5)
+    add_text(slide, P6B_IX + 0.16, P6B_PLAN_Y + 0.34, P6B_IW - 0.32, P6B_PLAN_H - 0.4,
+             [P(line, 8.5, G700) for line in lines], anchor=MIDDLE)
+
+    # 控制器 ↓ 请求 → mailbox ↓ → 规划器，提案沿对称的另一侧回到控制器
+    group_bottom, bus_bottom = P6B_GY + P6B_GH, P6B_BUS_Y + P6B_BUS_H
+    for x, (top_a, top_b), (bottom_a, bottom_b) in (
+        (P6B_SPINE - P6B_FLOW_DX, (group_bottom, P6B_BUS_Y), (bus_bottom, P6B_PLAN_Y)),
+        (P6B_SPINE + P6B_FLOW_DX, (P6B_BUS_Y, group_bottom), (P6B_PLAN_Y, bus_bottom)),
+    ):
+        add_arrow(slide, x, top_a + 0.02, x, top_b - 0.02, ORANGE_FILL, 1.5)
+        add_arrow(slide, x, bottom_a + 0.02, x, bottom_b - 0.02, ORANGE_FILL, 1.5)
+    label_w = 1.28
+    for x, text, align in ((P6B_SPINE - P6B_FLOW_DX + 0.07, P6B_BUS_FLOW[0], LEFT),
+                           (P6B_SPINE + P6B_FLOW_DX - 0.07 - label_w, P6B_BUS_FLOW[1], RIGHT)):
+        add_text(slide, x, group_bottom + 0.02, label_w, P6B_BUS_Y - group_bottom - 0.04,
+                 [P(text, 7.5, ORANGE, True, align=align)], anchor=MIDDLE)
+
+
+def page_six_inside(slide):
+    add_background(slide)
+    page_header(slide, P6B_TITLE, P6B_SUB, sub_size=11.5)
+    column_heads(slide, [(x, w, *head) for x, w, head in
+                         ((P6B_LX, P6B_LW, P6B_HEADS[0]), (P6B_CX, P6B_CW_, P6B_HEADS[1]),
+                          (P6B_RX, P6B_RW, P6B_HEADS[2]))], P6B_HEAD_Y, P6B_HEAD_H)
+    for title, english, items, y, h in P6B_HUMAN:
+        side_card(slide, P6B_LX, y, P6B_LW, h, title, english, items, G500)
+    for title, english, items, y, h in P6B_BACK:
+        side_card(slide, P6B_RX, y, P6B_RW, h, title, english, items, AGENT)
+    p6b_centre(slide)
+
+    left_edge, right_edge = P6B_LX + P6B_LW + 0.04, P6B_RX - 0.04
+    inner_left, inner_right = P6B_IX - 0.04, P6B_IX + P6B_IW + 0.04
+    left_lane = (P6B_LX + P6B_LW + P6B_CX) / 2
+    right_lane = (P6B_CX + P6B_CW_ + P6B_RX) / 2
+    mid = [y + h / 2 for *_, y, h in P6B_HUMAN]
+    back_mid = [y + h / 2 for *_, y, h in P6B_BACK]
+
+    # 人 ⇄ 控制器：上行下发合同，下行回报判决
+    add_arrow(slide, left_edge, mid[0], inner_left, mid[0], G500, 1.5)
+    add_arrow(slide, inner_left, mid[1], left_edge, mid[1], G500, 1.5)
+    # 人 ⇄ 规划器：唯一与大模型直接协同的位置
+    add_arrow(slide, left_edge, mid[2], inner_left, mid[2], ORANGE_FILL, 1.5, both=True)
+    for index, lane, centre in ((0, left_lane, mid[0]), (1, left_lane, mid[1]),
+                                (2, left_lane, mid[2]), (3, right_lane, back_mid[0]),
+                                (5, right_lane, back_mid[1])):
+        label, width = P6B_EDGES[index]
+        edge_tag(slide, lane, centre - 0.17, label, ORANGE if index == 2 else G500, width)
+
+    # 控制器 → 被测系统 → 四道门禁 → 控制器
+    add_arrow(slide, inner_right, back_mid[0], right_edge, back_mid[0], AGENT, 1.5)
+    add_arrow(slide, right_edge, back_mid[1], inner_right, back_mid[1], AGENT, 1.5)
+    gate_x = P6B_RX + 0.5
+    sut_bottom = P6B_BACK[0][3] + P6B_BACK[0][4]
+    add_arrow(slide, gate_x, sut_bottom + 0.02, gate_x, P6B_BACK[1][3] - 0.02, AGENT, 1.5)
+    add_text(slide, gate_x + 0.12, sut_bottom, P6B_RW - 0.62, P6B_BACK[1][3] - sut_bottom,
+             [P(P6B_EDGES[4][0], 7.5, AGENT, True)], anchor=MIDDLE)
+    # 证据回到 mailbox，再由 mailbox 带给规划器
+    bus_mid = P6B_BUS_Y + P6B_BUS_H / 2
+    turn_x = P6B_CX + P6B_CW_ + 0.14
+    add_path_arrow(slide, [(right_edge, back_mid[2]), (turn_x, back_mid[2]),
+                           (turn_x, bus_mid), (inner_right, bus_mid)], G500, 1.25)
+    add_text(slide, turn_x + 0.06, back_mid[2] - 0.26, right_edge - turn_x - 0.12, 0.22,
+             [P(P6B_EDGES[6][0], 7.5, G500, True, align=CENTER)], anchor=MIDDLE)
+
+    add_box(slide, MX, 6.46, CW, 0.58, fill=TINT)
+    add_box(slide, MX, 6.46, 0.08, 0.58, fill=AGENT)
+    add_text(slide, MX + 0.36, 6.46, CW - 0.72, 0.58, [runs([
+        (P6B_BAND[0], 12, AGENT, True), ("　｜　", 12, G400), (P6B_BAND[1], 13, G900, True),
+    ])], anchor=MIDDLE)
+
+
+# --------------------------------------------------------------- 8  理论上限核算
 P7B_TITLE = "M100 Agent： 单算子理论下界与逐层核算"
 P7B_SUB = "一个算子的四条路径并行推进，耗时由最慢的一条决定；逐算子求和得到单层，再乘层数得到整模型下界"
 P7B_FORM = ("单算子理论下界", "t_算子 ＝ max（ t_读, t_写, t_算, t_其它 ）",
@@ -1263,30 +1465,6 @@ P11_CALL_X = 2 * P11_SPINE - P11_WATCH_X
 P11_RETURN_X, P11_RETURN_Y = P11_LX + P11_LW / 2, 6.24
 
 
-def p11_card(slide, x, y, w, h, title, english, items, tone):
-    card(slide, x, y, w, h, fill=WHITE, line=G200)
-    add_box(slide, x, y, 0.07, h, fill=tone)
-    add_text(slide, x + 0.2, y + 0.05, w - 0.36, h - 0.1, [
-        runs([(title, 10.5, G900, True), (f"　{english}", 8, tone, True, MONO)], after=3),
-        *[P(f"·　{item}", 9, G700) for item in items],
-    ], anchor=MIDDLE)
-
-
-def p11_columns(slide):
-    for x, w, (title, english, tone) in zip((P11_LX, P11_CX, P11_RX),
-                                            (P11_LW, P11_CW_, P11_RW), P11_HEADS):
-        add_box(slide, x, P11_HEAD_Y + 0.03, 0.06, P11_HEAD_H - 0.06, fill=tone)
-        add_text(slide, x + 0.16, P11_HEAD_Y, w - 0.16, P11_HEAD_H, [
-            runs([(title, 11, G900, True), (f"　{english}", 8.5, tone, True)]),
-        ], anchor=MIDDLE)
-
-
-def p11_tag(slide, cx, cy, text, tone, w, size=7.5):
-    shape = add_box(slide, cx - w / 2, cy - 0.11, w, 0.22, fill=WHITE, line=tone,
-                    kind=MSO_SHAPE.ROUNDED_RECTANGLE, radius=0.5)
-    boxed_text(shape, [P(text, size, tone, True, align=CENTER)], inset=(0.02, 0, 0.02, 0))
-
-
 def p11_stage(slide, y, h, fill, tone):
     return add_box(slide, P11_IX, y, P11_IW, h, fill=fill, line=tone,
                    kind=MSO_SHAPE.ROUNDED_RECTANGLE, radius=P11_RADIUS / min(P11_IW, h))
@@ -1330,11 +1508,13 @@ def p11_centre(slide):
 def page_eleven(slide):
     add_background(slide)
     page_header(slide, P11_TITLE, P11_SUB, sub_size=11.5)
-    p11_columns(slide)
+    column_heads(slide, [(x, w, *head) for x, w, head in
+                         ((P11_LX, P11_LW, P11_HEADS[0]), (P11_CX, P11_CW_, P11_HEADS[1]),
+                          (P11_RX, P11_RW, P11_HEADS[2]))], P11_HEAD_Y, P11_HEAD_H)
     for title, english, items, y, h in P11_LEFT:
-        p11_card(slide, P11_LX, y, P11_LW, h, title, english, items, G500)
+        side_card(slide, P11_LX, y, P11_LW, h, title, english, items, G500)
     for title, english, items, y, h in P11_RIGHT:
-        p11_card(slide, P11_RX, y, P11_RW, h, title, english, items, AGENT)
+        side_card(slide, P11_RX, y, P11_RW, h, title, english, items, AGENT)
     p11_centre(slide)
 
     read, observe, call, fire, _ = P11_EDGES
@@ -1348,21 +1528,21 @@ def page_eleven(slide):
     watch_mid = P11_STAGES[1][3] + P11_STAGES[1][4] / 2
     add_arrow(slide, P11_BRACE_X + P11_BRACE_W + 0.03, watch_mid, centre_left, watch_mid,
               G500, 1.25)
-    p11_tag(slide, left_lane, watch_mid - 0.17, read, G500, 0.76)
+    edge_tag(slide, left_lane, watch_mid - 0.17, read, G500, 0.76)
 
     think_mid = P11_STAGES[2][3] + P11_STAGES[2][4] / 2
     board_top = P11_LEFT[2][3]
     add_path_arrow(slide, [(P11_WATCH_X, board_top - 0.03), (P11_WATCH_X, think_mid),
                            (centre_left, think_mid)], G500, 1.25)
-    p11_tag(slide, left_lane, think_mid - 0.17, observe, G500, 0.46)
+    edge_tag(slide, left_lane, think_mid - 0.17, observe, G500, 0.46)
     tool_bottom = P11_RIGHT[0][3] + P11_RIGHT[0][4]
     add_path_arrow(slide, [(centre_right, think_mid), (P11_CALL_X, think_mid),
                            (P11_CALL_X, tool_bottom + 0.04)], ORANGE_FILL, 1.5)
-    p11_tag(slide, right_lane, think_mid - 0.17, call, ORANGE, 0.66)
+    edge_tag(slide, right_lane, think_mid - 0.17, call, ORANGE, 0.66)
 
     action_mid = P11_STAGES[3][3] + P11_STAGES[3][4] / 2
     add_arrow(slide, centre_right, action_mid, P11_RX - 0.04, action_mid, ORANGE_FILL, 1.5)
-    p11_tag(slide, right_lane, action_mid - 0.17, fire, ORANGE, 0.66)
+    edge_tag(slide, right_lane, action_mid - 0.17, fire, ORANGE, 0.66)
 
     harness_x = P11_RX + P11_RW / 2
     harness_bottom = P11_RIGHT[1][3] + P11_RIGHT[1][4]
@@ -1370,7 +1550,7 @@ def page_eleven(slide):
     add_path_arrow(slide, [(harness_x, harness_bottom + 0.04), (harness_x, P11_RETURN_Y),
                            (P11_RETURN_X, P11_RETURN_Y), (P11_RETURN_X, board_bottom + 0.04)],
                    G500, 1.25)
-    p11_tag(slide, P11_SPINE, P11_RETURN_Y, P11_RETURN, G500, 2.56, size=8)
+    edge_tag(slide, P11_SPINE, P11_RETURN_Y, P11_RETURN, G500, 2.56, size=8)
 
     add_box(slide, MX, 6.46, CW, 0.58, fill=TINT)
     add_box(slide, MX, 6.46, 0.08, 0.58, fill=AGENT)
@@ -1419,7 +1599,7 @@ P10_REAL = ("真机实测 · 唯一准入终审（一票否决）", (
 ))
 P10_CLOSE = (("闭环演进", "验证通过即晋升为最新基线，回流目标层重新核算差距"),
              ("收敛条件", "候选收益无法跨越系统噪声门限时，迭代自动收敛终止"))
-P10_NOTE = "第 7–8 页是单步口径（ms/步），本页是服务口径（约束下的吞吐），两种口径的数不能直接对齐"
+P10_NOTE = "第 8–9 页是单步口径（ms/步），本页是服务口径（约束下的吞吐），两种口径的数不能直接对齐"
 
 P10_SPINE_X = 0.66
 P10_CX = 0.88
@@ -1747,17 +1927,18 @@ PAGES = (
     (4, page_four),
     (5, page_five),
     (6, page_six),
-    (7, page_seven_bound),
-    (8, page_seven),
-    (9, page_eight),
-    (10, page_nine),
-    (11, page_eleven),
-    (12, page_ten),
-    (13, lambda slide: divider_slide(slide, "从『我们自己做生态』到『合作伙伴共建生态飞轮』")),
-    (14, page_twelve),
-    (15, page_thirteen),
+    (7, page_six_inside),
+    (8, page_seven_bound),
+    (9, page_seven),
+    (10, page_eight),
+    (11, page_nine),
+    (12, page_eleven),
+    (13, page_ten),
+    (14, lambda slide: divider_slide(slide, "从『我们自己做生态』到『合作伙伴共建生态飞轮』")),
+    (15, page_twelve),
+    (16, page_thirteen),
 )
-DIVIDERS = {2, 13}
+DIVIDERS = {2, 14}
 
 
 def build(path):
