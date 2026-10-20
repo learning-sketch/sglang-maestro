@@ -283,96 +283,125 @@ def page_three(slide):
 
 
 # ------------------------------------------------------------------------- 4  总体方案
-P4_TITLE = "M100 Agent： 总体方案"
+P4_TITLE = "M100 Agent： 总体方案（写判分离 · 双层同构 · 跨层闭环）"
 P4_SUB = "两层架构同构——Agent 仅负责生成优化方案，准入判定完全交由固定规则与真机实测；核心差异在于评测粒度。"
-P4_SLOTS = ((0.80, 1.60), (2.80, 3.50), (6.80, 4.10), (11.30, 1.30))
-# (eyebrow, layer, role, ask, generate, judge, take, return label)
+# (x, width) for 层级定位 and the four stages
+P4_GRID = ((MX, 1.70), (2.42, 1.96), (4.64, 2.92), (7.82, 3.12), (11.20, 1.52))
+# (number, name, note, tone, fill)
+P4_HEAD = (
+    (None, "层级定位", None, G700, G050),
+    ("①", "任务输入", None, G700, G050),
+    ("②", "AI 生成侧（写）", "唯一引入大模型的位置", ORANGE, ORANGE_TINT),
+    ("③", "确定性验证侧（判）", "纯规则驱动 · 真机实测", AGENT, PALE),
+    ("④", "准入出口", None, G700, G050),
+)
+# (eyebrow, layer, role, cells, return label)
 P4_ROWS = (
-    ("model-agent", "模型层", "模型接入与性能调优",
-     ("人", "定目标与边界"),
-     ("Agent 生成接入、优化方案", ()),
-     ("规则验收 + 真机实测", ("整模型端到端", "真实服务 + 固定评测集")),
-     ("人", "判断交付"),
-     "不过即回退，带着原因退回"),
-    ("xpugen", "算子层", "面向 M100 自动生成算子实现并调优，提升aten算子的覆盖泛化",
-     ("需求", "输入规格与约束"),
-     ("Agent 基于已有skills优化算子", ()),
-     ("Harness 判算子", ("规则驱动", "单算子、多 Shape，与 Golden 对齐")),
-     ("候选", "交付实现"),
-     "不过即淘汰，带着证据退回"),
+    ("model-agent", "【模型层】", "模型接入与性能调优", (
+        ("人：定目标与边界", "负载 / 精度 / 预算"),
+        ("Agent 生成接入、优化方案", "服务配置与图融合补丁"),
+        ("整模型真机端到端验收", "输出对齐 · 质量不降 · 吞吐提升"),
+        ("人", "判断交付"),
+    ), "✕　不过即回退，带着原因退回"),
+    ("xpugen", "【算子层】", "面向 M100 自动生成算子实现并调优，提升aten算子的覆盖泛化", (
+        ("算子规格与约束", "目标 Shape 与硬件规格"),
+        ("Agent 基于已有skills优化算子", "生成并调优 Kernel 代码"),
+        ("Harness 单算子评测", "编译通过 · Golden 对齐 · 真机实测更快"),
+        ("候选库", "交付实现"),
+    ), "✕　不过即淘汰，带着证据退回"),
 )
+# (column the arrow sits under, upward, number, direction, detail)
 P4_EXCHANGE = (
-    (1.05, False, "模型层 → 算子层", "Trace 定位的瓶颈算子，转成带输入规格的算子请求"),
-    (7.05, True, "算子层 → 模型层", "新内核合入候选分支，重新执行模型层验收"),
+    (2, True, "②", "算子层 → 模型层", "交付新算子内核，合入候选分支重跑整模型复验"),
+    (3, False, "①", "模型层 → 算子层", "Trace 定位瓶颈算子，下发 Shape 规格"),
 )
-P4_KEY = ("关键：", "算子kernel优化既要通过算子验收，更要通过整模型复验",
+P4_KEY = ("核心原则：", "算子局部加速 ≠ 整模型收益；任何算子优化必须回流通过整模型真机复验方可交付",
           "算子 bench 衡量的是局部收益；能否交付，由真实模型上的复测决定")
-P4_ROW_Y, P4_ROW_H = (1.46, 4.26), 2.20
+P4_HEAD_Y, P4_HEAD_H = 1.34, 0.52
+P4_ROW_Y, P4_ROW_H = (1.92, 4.50), 1.62
+P4_CELL_DY, P4_CELL_H = 0.38, 1.16
+P4_BAND_Y, P4_BAND_H = 3.62, 0.80
+P4_STAGE_TONES = (None, ORANGE_FILL, AGENT, None)
 
 
-def p4_cap(slide, x, w, y, h, name, detail):
-    card(slide, x, y, w, h, fill=G050, line=G200)
-    add_text(slide, x + 0.1, y, w - 0.2, h, [
-        P(name, 13, G900, True, align=CENTER, after=2),
-        P(detail, 9.5, G500, align=CENTER),
-    ], anchor=MIDDLE)
+def p4_mid(column):
+    x, w = P4_GRID[column]
+    return x + w / 2
 
 
-def p4_step(slide, x, w, y, h, tone, title, lines):
-    card(slide, x, y, w, h, fill=WHITE, line=G200)
-    add_box(slide, x, y, 0.07, h, fill=tone)
-    add_text(slide, x + 0.24, y + 0.04, w - 0.4, h - 0.08, [
-        P(title, 13, G900, True, after=3),
-        *[P(line, 10, G700) for line in lines],
-    ], anchor=MIDDLE)
+def p4_head(slide):
+    for (x, w), (number, name, note, tone, fill) in zip(P4_GRID, P4_HEAD):
+        card(slide, x, P4_HEAD_Y, w, P4_HEAD_H, fill=fill, line=None)
+        if fill is not G050:
+            add_box(slide, x, P4_HEAD_Y, w, 0.05, fill=tone)
+        add_text(slide, x + 0.16, P4_HEAD_Y + 0.04, w - 0.3, P4_HEAD_H - 0.08, [
+            runs([*([(f"{number} ", 11, tone, True)] if number else []),
+                  (name, 11, G900, True)], align=CENTER, after=2),
+            *([P(note, 9, tone, align=CENTER)] if note else []),
+        ], anchor=MIDDLE)
 
 
 def p4_row(slide, index):
-    eyebrow, layer, role, ask, generate, judge, take, back = P4_ROWS[index]
+    eyebrow, layer, role, cells, back = P4_ROWS[index]
     y = P4_ROW_Y[index]
-    card(slide, MX, y, CW, P4_ROW_H, fill=WHITE, line=G200)
-    add_box(slide, MX, y, CW, 0.05, fill=ORANGE_FILL)
-    add_text(slide, MX + 0.22, y + 0.1, CW - 0.44, 0.32, [runs([
-        (eyebrow, 11, ORANGE, True, MONO), ("　｜　", 11, G300),
-        (layer, 13, G900, True), (f"　{role}", 10.5, G500),
-    ])], anchor=MIDDLE)
+    add_box(slide, MX, y, CW, P4_ROW_H, fill=G050)
 
-    box_y, box_h = y + 0.80, 1.08
-    p4_cap(slide, P4_SLOTS[0][0], P4_SLOTS[0][1], box_y, box_h, *ask)
-    p4_step(slide, P4_SLOTS[1][0], P4_SLOTS[1][1], box_y, box_h, ORANGE_FILL, *generate)
-    p4_step(slide, P4_SLOTS[2][0], P4_SLOTS[2][1], box_y, box_h, AGENT, *judge)
-    p4_cap(slide, P4_SLOTS[3][0], P4_SLOTS[3][1], box_y, box_h, *take)
-    for left, right in zip(P4_SLOTS, P4_SLOTS[1:]):
-        add_arrow(slide, left[0] + left[1] + 0.06, box_y + box_h / 2, right[0] - 0.06,
-                  box_y + box_h / 2, G500, 1.5)
+    label_x, label_w = P4_GRID[0]
+    add_box(slide, label_x, y, 0.07, P4_ROW_H, fill=ORANGE_FILL)
+    add_text(slide, label_x + 0.22, y + 0.3, label_w - 0.36, P4_ROW_H - 0.6, [
+        P(layer, 13, G900, True, after=3),
+        P(eyebrow, 10, ORANGE, True, MONO, after=4),
+        P(role, 8, G500),
+    ], anchor=TOP)
 
-    gen_mid = P4_SLOTS[1][0] + P4_SLOTS[1][1] / 2
-    judge_mid = P4_SLOTS[2][0] + P4_SLOTS[2][1] / 2
-    back_y = y + 0.62
-    polyline(slide, [(judge_mid, box_y), (judge_mid, back_y), (gen_mid, back_y)], ORANGE_FILL,
-             1.25)
-    add_arrow(slide, gen_mid, back_y, gen_mid, box_y - 0.02, ORANGE_FILL, 1.25)
-    add_text(slide, (gen_mid + judge_mid) / 2 - 1.5, back_y - 0.32, 3.0, 0.28,
+    cell_y = y + P4_CELL_DY
+    for column, ((title, detail), tone) in enumerate(zip(cells, P4_STAGE_TONES), start=1):
+        x, w = P4_GRID[column]
+        card(slide, x, cell_y, w, P4_CELL_H, fill=WHITE, line=G200)
+        if tone:
+            add_box(slide, x, cell_y, 0.07, P4_CELL_H, fill=tone)
+        add_text(slide, x + (0.24 if tone else 0.16), cell_y + 0.06, w - 0.4, P4_CELL_H - 0.12, [
+            P(title, 11, G900, True, after=4),
+            P(detail, 9, G700),
+        ], anchor=MIDDLE)
+        if column < len(cells):
+            right = P4_GRID[column + 1][0]
+            add_arrow(slide, x + w + 0.05, cell_y + P4_CELL_H / 2, right - 0.05,
+                      cell_y + P4_CELL_H / 2, G500, 1.5)
+
+    arc_y = y + 0.28
+    generate, judge = p4_mid(2), p4_mid(3)
+    polyline(slide, [(judge, cell_y), (judge, arc_y), (generate, arc_y)], ORANGE_FILL, 1.25)
+    add_arrow(slide, generate, arc_y, generate, cell_y - 0.02, ORANGE_FILL, 1.25)
+    add_text(slide, (generate + judge) / 2 - 1.6, y + 0.03, 3.2, 0.24,
              [P(back, 9.5, ORANGE, align=CENTER)], anchor=MIDDLE)
 
 
 def page_four(slide):
     add_background(slide)
     page_header(slide, P4_TITLE, P4_SUB, sub_size=11.5)
+    p4_head(slide)
     for index in range(len(P4_ROWS)):
         p4_row(slide, index)
 
-    ex_y, ex_h = 3.54, 0.60
-    add_box(slide, MX, ex_y, CW, ex_h, fill=ORANGE_TINT)
-    for x, upward, lead, text in P4_EXCHANGE:
-        top, bottom = ex_y + 0.12, ex_y + ex_h - 0.12
-        add_arrow(slide, x, bottom if upward else top, x, top if upward else bottom,
-                  ORANGE_FILL, 1.5)
-        add_text(slide, x + 0.2, ex_y, 5.6, ex_h, [runs([
-            (f"{lead}　", 10, ORANGE, True), (text, 10.5, G700),
-        ])], anchor=MIDDLE)
+    add_box(slide, MX, P4_BAND_Y, CW, P4_BAND_H, fill=ORANGE_TINT)
+    top, bottom = P4_BAND_Y + 0.1, P4_BAND_Y + P4_BAND_H - 0.1
+    for column, upward, number, direction, detail in P4_EXCHANGE:
+        arrow_x = p4_mid(column)
+        add_arrow(slide, arrow_x, bottom if upward else top, arrow_x,
+                  top if upward else bottom, ORANGE_FILL, 1.75)
+        if upward:
+            text_x, text_w, align = P4_GRID[1][0], arrow_x - 0.2 - P4_GRID[1][0], RIGHT
+        else:
+            text_x = arrow_x + 0.2
+            text_w, align = SW - MX - text_x, LEFT
+        add_text(slide, text_x, P4_BAND_Y, text_w, P4_BAND_H, [
+            runs([(f"{number} ", 10.5, ORANGE, True), (direction, 10.5, G900, True)],
+                 align=align, after=3),
+            P(detail, 9.5, G700, align=align),
+        ], anchor=MIDDLE)
 
-    band(slide, 6.56, 0.72, *P4_KEY, tone=ORANGE_FILL, fill=ORANGE_TINT, size=14)
+    band(slide, 6.24, 0.68, *P4_KEY, tone=ORANGE_FILL, fill=ORANGE_TINT, size=13.5)
 
 
 # ------------------------------------------------------------------- 5  模型层适配与优化
