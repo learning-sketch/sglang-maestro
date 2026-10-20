@@ -1,16 +1,22 @@
 """Draft of the repository's runtime view: one iteration drawn as a ring of components.
 
-Each node is a group of modules from src/m100_model_agent/ with what it does and what it did this
-run; each arc is the hand-off to the next node, in the order of the iteration sequence. The
-controller sits in the middle because it schedules and judges every node; the planner is the one
-external node on the ring. The corners hold what sits outside the loop: the frozen contract, the
-planner's limits, the one-off baseline entry, and the system under test. Every one of the 24
-modules appears exactly once somewhere on the page.
+This page is the mechanism, not one run: it says what each component does, what it hands to the
+next one and where a candidate gets stopped, without naming a model, a dataset or a measurement
+from any particular session. Those numbers live on the record and gate pages instead.
+
+Each node is a group of modules from src/m100_model_agent/; each arrow is the hand-off to the
+next node, in the order of the iteration sequence. The ring is a racetrack rather than a circle
+because a 16:9 page gives the straight runs the width the hand-off labels need. The controller
+sits inside the loop because it schedules and judges every node. The one node where code
+actually changes is drawn tall, with three lanes, because three parties meet there: the
+controller frames the request, the planner is an external session, and a person steps in when a
+case is too hard to hand off. The strips above and below hold what sits outside the loop: the
+frozen contract, the one-off entry and the system under test. Every one of the 24 modules
+appears exactly once somewhere on the page.
 
     python draft_ring_page.py [out.pptx]
 """
 
-import math
 import sys
 
 from build_agent_deck import (
@@ -21,217 +27,227 @@ from build_agent_deck import (
     MONO,
     MX,
     RIGHT,
-    SH,
     SW,
+    SH,
     WHITE,
     P,
     add_arrow,
-    add_arrowheads,
     add_box,
     add_text,
-    drop_theme_style,
-    ellipse_point,
-    rgb,
     runs,
 )
 from build_model_layer_page import THEMES
 from check_text_fit import SAFETY, char_em
 from pptx import Presentation
-from pptx.enum.shapes import MSO_SHAPE
-from pptx.util import Inches, Pt
+from pptx.util import Inches
 
 T = THEMES["review"]
 TITLE_BAR, TITLE_INK = "306FFF", "000000"
 OUTPUT = "../../slides/ring_page_draft.pptx"
 TITLE = "M100 Model Agent：一轮迭代的运行视图"
+SUBTITLE = "不绑定具体模型：每个组件做什么、把什么交给下一个、在哪一步会被拦下"
+PROVENANCE = "全链路 24 个核心模块 · 本页只讲机制，单次运行的数据见记录页"
 
 EVIDENCE, PLANNER, CONTROLLER = LOOPS["B"]["main"], T.accent, LOOPS["A"]["main"]
-LEGEND = ((EVIDENCE, "证据层"), (PLANNER, "规划器层 · 外部托管"), (CONTROLLER, "控制器层"))
+HUMAN = T.g700
+LEGEND = ((EVIDENCE, "证据层"), (PLANNER, "规划器层 · 外部会话"), (CONTROLLER, "控制器层"),
+          (HUMAN, "人 · 按需介入"))
 
-CX, CY, RX, RY = 6.667, 4.15, 4.8, 2.4
-NODE_W, NODE_H = 2.5, 1.04
+# The racetrack: two straight runs of nodes joined down the right and back up the left.
+CONTRACT_Y, CONTRACT_H = 0.95, 0.52
+TOP_Y, ROW_H = 1.58, 0.98
+BOT_Y = 5.56
+FOOT_Y, FOOT_H = 6.70, 0.70
+NODE_W = 2.6
+RIGHT_X = 9.6
+RIGHT_W = SW - MX - RIGHT_X
+TALL_H = 2.88
+TOP_X = (MX, 3.65, 6.7)
+BOT_X = (MX, 3.5, 6.55)
+HUB = (3.6, 3.22, 5.45, 1.78)
 
-# (angle, layer, title, modules, does, this run, external) -- clockwise from 9 o'clock in run order
+# (rect, layer, title, modules, what it does) -- clockwise, in run order; the tall node is drawn
+# separately because it holds three lanes instead of one body.
 NODES = (
-    (180, EVIDENCE, "采 trace", ("profile_session", "roofline_instrumentation"), (
-        "另起一次性服务，关 CG 与 overlap",
-        "start / stop_profile 夹固定诊断请求",
-    ), "profile 0 → 8，每轮 D 后重采", False),
-    (221, EVIDENCE, "归因", ("roofline_trace · trace_diagnosis",), (
-        "截 decode 窗口，按源码 scope 归因",
-        "kernel 名只在缺 scope 时回退",
-    ), "总和 23.921 ≈ 并集 23.920 ms", False),
-    (262, EVIDENCE, "账本", ("roofline · hardware-ceilings/",), (
-        "config → FLOPs/字节 → 下界 → ratio",
-        "专家字节用路由实测 distinct experts",
-    ), "两类 GEMM 自检失败，按授权隔离", False),
-    (298, PLANNER, "规划请求", ("optimization_planner", "planner_memory · planner_mailbox"), (
-        "UUID + 请求 SHA + 动作 schema",
-        "上下文 ≤ 18 KB，整条消息 ≤ 28 KB",
-    ), "18 轮往来，全部落盘", False),
-    (343, PLANNER, "Codex subagent", ("/root/optimization_planner",), (
-        "读源码与冻结证据，提假设、写补丁",
-        "read/search/list/probe/patch/stop",
-        "不能碰设备、起服务、宣布成功",
-    ), "6 轮读了 roofline-fusion-advisor", True),
-    (17, CONTROLLER, "落地", ("git_workspace · server", "development_workspace",
-                            "optimization_adapters"), (
-        "原位建版本、打隔离补丁、只编登记组件",
-    ), "5 / 16 卡在构建身份 → retry", False),
-    (62, CONTROLLER, "C 筛选", ("device 侧 · 隔离算子链",), (
-        "对照与候选对称预热，µs 级微测",
-        "≥ 2% 才记 device_screened",
-    ), "6 个通过，+1.61% / +0.77% 被拒", False),
-    (98, CONTROLLER, "数值 + 质量门", ("evaluation",), (
-        "3 个文本探针 |Δlogprob| ≤ 0.03",
-        "MMStar 冻结 60 题，解析、截断都计入",
-    ), "交付版 Δ 0.0 · MMStar 45/60", False),
-    (139, CONTROLLER, "D 三方 A/B", ("optimization_staging · benchmark", "selfiterate_gates"), (
-        "原始 / 上一版 / 候选共用加载库 SHA",
-        "各 3 次取中位，关 profiler，过噪声门",
-    ), "3 轮都过；034 c32 +45.61%", False),
+    ((TOP_X[0], TOP_Y, NODE_W, ROW_H), EVIDENCE, "采 trace",
+     ("profile_session", "roofline_instrumentation"), (
+         "另起一次性服务，关 CG 与 overlap",
+         "start / stop_profile 圈定固定诊断请求",
+         "诊断数据不计入收益口径",
+     )),
+    ((TOP_X[1], TOP_Y, NODE_W, ROW_H), EVIDENCE, "归因",
+     ("roofline_trace · trace_diagnosis",), (
+         "截 decode 窗口，按源码 scope 归因",
+         "kernel 名只在缺 scope 时回退",
+         "区间并集与总和互校，防重叠漏记",
+     )),
+    ((TOP_X[2], TOP_Y, NODE_W, ROW_H), EVIDENCE, "账本",
+     ("roofline · hardware-ceilings/",), (
+         "config → FLOPs / 字节 → 下界与 ratio",
+         "专家层字节取路由实测 distinct experts",
+         "快于下界者判自检证伪，按授权隔离",
+     )),
+    ((RIGHT_X, TOP_Y, RIGHT_W, TALL_H), PLANNER, "方案与补丁", (), ()),
+    ((RIGHT_X, BOT_Y, RIGHT_W, ROW_H), CONTROLLER, "落地 · 构建",
+     ("git_workspace · server · development_workspace", "optimization_adapters"), (
+         "在源码工作区原位构建，打隔离补丁",
+         "只增量编译已登记的 standalone 组件",
+     )),
+    ((BOT_X[2], BOT_Y, NODE_W, ROW_H), CONTROLLER, "算子级微测初筛",
+     ("device 侧 · 隔离算子链",), (
+         "对照与候选对称预热，µs 级微测",
+         "提速达到筛选阈值才记 device_screened",
+     )),
+    ((BOT_X[1], BOT_Y, NODE_W, ROW_H), CONTROLLER, "数值 + 质量门", ("evaluation",), (
+        "固定文本探针比对数概率，偏差须在容差内",
+        "评测得分不降，解析失败与截断都计入",
+    )),
+    ((BOT_X[0], BOT_Y, NODE_W, ROW_H), CONTROLLER, "端到端三方复验",
+     ("optimization_staging · benchmark", "selfiterate_gates"), (
+         "原始 / 上一版 / 候选共用加载库 SHA",
+         "重复取中位，关 profiler，须过噪声门",
+     )),
+)
+TALL_INDEX = 3
+
+# The three parties inside the tall node: (colour, role, modules, lines)
+LANES = (
+    (CONTROLLER, "控制器侧 · 封装请求",
+     ("optimization_planner · planner_memory", "planner_mailbox"), (
+         "UUID + 请求 SHA + 动作 schema",
+         "上下文 ≤ 18 KB，单条消息 ≤ 28 KB",
+         "ID / SHA 不匹配即拒收，往返全部落盘",
+     )),
+    (PLANNER, "规划器 · 外部会话",
+     ("/root/optimization_planner", "planner-skills/ · planner_diagnostics"), (
+         "读源码与冻结证据，提假设、写补丁",
+         "默认只附 INDEX，一轮最多再取 2 个 SKILL",
+         "证据不足可发起有界诊断，输出 ≤ 64 KiB",
+         "不能碰设备、起服务、宣布成功",
+     )),
+    (HUMAN, "人 · 按需介入", (), (
+        "复杂场景由人直接写补丁，或与规划器协同实现",
+        "介入不改变判决路径，同样走下面三道门",
+    )),
 )
 
-# hand-off from node i to node i + 1: (x, y, w, h, align, lines, both ways); a line is a tuple of
-# (text, mono) parts
+# (x, y, w, h, align, lines) for each hand-off; a line is a tuple of (text, mono) parts
 HANDOFFS = (
-    (2.55, 3.14, 1.85, 0.44, None, ((("Chrome trace", False),), (("+ 路由探针", False),)), False),
-    (4.36, 2.34, 1.9, 0.36, None,
-     ((("每类 kernel 时长、调用数", False),), (("区间并集与总和", False),)), False),
-    (6.3, 2.34, 1.32, 0.36, RIGHT, ((("ranked_targets", True),), (("+ 隔离项与原因", False),)), False),
-    (8.2, 2.6, 1.75, 0.36, RIGHT, ((("请求 ⇄ 回复", False),), (("ID / SHA 不匹配即拒收", False),)), True),
-    (8.95, 3.99, 2.3, 0.32, RIGHT,
-     ((("提案：假设 + 补丁 + 证据引用", False),), (("证据齐备才落地", False),)), False),
-    (8.0, 5.35, 1.95, 0.36, RIGHT, ((("构建身份一致才进入比较", False),),
-                                     (("否则 ", False), ("optimization_retry", True), (" 重测", False))),
-     False),
-    (6.3, 5.6, 1.32, 0.36, RIGHT, ((("device_screened", True),),), False),
-    (4.36, 5.6, 1.9, 0.36, None, ((("进 bundle", False),), (("三方同库构建，本轮 8 次", False),)), False),
-    (2.55, 4.72, 1.85, 0.44, None,
-     ((("verified_gain", True),), (("→ best 晋升 → 再采 trace", False),)), False),
+    (2.45, 2.64, 1.85, 0.52, None, ((("Chrome trace", False),), (("+ 路由探针", False),))),
+    (5.45, 2.64, 1.85, 0.52, None,
+     ((("每类 kernel 时长、调用数", False),), (("区间并集与总和", False),))),
+    (7.35, 2.64, 1.85, 0.52, RIGHT,
+     ((("ranked_targets", True),), (("+ 隔离项与原因", False),))),
+    (8.75, 4.54, 2.3, 0.48, RIGHT,
+     ((("提案：假设 + 补丁 + 证据引用", False),), (("证据齐备才落地", False),))),
+    (8.05, 5.08, 1.95, 0.44, RIGHT, ((("构建身份一致才比较，否则", False),),
+                                     (("optimization_retry", True), (" 重测", False)))),
+    (5.0, 5.08, 1.95, 0.44, RIGHT, ((("device_screened", True),),)),
+    (1.95, 5.08, 1.95, 0.44, RIGHT, ((("进 bundle，三方同库构建", False),),)),
+    (2.05, 3.52, 1.5, 0.62, None,
+     ((("verified_gain", True),), (("→ best 晋升", False),), (("→ 再采 trace", False),))),
 )
-PROVENANCE = "24 个模块全部在图上 · codex/m100-selfiterate-30b-20261019 @ 04f3965 · 快照 2026-10-20 01:11 UTC"
 
-HUB = (
-    "Python，确定性：设备锁、状态机、恢复、验证、报告",
+CONTROLLER_BODY = (
+    "Python，确定性：设备锁、状态机、失败恢复、验证、报告",
     "规划器不能自行宣布实验成功，数值、图文质量、性能收益全部由控制器独立检查",
-    ("35 条 trial：candidate 16（含 6 次 retry）· 构建准备 8",
-     "baseline 1 · baseline-recheck 7 · verification 3",
-     "候选尝试累计 25 次：新主线 16 + 旧主线 9"),
-    "拒绝原因经 planner_memory 带回下一轮请求；基础设施中断不记成优化无效",
+    "每次尝试按 trial 落盘：候选、构建准备、基线、基线复核、最终复验",
+    "拒绝原因经 planner_memory 带回下一轮请求；基础设施中断不计入方案失败",
 )
-
 CONTRACT = (
     ("optimization-task.json", "模型 / 精度 / 负载 / 门限 / 预算"),
-    ("generation-task.json", "数值探针 + 质量合同"),
+    ("generation-task.json", "数值探针 + 质量契约"),
     ("backup/", "manifest 组件 SHA + 冻结基准 + planner-skills"),
 )
-PLANNER_LIMITS = (
-    ("planner-skills/", ("INDEX.md + 10 个 SKILL.md", "默认只附 INDEX，一轮最多读 2 个")),
-    ("probe · planner_diagnostics", ("证据不足时的有界诊断，≤ 64 KiB", "本轮 5 个 probe，都改变了决策")),
-)
-HOSTING = ("依赖当前 Codex 会话托管，", "还不能无人值守长跑")
 ENTRY = (
-    ("memory_preflight", "显存预检；控制器另查卡空闲、备份、SHA"),
-    ("server · evaluation · benchmark", "冻结配置起服务、测基线"),
-    ("diagnostic_profiles", "任何候选执行前生成诊断映射"),
-    ("optimization_source", "导入已完整验证的结果"),
+    ("memory_preflight", "显存预检"),
+    ("server · evaluation · benchmark", "起服务、测基线"),
+    ("diagnostic_profiles", "生成诊断映射"),
+    ("optimization_source", "导入已验证结果"),
 )
-# (name, detail, detail is an identifier)
 SUT = (
-    ("SGLang 原仓库", "原 Git 版本，未提交修改保留", False),
-    ("xInfer / xtorch_ops", "只编登记的 standalone 组件", False),
-    ("M100 单卡", "Qwen3-VL-30B-A3B · channel-fp8", True),
+    ("SGLang 原仓库", "原 Git 版本，未提交修改保留"),
+    ("xInfer / xtorch_ops", "只编登记的 standalone 组件"),
+    ("M100 单卡", "目标模型与精度由任务契约锁定"),
 )
-SUT_NOTE = ("native kernel 由 subagent 写，", "不是 xpugen 生成")
+SUT_NOTE = "算子层的跨层调用尚未接入：融合算子由规划器直接写成内联补丁，不经 xpugen"
 
 
-def text_width(text, size):
-    return sum(char_em(ch, False) for ch in text) * size / 72
+def text_width(text, size, mono=False):
+    em = 0.6 if mono else 1.0
+    return sum(char_em(ch, False) * (em if ch.isascii() else 1) for ch in text) * size / 72
 
 
 def header(slide):
-    add_box(slide, MX, 0.44, 0.07, 0.38, fill=TITLE_BAR)
-    add_text(slide, MX + 0.22, 0.33, 7.6, 0.6, [P(TITLE, 24, TITLE_INK, True)], anchor=MIDDLE)
+    add_box(slide, MX, 0.26, 0.07, 0.38, fill=TITLE_BAR)
+    add_text(slide, MX + 0.22, 0.15, 7.6, 0.6, [P(TITLE, 24, TITLE_INK, True)], anchor=MIDDLE)
+    add_text(slide, MX + 0.22, 0.62, 8.4, 0.26, [P(SUBTITLE, 10, T.g500)], anchor=MIDDLE)
     x = SW - MX
     for color, label in reversed(LEGEND):
-        label_w = text_width(label, 9) / SAFETY + 0.04
+        label_w = text_width(label, 9) * 1.15
         x -= 0.18 + label_w
-        add_box(slide, x, 0.58, 0.12, 0.12, fill=color)
-        add_text(slide, x + 0.18, 0.5, label_w, 0.28, [P(label, 9, T.g500)], anchor=MIDDLE)
-        x -= 0.24
-    add_text(slide, SW - MX - 5.5, 0.78, 5.5, 0.2, [P(PROVENANCE, 7.5, T.g400, align=RIGHT)],
+        add_box(slide, x, 0.30, 0.12, 0.12, fill=color)
+        add_text(slide, x + 0.18, 0.22, label_w, 0.28, [P(label, 9, T.g500)], anchor=MIDDLE)
+        x -= 0.22
+    add_text(slide, SW - MX - 5.5, 0.52, 5.5, 0.2, [P(PROVENANCE, 7.5, T.g400, align=RIGHT)],
              anchor=MIDDLE)
 
 
-def node_corner(angle):
-    x, y = ellipse_point(CX, CY, RX, RY, angle)
-    return x - NODE_W / 2, y - NODE_H / 2
+def arrows(slide):
+    top_y, bot_y = TOP_Y + ROW_H / 2, BOT_Y + ROW_H / 2
+    left_x, right_x = TOP_X[0] + NODE_W / 2, RIGHT_X + RIGHT_W / 2
+    for index in range(len(TOP_X) - 1):
+        add_arrow(slide, TOP_X[index] + NODE_W, top_y, TOP_X[index + 1], top_y, T.g500, 1.5)
+    add_arrow(slide, TOP_X[-1] + NODE_W, top_y, RIGHT_X, top_y, T.g500, 1.5)
+    add_arrow(slide, right_x, TOP_Y + TALL_H, right_x, BOT_Y, T.g500, 1.5)
+    add_arrow(slide, RIGHT_X, bot_y, BOT_X[-1] + NODE_W, bot_y, T.g500, 1.5)
+    for index in range(len(BOT_X) - 1, 0, -1):
+        add_arrow(slide, BOT_X[index], bot_y, BOT_X[index - 1] + NODE_W, bot_y, T.g500, 1.5)
+    add_arrow(slide, left_x, BOT_Y, left_x, TOP_Y + ROW_H, T.g500, 1.5)
 
 
-def track(slide):
-    shape = slide.shapes.add_shape(MSO_SHAPE.OVAL, Inches(CX - RX), Inches(CY - RY),
-                                   Inches(2 * RX), Inches(2 * RY))
-    drop_theme_style(shape)
-    shape.fill.background()
-    shape.line.color.rgb = rgb(T.g100)
-    shape.line.width = Pt(10)
-
-
-def arc(slide, start, end, both):
-    """Clockwise arc between two parametric angles, arrowed at the far end (and the near one)."""
-
-    def visual(degrees):
-        angle = math.radians(degrees)
-        return math.degrees(math.atan2(RY * math.sin(angle), RX * math.cos(angle))) % 360
-
-    shape = slide.shapes.add_shape(MSO_SHAPE.ARC, Inches(CX - RX), Inches(CY - RY),
-                                   Inches(2 * RX), Inches(2 * RY))
-    drop_theme_style(shape)
-    # Preset arc angles are measured from the centre, not parametric, so convert them.
-    shape.adjustments[0] = visual(start) * 0.6
-    shape.adjustments[1] = visual(end) * 0.6
-    shape.fill.background()
-    shape.line.color.rgb = rgb(T.g500)
-    shape.line.width = Pt(1.5)
-    add_arrowheads(shape.line, head=both, tail=True)
-
-
-def ring_arcs(slide):
-    corners = [node_corner(spec[0]) for spec in NODES]
-
-    def covered(angle, corner):
-        px, py = ellipse_point(CX, CY, RX, RY, angle)
-        x, y = corner
-        return x - 0.05 <= px <= x + NODE_W + 0.05 and y - 0.05 <= py <= y + NODE_H + 0.05
-
-    for index, spec in enumerate(NODES):
-        start, end = spec[0], NODES[(index + 1) % len(NODES)][0]
-        span = (end - start) % 360
-        pair = (corners[index], corners[(index + 1) % len(NODES)])
-        free = [start + span * step / 400 for step in range(401)
-                if not any(covered(start + span * step / 400, corner) for corner in pair)]
-        if free:
-            arc(slide, free[0], free[-1], HANDOFFS[index][6])
-
-
-def node(slide, number, spec):
-    angle, color, title, modules, does, this_run, external = spec
-    x, y = node_corner(angle)
-    add_box(slide, x, y, NODE_W, NODE_H, fill=WHITE, line=color if external else T.g300,
-            line_w=1.0 if external else 0.75, dash=DASH if external else None)
-    add_box(slide, x, y, 0.06, NODE_H, fill=color)
+def node(slide, number, index):
+    (x, y, w, h), color, title, modules, does = NODES[index]
+    add_box(slide, x, y, w, h, fill=WHITE, line=T.g300)
+    add_box(slide, x, y, 0.06, h, fill=color)
     paragraphs = [runs([(f"{number} ", 10.5, color, True, "Arial"), (title, 10.5, T.g900, True)],
                        after=1)]
     paragraphs += [P(module, 7.5, T.g500, False, MONO) for module in modules]
     paragraphs[-1]["after"] = 2
-    paragraphs += [P(line, 8.5, T.drop if line.startswith("不能") else T.g700) for line in does]
-    paragraphs.append(runs([("本轮 ", 8.5, color, True), (this_run, 8.5, T.g900)]))
-    add_text(slide, x + 0.16, y + 0.04, NODE_W - 0.26, NODE_H - 0.08, paragraphs, anchor=MIDDLE)
+    paragraphs += [P(line, 8.5, T.g700) for line in does]
+    add_text(slide, x + 0.16, y + 0.04, w - 0.26, h - 0.08, paragraphs, anchor=MIDDLE)
+
+
+def tall_node(slide, number):
+    """The step where the patch comes from: one box, three parties, stacked as lanes."""
+    (x, y, w, h), color, title, _, _ = NODES[TALL_INDEX]
+    add_box(slide, x, y, w, h, fill=WHITE, line=color, line_w=1.0)
+    add_box(slide, x, y, 0.06, h, fill=color)
+    head = 0.3
+    add_text(slide, x + 0.16, y + 0.03, w - 0.26, head, [runs([
+        (f"{number} ", 10.5, color, True, "Arial"), (title, 10.5, T.g900, True),
+        ("　全环唯一产生改动的一步", 8.5, T.g500),
+    ])], anchor=MIDDLE)
+
+    weights = [1.0 + len(modules) * 0.85 + len(lines) * 0.95 for _, _, modules, lines in LANES]
+    lane_y = y + head
+    for (tone, role, modules, lines), weight in zip(LANES, weights):
+        lane_h = (h - head - 0.06 - 0.06 * len(LANES)) * weight / sum(weights)
+        add_box(slide, x + 0.14, lane_y, w - 0.28, lane_h, fill=T.panel)
+        add_box(slide, x + 0.14, lane_y, 0.04, lane_h, fill=tone)
+        paragraphs = [P(role, 9, tone, True, after=1)]
+        paragraphs += [P(module, 7.5, T.g500, False, MONO) for module in modules]
+        if modules:
+            paragraphs[-1]["after"] = 2
+        paragraphs += [P(line, 8.5, T.drop if line.startswith("不能") else T.g700)
+                       for line in lines]
+        add_text(slide, x + 0.30, lane_y + 0.02, w - 0.48, lane_h - 0.04, paragraphs,
+                 anchor=MIDDLE)
+        lane_y += lane_h + 0.06
 
 
 def handoff(slide, spec):
-    x, y, w, h, align, lines, _ = spec
+    x, y, w, h, align, lines = spec
     options = {"align": align} if align else {}
     add_text(slide, x, y, w, h, [
         runs([(text, 8, T.g500, False, MONO if mono else FONT) for text, mono in parts], **options)
@@ -240,69 +256,65 @@ def handoff(slide, spec):
 
 
 def hub(slide):
-    x, y, w, h = 4.45, 3.05, 4.45, 2.23
+    x, y, w, h = HUB
     add_box(slide, x, y, w, h, fill=LOOPS["A"]["tint"])
     add_box(slide, x, y, w, 0.05, fill=CONTROLLER)
-    role, constraint, this_run, feedback = HUB
-    add_text(slide, x + 0.2, y + 0.12, w - 0.4, h - 0.2, [
+    role, constraint, trials, feedback = CONTROLLER_BODY
+    add_text(slide, x + 0.2, y + 0.1, w - 0.4, h - 0.18, [
         P("控制器", 12, CONTROLLER, True),
         P("optimization · selfiterate · optimization_export", 7.5, T.g500, False, MONO, after=2),
         P(role, 9, T.g700, after=4),
         runs([("硬约束　", 9, T.drop, True), (constraint, 9, T.g900)], after=4),
-        runs([("本轮 ", 8.5, CONTROLLER, True), (this_run[0], 8.5, T.g700)]),
-        *[P(line, 8.5, T.g700) for line in this_run[1:]],
-        P(feedback, 9, T.g700, before=4),
+        P(trials, 8.5, T.g700),
+        P(feedback, 8.5, T.g700),
     ])
 
 
-def corner_box(slide, x, y, w, h, title, color, dashed=False):
-    add_box(slide, x, y, w, h, fill=WHITE if dashed else T.panel,
-            line=T.g300 if dashed else None, dash=DASH if dashed else None)
-    add_text(slide, x + 0.14, y + 0.06, w - 0.28, 0.22, [P(title, 9.5, color, True)],
-             anchor=MIDDLE)
+def inline(rows, size=8):
+    parts = []
+    for index, (name, text) in enumerate(rows):
+        if index:
+            parts.append(("　｜　", size, T.g300))
+        parts.append((name, size - 0.5, T.g700, False, MONO))
+        parts.append((f"　{text}", size, T.g500))
+    return runs(parts)
 
 
-def name_rows(rows):
-    return [runs([(name, 7.5, T.g700, False, MONO), (f"　{text}", 8, T.g500)]) for name, text in rows]
+def strips(slide):
+    """What the loop takes as given: the contract above it, the entry and the target below."""
+    add_box(slide, MX, CONTRACT_Y, SW - 2 * MX, CONTRACT_H, fill=WHITE, line=T.g300, dash=DASH)
+    add_text(slide, MX + 0.16, CONTRACT_Y + 0.02, SW - 2 * MX - 0.32, CONTRACT_H - 0.04, [
+        runs([("任务契约 · 冻结并哈希校验", 9.5, T.g700, True)], after=1),
+        inline(CONTRACT),
+    ], anchor=MIDDLE)
 
+    entry_w = 5.6
+    add_box(slide, MX, FOOT_Y, entry_w, FOOT_H, fill=T.panel)
+    add_text(slide, MX + 0.16, FOOT_Y + 0.04, entry_w - 0.32, FOOT_H - 0.08, [
+        runs([("0  入口", 9.5, CONTROLLER, True), ("　进环之前只跑一次", 8.5, T.g500)], after=1),
+        inline(ENTRY[:2]),
+        inline(ENTRY[2:]),
+    ], anchor=MIDDLE)
 
-def corners(slide):
-    x, y, w, h = MX, 1.0, 3.6, 0.9
-    corner_box(slide, x, y, w, h, "合同 · 冻结并哈希校验", T.g700, dashed=True)
-    add_text(slide, x + 0.14, y + 0.3, w - 0.28, h - 0.34, name_rows(CONTRACT))
-
-    x, y, w, h = 10.28, 1.0, SW - MX - 10.28, 1.42
-    corner_box(slide, x, y, w, h, "规划器的边界", PLANNER)
-    add_text(slide, x + 0.14, y + 0.3, w - 0.28, h - 0.34, [
-        *[paragraph for name, lines in PLANNER_LIMITS for paragraph in (
-            P(name, 7.5, T.g700, False, MONO), *[P(line, 8, T.g500) for line in lines])],
-        *[P(line, 8, T.drop) for line in HOSTING],
-    ])
-
-    x, y, w, h = MX, 6.4, 3.75, 0.92
-    corner_box(slide, x, y, w, h, "0  入口 · A 阶段，只跑一次", CONTROLLER)
-    add_text(slide, x + 0.14, y + 0.3, w - 0.28, h - 0.34, name_rows(ENTRY))
-    entry_x = MX + 0.32
-    add_arrow(slide, entry_x, y, entry_x, ellipse_point(CX, CY, RX, RY, 180)[1] + NODE_H / 2,
-              CONTROLLER, 1.25)
-
-    x, y, w, h = 10.28, 5.88, SW - MX - 10.28, 1.44
-    corner_box(slide, x, y, w, h, "被测系统", T.g700)
-    add_text(slide, x + 0.14, y + 0.3, w - 0.28, h - 0.34, [
-        *[paragraph for name, text, ident in SUT for paragraph in (
-            P(name, 8.5, T.g900, True),
-            P(text, 7.5, T.g500, False, MONO) if ident else P(text, 8, T.g500))],
-        *[P(line, 7.5, T.g400, before=3 if not index else 0) for index, line in enumerate(SUT_NOTE)],
-    ])
+    sut_x = MX + entry_w + 0.2
+    sut_w = SW - MX - sut_x
+    add_box(slide, sut_x, FOOT_Y, sut_w, FOOT_H, fill=T.panel)
+    add_text(slide, sut_x + 0.16, FOOT_Y + 0.04, sut_w - 0.32, FOOT_H - 0.08, [
+        runs([("被测系统", 9.5, T.g700, True)], after=1),
+        inline(SUT),
+        P(SUT_NOTE, 7.5, T.g500),
+    ], anchor=MIDDLE)
 
 
 def ring_page(slide):
     header(slide)
-    corners(slide)
-    track(slide)
-    ring_arcs(slide)
-    for number, spec in enumerate(NODES, start=1):
-        node(slide, number, spec)
+    strips(slide)
+    arrows(slide)
+    for number, index in enumerate(range(len(NODES)), start=1):
+        if index == TALL_INDEX:
+            tall_node(slide, number)
+        else:
+            node(slide, number, index)
     for spec in HANDOFFS:
         handoff(slide, spec)
     hub(slide)
