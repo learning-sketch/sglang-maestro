@@ -73,7 +73,7 @@ BAD = "B4382F"
 # The lockup's keep-out box, measured off the template.
 LOGO_X, LOGO_Y = 11.29, 1.16
 HEAD_W = LOGO_X - MX - 0.2
-TOTAL = 13
+TOTAL = 14
 
 
 # ----------------------------------------------------------------------- shared furniture
@@ -639,6 +639,207 @@ def page_six(slide):
     add_arrow(slide, ret_x, bot_y - 0.04, ret_x, top_y + top_h + 0.04, G500, 1.25)
     add_text(slide, MX + 0.02, 3.80, 1.02, 1.0, [P(P6_RETURN, 8, G500, align=RIGHT)],
              anchor=MIDDLE)
+
+
+# --------------------------------------------------------------- 7  理论上限核算
+P7B_TITLE = "M100 Agent： 单算子理论下界与逐层核算"
+P7B_SUB = "一个算子的四条路径并行推进，耗时由最慢的一条决定；逐算子求和得到单层，再乘层数得到整模型下界"
+P7B_FORM = ("单算子理论下界", "t_算子 ＝ max（ t_读, t_写, t_算, t_其它 ）",
+            "四条路径在硬件上并行推进，算子耗时由最慢的一条决定，不是四项求和", (
+    ("t_读", "读字节 ÷ 读带宽"),
+    ("t_写", "写字节 ÷ 写带宽"),
+    ("t_算", "FLOP ÷ 路径算力（cluster / sdnn × bf16 / fp8）"),
+    ("t_其它", "特殊单元耗时，如 SFU"),
+))
+P7B_CASE = ("代入一个算子：expert gate+up GEMM",
+            "max（ 读 98.28 ， 写 4.27 ， 算 7.19 ）＝ 98.28 µs",
+            "读 127.76 MB 定死了下界，算力只跑到 7.3%，写和算全被读掩盖")
+P7B_ROOF = ("Roofline：所有算子都落在访存区", "算术强度（FLOP / Byte）")
+P7B_LEGEND = (("带宽屋顶 ＝ 算术强度 × 带宽", G500), ("fp8 算力屋顶（拐点 171）", ORANGE),
+              ("bf16 算力屋顶（拐点 85）", AGENT))
+P7B_RIDGE = ((85.0, 1.0, AGENT), (171.0, 2.0, ORANGE_FILL))
+# (算术强度, 可达性能, 标签, 标签相对散点的纵向偏移)
+P7B_DOTS = ((8.0, 0.093, "decode attention", 0.10), (12.5, 0.145, "expert GEMM ×2", 0.01),
+            (31.3, 0.365, "qkv_proj / o_proj", 0.01))
+P7B_ROOF_NOTE = "6 个带计算的算子强度 8–31 FLOP/Byte，另外 10 个 FLOP ＝ 0"
+P7B_COLS = (("模块", 1.40, LEFT), ("路径", 0.50, CENTER), ("读 MB", 0.54, RIGHT),
+            ("写 MB", 0.54, RIGHT), ("GFLOP", 0.54, RIGHT), ("t_read", 0.56, RIGHT),
+            ("t_write", 0.56, RIGHT), ("t_comp", 0.54, RIGHT), ("t_其它", 0.64, RIGHT),
+            ("取 max", 0.56, RIGHT), ("×48 ms", 0.58, RIGHT))
+# 末位 = 决定 max 的那一列（5 = t_read，8 = t_其它）
+P7B_ROWS = (
+    ("input_rmsnorm", "cluster", "0.14", "0.131", "0", "0.18", "0.18", "0", "", "0.18", "0.009", 5),
+    ("qkv_proj GEMM", "sdnn", "21.10", "0.328", "0.67", "16.23", "1.78", "5.99", "", "16.23",
+     "0.779", 5),
+    ("q_norm/k_norm", "cluster", "0.33", "0.328", "0", "0.44", "0.44", "0", "", "0.44", "0.021", 5),
+    ("3D-RoPE(mrope)", "cluster", "0.33", "0.328", "0", "0.44", "0.44", "0", "", "0.44",
+     "0.021", 5),
+    ("store_kv(page)", "cluster", "0.07", "0.066", "0", "0.09", "0.09", "0", "", "0.09", "0.004", 5),
+    ("decode attention", "sdnn", "100.93", "0.262", "0.81", "54.85", "1.42", "7.19", "32.4",
+     "54.85", "2.633", 5),
+    ("o_proj GEMM", "sdnn", "17.04", "0.131", "0.54", "13.11", "0.71", "4.79", "", "13.11",
+     "0.629", 5),
+    ("post_rmsnorm", "cluster", "0.14", "0.131", "0", "0.18", "0.18", "0", "", "0.18", "0.009", 5),
+    ("router gate GEMM", "cluster", "0.66", "0.008", "0.02", "0.50", "0.04", "0.15", "", "0.50",
+     "0.024", 5),
+    ("topk+softmax", "cluster", "0.01", "0.001", "0", "0.01", "0.00", "0", "", "0.01", "0.001", 5),
+    ("act_quant(fp8)", "cluster", "0.13", "0.066", "0", "0.18", "0.09", "0", "", "0.18", "0.009", 5),
+    ("permute/shuffle", "cluster", "0.52", "0.524", "0", "0.71", "0.71", "0", "", "0.71",
+     "0.034", 5),
+    ("expert gate+up GEMM", "sdnn", "127.76", "0.786", "1.61", "98.28", "4.27", "7.19", "",
+     "98.28", "4.717", 5),
+    ("silu_and_mul(+quant)", "cluster", "0.79", "0.197", "0", "1.06", "0.27", "0", "6.6(SFU)",
+     "6.55", "0.315", 8),
+    ("expert down GEMM", "sdnn", "63.82", "1.049", "0.81", "49.09", "5.70", "3.60", "", "49.09",
+     "2.356", 5),
+    ("unpermute+combine", "cluster", "1.05", "0.131", "0", "1.42", "0.18", "0", "", "1.42",
+     "0.068", 5),
+)
+P7B_TOTAL = ("单层合计", "242.3", "11.629")
+P7B_TABLE_HEAD = "单步 Decode 逐算子理论下界（µs / 层）"
+P7B_TABLE_NOTE = "橙色为决定该算子下界的那一列：16 个算子里 15 个卡在读，唯一例外是 silu_and_mul 卡在 SFU"
+P7B_BAND = ("单层 242.3 µs × 48 层 ＝ 11.63 ms/步", "其中 97.7% 是把权重与 KV 读一遍的时间")
+
+P7B_TABLE_X, P7B_TABLE_W = MX, 7.40
+P7B_SIDE_X, P7B_SIDE_W = 8.14, SW - MX - 8.14
+
+
+def p7b_table(slide):
+    x, w = P7B_TABLE_X, P7B_TABLE_W
+    y, h = 1.34, 5.04
+    card(slide, x, y, w, h, fill=WHITE, line=G200)
+    add_text(slide, x + 0.14, y + 0.06, w - 0.3, 0.24, [P(P7B_TABLE_HEAD, 10.5, G900, True)],
+             anchor=MIDDLE)
+
+    head_y, row_h = y + 0.32, 0.25
+    left = x + 0.14
+    spans = []
+    for label, width, align in P7B_COLS:
+        spans.append((left, width, align))
+        add_text(slide, left, head_y, width - (0.06 if align == RIGHT else 0), 0.22,
+                 [P(label, 8, G700, True, align=align)], anchor=MIDDLE)
+        left += width
+    add_line(slide, x + 0.14, head_y + 0.23, left, head_y + 0.23, G300, 0.75)
+
+    body_y = head_y + 0.28
+    for index, row in enumerate(P7B_ROWS):
+        top = body_y + index * row_h
+        if index % 2:
+            add_box(slide, x + 0.14, top, left - x - 0.14, row_h, fill=G050)
+        bound = row[-1]
+        for column, ((cell_x, width, align), value) in enumerate(zip(spans, row[:-1])):
+            if not value:
+                continue
+            winner = column == bound
+            result = column >= 9
+            if align == RIGHT:
+                width -= 0.06
+            add_text(slide, cell_x, top, width, row_h, [P(
+                value, 8, ORANGE if winner else (G900 if result else G700), winner or result,
+                FONT if column < 2 else MONO, align=align,
+            )], anchor=MIDDLE)
+    add_line(slide, spans[9][0] - 0.02, head_y, spans[9][0] - 0.02,
+             body_y + len(P7B_ROWS) * row_h, G300, 0.75)
+
+    total_y = body_y + len(P7B_ROWS) * row_h + 0.04
+    add_box(slide, x + 0.14, total_y, left - x - 0.14, 0.26, fill=PALE)
+    name, total_max, total_ms = P7B_TOTAL
+    add_text(slide, spans[0][0] + 0.06, total_y, 2.0, 0.26, [P(name, 9, AGENT, True)],
+             anchor=MIDDLE)
+    for (cell_x, width, align), value in ((spans[9], total_max), (spans[10], total_ms)):
+        add_text(slide, cell_x, total_y, width - 0.06, 0.26,
+                 [P(value, 9, AGENT, True, MONO, align=align)], anchor=MIDDLE)
+    add_text(slide, x + 0.14, y + h - 0.28, w - 0.3, 0.22, [P(P7B_TABLE_NOTE, 8, G500)],
+             anchor=MIDDLE)
+
+
+def p7b_formula(slide):
+    x, w = P7B_SIDE_X, P7B_SIDE_W
+    y, h = 1.34, 2.46
+    card(slide, x, y, w, h, fill=WHITE, line=G200)
+    head, formula, note, terms = P7B_FORM
+    add_text(slide, x + 0.2, y + 0.06, w - 0.36, 0.22, [P(head, 10.5, G900, True)], anchor=MIDDLE)
+    add_box(slide, x + 0.2, y + 0.30, w - 0.4, 0.32, fill=PALE)
+    add_text(slide, x + 0.2, y + 0.30, w - 0.4, 0.32,
+             [P(formula, 11, AGENT, True, MONO, align=CENTER)], anchor=MIDDLE)
+    add_text(slide, x + 0.2, y + 0.64, w - 0.4, 0.20,
+             [P(note, 8.5, G500, align=CENTER)], anchor=MIDDLE)
+    for index, (term, meaning) in enumerate(terms):
+        top = y + 0.86 + index * 0.20
+        add_text(slide, x + 0.24, top, 0.52, 0.20, [P(term, 9, AGENT, True, MONO)], anchor=MIDDLE)
+        add_text(slide, x + 0.80, top, w - 1.02, 0.20, [P(meaning, 8.5, G700)], anchor=MIDDLE)
+
+    case_head, case_formula, case_note = P7B_CASE
+    case_y = y + 1.70
+    add_box(slide, x + 0.2, case_y, w - 0.4, 0.66, fill=ORANGE_TINT)
+    add_box(slide, x + 0.2, case_y, 0.06, 0.66, fill=ORANGE_FILL)
+    add_text(slide, x + 0.36, case_y + 0.02, w - 0.62, 0.20,
+             [P(case_head, 8.5, ORANGE, True)], anchor=MIDDLE)
+    add_text(slide, x + 0.36, case_y + 0.22, w - 0.62, 0.22,
+             [P(case_formula, 9.5, G900, True, MONO)], anchor=MIDDLE)
+    add_text(slide, x + 0.36, case_y + 0.44, w - 0.62, 0.20,
+             [P(case_note, 8, G700)], anchor=MIDDLE)
+
+
+def p7b_roofline(slide):
+    x, w = P7B_SIDE_X, P7B_SIDE_W
+    y, h = 3.92, 2.46
+    card(slide, x, y, w, h, fill=WHITE, line=G200)
+    head, x_label = P7B_ROOF
+    add_text(slide, x + 0.2, y + 0.06, w - 0.36, 0.22, [P(head, 10.5, G900, True)], anchor=MIDDLE)
+
+    px0, pw = x + 0.62, w - 0.94
+    py0, ph = y + 0.42, 1.40
+
+    def px(intensity):
+        return px0 + pw * (math.log2(intensity) - 2) / 6
+
+    def py(performance):
+        return py0 + ph * (1 - (math.log2(performance) + 5) / 6)
+
+    add_box(slide, px0, py0, px(85.0) - px0, ph, fill=G050)
+    add_line(slide, px(4.0), py(4.0 / 85.0), px(171.0), py(2.0), G500, 1.5)
+    for ridge, ceiling, tone in P7B_RIDGE:
+        add_line(slide, px(ridge), py(ceiling), px(256.0), py(ceiling), tone, 1.25)
+        add_box(slide, px(ridge) - 0.04, py(ceiling) - 0.04, 0.08, 0.08, fill=tone,
+                kind=MSO_SHAPE.OVAL)
+    for index, (label, tone) in enumerate(P7B_LEGEND):
+        add_text(slide, px0 + 0.08, py0 + 0.02 + index * 0.18, 1.86, 0.18,
+                 [P(label, 8, tone)], anchor=MIDDLE)
+
+    add_line(slide, px0, py0 + ph, px0 + pw, py0 + ph, G400, 0.75)
+    add_line(slide, px0, py0, px0, py0 + ph, G400, 0.75)
+    for tick in (4, 16, 64, 256):
+        add_text(slide, px(float(tick)) - 0.2, py0 + ph + 0.02, 0.4, 0.18,
+                 [P(str(tick), 8, G500, font=MONO, align=CENTER)], anchor=MIDDLE)
+    for tick, text in ((0.0625, "1/16"), (0.25, "1/4"), (1.0, "1"), (2.0, "2")):
+        add_text(slide, px0 - 0.44, py(tick) - 0.09, 0.38, 0.18,
+                 [P(text, 8, G500, font=MONO, align=RIGHT)], anchor=MIDDLE)
+
+    for intensity, performance, label, offset in P7B_DOTS:
+        dot_x, dot_y = px(intensity), py(performance)
+        add_box(slide, dot_x - 0.055, dot_y - 0.055, 0.11, 0.11, fill=ORANGE_FILL,
+                kind=MSO_SHAPE.OVAL)
+        add_text(slide, dot_x + 0.09, dot_y + offset, 1.2, 0.18,
+                 [P(label, 8, ORANGE)], anchor=MIDDLE)
+
+    add_text(slide, x + 0.2, py0 + ph + 0.21, w - 0.36, 0.18,
+             [P(x_label, 8, G500, align=CENTER)], anchor=MIDDLE)
+    add_text(slide, x + 0.24, y + h - 0.3, w - 0.44, 0.24,
+             [P(P7B_ROOF_NOTE, 8, G500)], anchor=MIDDLE)
+
+
+def page_seven_bound(slide):
+    add_background(slide)
+    page_header(slide, P7B_TITLE, P7B_SUB, sub_size=11.5)
+    p7b_table(slide)
+    p7b_formula(slide)
+    p7b_roofline(slide)
+    add_box(slide, MX, 6.50, CW, 0.54, fill=ORANGE_TINT)
+    add_box(slide, MX, 6.50, 0.08, 0.54, fill=ORANGE_FILL)
+    add_text(slide, MX + 0.36, 6.50, CW - 0.72, 0.54, [runs([
+        (P7B_BAND[0], 13.5, G900, True), ("　——　", 12, G400), (P7B_BAND[1], 12.5, G700),
+    ])], anchor=MIDDLE)
 
 
 # ------------------------------------------------------------------------- 7  优化记录
@@ -1375,15 +1576,16 @@ PAGES = (
     (4, page_four),
     (5, page_five),
     (6, page_six),
-    (7, page_seven),
-    (8, page_eight),
-    (9, page_nine),
-    (10, page_ten),
-    (11, lambda slide: divider_slide(slide, "从『我们自己做生态』到『合作伙伴共建生态飞轮』")),
-    (12, page_twelve),
-    (13, page_thirteen),
+    (7, page_seven_bound),
+    (8, page_seven),
+    (9, page_eight),
+    (10, page_nine),
+    (11, page_ten),
+    (12, lambda slide: divider_slide(slide, "从『我们自己做生态』到『合作伙伴共建生态飞轮』")),
+    (13, page_twelve),
+    (14, page_thirteen),
 )
-DIVIDERS = {2, 11}
+DIVIDERS = {2, 12}
 
 
 def build(path):
