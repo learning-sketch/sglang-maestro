@@ -74,7 +74,7 @@ BAD = "B4382F"
 # The lockup's keep-out box, measured off the template.
 LOGO_X, LOGO_Y = 11.29, 1.16
 HEAD_W = LOGO_X - MX - 0.2
-TOTAL = 17
+TOTAL = 18
 
 
 # ----------------------------------------------------------------------- shared furniture
@@ -987,6 +987,190 @@ def page_ledger(slide):
         start = min(max(centre, P8L_BAND_X + 0.4), P8L_BAND_X + P8L_BAND_W - 0.4)
         add_arrow(slide, start, band_bottom + 0.02, centre, P8L_CARD_Y - 0.03, G500, 1.5)
         p8l_card(slide, x, each, spec)
+
+
+# --------------------------------------------- 8  组件串联与 Agent 范畴划分
+P8C_TITLE = "M100 Agent：组件串联与 Agent 范畴划分"
+P8C_SUB = "全链路只有规划器用大模型；提案先过守门员，变更只走唯一闸口，判决由四道门实测给出"
+P8C_ZONES = (("确定性 Python 调度区（非 Agent 范畴）", AGENT, "F4F9FD", DASH),
+             ("大模型 Agent 范畴（唯一引入 AI 的区域）", ORANGE_FILL, "FDF8EF", None))
+# 边框色、标题底色、标题字色
+P8C_KINDS = {
+    "soft_blue": (AGENT, PALE, AGENT),
+    "blue": (AGENT, AGENT, WHITE),
+    "soft_orange": (ORANGE_FILL, "FBEBD6", ORANGE),
+    "orange": (ORANGE_FILL, ORANGE_FILL, WHITE),
+    "red": (BAD, "FBECEA", BAD),
+    "green": (OK, "DCEFE7", OK),
+    "grey": (G400, G100, G700),
+}
+# (标题, 配色, 正文)：正文每行是一串 run，run 为 (文字, 字号, 颜色, 加粗)
+P8C_CONTRACT = ("契约与硬件", "soft_blue",
+                ((("任务冻结与硬件预检", 9.5, G900, True),),
+                 (("模型规格推导 · 显存预检", 8.5, G700, False),)))
+P8C_CONTROL = ("控制器", "blue",
+               ((("主循环与状态机", 9.5, G900, True),),
+                (("三重独占文件锁", 8.5, BAD, True),)))
+P8C_LEDGER = ("采样与账本", "soft_blue",
+              ((("Trace 归因 → 理论下界与差距比", 9.5, G900, True),),
+               (("产出待优化目标队列", 8.5, G700, False),),
+               (("自检：比值 < 0.9 自动报错隔离", 8.5, BAD, True),)))
+P8C_VERDICT = ("晋升判决器", "green",
+               ((("晋升：更新基线", 9.5, OK, True), ("　　", 9.5, G400, False),
+                 ("淘汰：记入记忆", 9.5, BAD, True)),
+                (("重测：签名漂移回退", 9, ORANGE, True), ("　　", 9, G400, False),
+                 ("决定下一轮循环", 9, G700, False))))
+P8C_MAILBOX = ("通信压缩器", "soft_orange",
+               ((("装配账本 + 历史记忆", 9.5, G900, True),),
+                (("18 KB 有序降级压缩", 8.5, ORANGE, True),)))
+P8C_PLANNER = ("规划器（Agent）", "orange",
+               ((("查技能库 · 提单动作", 9.5, G900, True),),
+                (("读码 · 搜索 · 探针 · 补丁", 8.5, G700, False),),
+                (("零执行权限", 8.5, BAD, True),)))
+P8C_GUARD = ("动作守门员（写入前严格拦截）", "red",
+             ((("动作白名单 · 已读文件门 · 拒绝重复动作", 9.5, G900, True),),
+              (("提案守卫：账本许可 + 证据引用 + 已登记开关", 9, BAD, True),),
+              (("冻结黑名单：模型 / 设备 / 并行度 / 种子一律不许改", 8, G700, False),)))
+P8C_BUILDER = ("构建器（唯一变更闸口）", "soft_blue",
+               ((("暂存校验后统一写入 · 原仓原位构建", 9.5, G900, True),),
+                (("增量编译算子组件 · 校验实际加载库签名", 8.5, G700, False),)))
+P8C_BENCH = ("服务与评测器", "blue",
+             ((("拉起受控推理服务（核对活进程身份）", 9.5, G900, True),),
+              (("算子微测 → 数值探针 → 质量门 → 性能门", 9.5, AGENT, True),)))
+P8C_OWNER = ("任务负责人", "命令行启动")
+P8C_DELIVER = ("最终交付", "最优版本与报告")
+P8C_EVIDENCE = ("证据落盘组件（强制执行 · 不可绕过）",
+                "事件流 · 每次实验独立目录 · 全局状态与自动报告")
+P8C_CHANNEL = ("xpugen 跨层算子通道", "算子请求与结果的版本化传输（本轮禁用）")
+P8C_EDGES = ("排序目标", "四道门判决", "晋升循环")
+
+P8C_SIDE_X, P8C_SIDE_W = MX, 1.18
+P8C_LX, P8C_LW = 1.92, 4.40
+P8C_RX = 7.00
+P8C_RW = SW - MX - P8C_RX
+P8C_PAD = 0.16
+P8C_ZONE_Y, P8C_ZONE_H = 1.62, 4.96
+P8C_HEAD_Y, P8C_HEAD_H = 1.28, 0.30
+P8C_NODE_HEAD = 0.28
+# 两栏之间的空档只有 0.68 宽，跨栏箭头的胶囊都压在这条中线上
+P8C_LANE_X = (P8C_LX + P8C_LW + P8C_RX) / 2
+# 「晋升循环」折线沿左栏内缘爬回控制器，所以采样与账本要给左边让出一条巷子
+P8C_ALLEY = 0.56
+P8C_ROW1_Y, P8C_ROW1_H = 1.78, 0.78
+P8C_LEDGER_Y, P8C_LEDGER_H = 2.96, 1.00
+P8C_VERDICT_Y, P8C_VERDICT_H = 4.46, 0.90
+P8C_EVIDENCE_Y, P8C_EVIDENCE_H = 5.66, 0.62
+P8C_GUARD_Y, P8C_GUARD_H = 2.96, 0.90
+P8C_BUILDER_Y, P8C_BUILDER_H = 4.10, 0.72
+P8C_BENCH_Y, P8C_BENCH_H = 5.06, 0.86
+P8C_CHANNEL_Y, P8C_CHANNEL_H = 6.08, 0.36
+P8C_OWNER_Y, P8C_SIDE_H = 1.82, 0.70
+
+
+def p8c_node(slide, x, y, w, h, spec):
+    head, kind, body = spec
+    border, head_fill, head_tone = P8C_KINDS[kind]
+    add_box(slide, x, y, w, h, fill=head_fill, line=border, line_w=1.0,
+            kind=MSO_SHAPE.ROUNDED_RECTANGLE, radius=0.07 / min(w, h))
+    inner_h = h - P8C_NODE_HEAD - 0.05
+    add_box(slide, x + 0.05, y + P8C_NODE_HEAD, w - 0.10, inner_h, fill=WHITE,
+            kind=MSO_SHAPE.ROUNDED_RECTANGLE, radius=0.05 / min(w - 0.10, inner_h))
+    add_text(slide, x + 0.10, y, w - 0.20, P8C_NODE_HEAD,
+             [P(head, 10, head_tone, True, align=CENTER)], anchor=MIDDLE)
+    add_text(slide, x + 0.12, y + P8C_NODE_HEAD, w - 0.24, inner_h,
+             [runs(line, align=CENTER) for line in body], anchor=MIDDLE)
+
+
+def p8c_plain(slide, x, y, w, h, title, note, tone, fill, title_tone, dash=None):
+    """A single-tier box: the components that only need a name and one line under it."""
+    shape = add_box(slide, x, y, w, h, fill=fill, line=tone, line_w=1.0, dash=dash,
+                    kind=MSO_SHAPE.ROUNDED_RECTANGLE, radius=0.07 / min(w, h))
+    boxed_text(shape, [P(title, 10, title_tone, True, align=CENTER, after=2),
+                       P(note, 8, G700 if fill == WHITE else TINT, align=CENTER)],
+               inset=(0.06, 0.02, 0.06, 0.02))
+
+
+def page_scope(slide):
+    add_background(slide)
+    page_header(slide, P8C_TITLE, P8C_SUB, sub_size=11.5)
+    for x, w, (head, tone, fill, dash) in ((P8C_LX, P8C_LW, P8C_ZONES[0]),
+                                           (P8C_RX, P8C_RW, P8C_ZONES[1])):
+        add_text(slide, x + 0.04, P8C_HEAD_Y, w, P8C_HEAD_H,
+                 [P(head, 11, tone, True)], anchor=MIDDLE)
+        add_box(slide, x, P8C_ZONE_Y, w, P8C_ZONE_H, fill=fill, line=tone, line_w=1.25,
+                dash=dash, kind=MSO_SHAPE.ROUNDED_RECTANGLE, radius=0.06 / w)
+
+    left_x, left_w = P8C_LX + P8C_PAD, P8C_LW - 2 * P8C_PAD
+    right_x, right_w = P8C_RX + P8C_PAD, P8C_RW - 2 * P8C_PAD
+    # 两栏顶行都是一对并排的框，右框略宽，承接跨栏的那条线
+    pair_gap = 0.24
+    contract_w = 1.86
+    control_x, control_w = left_x + contract_w + pair_gap, left_w - contract_w - pair_gap
+    mailbox_w = 2.56
+    planner_x, planner_w = right_x + mailbox_w + pair_gap, right_w - mailbox_w - pair_gap
+    row1_mid = P8C_ROW1_Y + P8C_ROW1_H / 2
+    row1_bottom = P8C_ROW1_Y + P8C_ROW1_H
+    control_cx = control_x + control_w / 2
+    ledger_x, ledger_w = left_x + P8C_ALLEY, left_w - P8C_ALLEY
+    ledger_mid = P8C_LEDGER_Y + P8C_LEDGER_H / 2
+    verdict_mid = P8C_VERDICT_Y + P8C_VERDICT_H / 2
+    bench_mid = P8C_BENCH_Y + P8C_BENCH_H / 2
+    guard_cx = right_x + right_w / 2
+
+    # 「晋升循环」压在采样与账本的左侧巷子里，先画线再画框，交叉处由框盖住
+    p8c_node(slide, left_x, P8C_ROW1_Y, contract_w, P8C_ROW1_H, P8C_CONTRACT)
+    p8c_node(slide, control_x, P8C_ROW1_Y, control_w, P8C_ROW1_H, P8C_CONTROL)
+    p8c_node(slide, ledger_x, P8C_LEDGER_Y, ledger_w, P8C_LEDGER_H, P8C_LEDGER)
+    p8c_node(slide, left_x, P8C_VERDICT_Y, left_w, P8C_VERDICT_H, P8C_VERDICT)
+    p8c_plain(slide, left_x, P8C_EVIDENCE_Y, left_w, P8C_EVIDENCE_H, *P8C_EVIDENCE,
+              G900, G900, "7FD2F5")
+
+    p8c_node(slide, right_x, P8C_ROW1_Y, mailbox_w, P8C_ROW1_H, P8C_MAILBOX)
+    p8c_node(slide, planner_x, P8C_ROW1_Y, planner_w, P8C_ROW1_H, P8C_PLANNER)
+    p8c_node(slide, right_x, P8C_GUARD_Y, right_w, P8C_GUARD_H, P8C_GUARD)
+    p8c_node(slide, right_x, P8C_BUILDER_Y, right_w, P8C_BUILDER_H, P8C_BUILDER)
+    p8c_node(slide, right_x, P8C_BENCH_Y, right_w, P8C_BENCH_H, P8C_BENCH)
+    p8c_plain(slide, right_x, P8C_CHANNEL_Y, right_w, P8C_CHANNEL_H, *P8C_CHANNEL,
+              G400, WHITE, G700, DASH)
+
+    p8c_plain(slide, P8C_SIDE_X, P8C_OWNER_Y, P8C_SIDE_W, P8C_SIDE_H, *P8C_OWNER,
+              AGENT, WHITE, AGENT)
+    deliver_y = verdict_mid - P8C_SIDE_H / 2
+    p8c_plain(slide, P8C_SIDE_X, deliver_y, P8C_SIDE_W, P8C_SIDE_H, *P8C_DELIVER,
+              OK, WHITE, OK)
+
+    side_right = P8C_SIDE_X + P8C_SIDE_W
+    add_arrow(slide, side_right + 0.03, row1_mid, left_x - 0.03, row1_mid, AGENT, 1.5)
+    add_arrow(slide, left_x + contract_w + 0.03, row1_mid, control_x - 0.03, row1_mid, AGENT, 1.5)
+    add_arrow(slide, control_cx + 0.40, row1_bottom + 0.03, control_cx + 0.40,
+              P8C_LEDGER_Y - 0.03, AGENT, 1.5)
+    add_arrow(slide, right_x + mailbox_w + 0.03, row1_mid, planner_x - 0.03, row1_mid,
+              ORANGE_FILL, 1.5)
+    add_arrow(slide, planner_x + planner_w / 2, row1_bottom + 0.03, planner_x + planner_w / 2,
+              P8C_GUARD_Y - 0.03, ORANGE_FILL, 1.5)
+    add_arrow(slide, guard_cx, P8C_GUARD_Y + P8C_GUARD_H + 0.03, guard_cx,
+              P8C_BUILDER_Y - 0.03, AGENT, 1.5)
+    add_arrow(slide, guard_cx, P8C_BUILDER_Y + P8C_BUILDER_H + 0.03, guard_cx,
+              P8C_BENCH_Y - 0.03, AGENT, 1.5)
+    add_arrow(slide, left_x + left_w / 2, P8C_VERDICT_Y + P8C_VERDICT_H + 0.03,
+              left_x + left_w / 2, P8C_EVIDENCE_Y - 0.03, G500, 1.5)
+    add_arrow(slide, left_x - 0.03, verdict_mid, side_right + 0.03, verdict_mid, OK, 1.5)
+
+    hand_off, gates, loop = P8C_EDGES
+    add_path_arrow(slide, [(ledger_x + ledger_w + 0.03, ledger_mid), (P8C_LANE_X, ledger_mid),
+                           (P8C_LANE_X, row1_mid), (right_x - 0.03, row1_mid)], AGENT, 1.5)
+    edge_tag(slide, P8C_LANE_X, (row1_mid + ledger_mid) / 2, hand_off, AGENT, 0.64)
+    add_path_arrow(slide, [(right_x - 0.03, bench_mid), (P8C_LANE_X, bench_mid),
+                           (P8C_LANE_X, verdict_mid), (left_x + left_w + 0.03, verdict_mid)],
+                   G500, 1.5)
+    edge_tag(slide, P8C_LANE_X, (bench_mid + verdict_mid) / 2, gates, G500, 0.68)
+
+    alley_x = left_x + P8C_ALLEY / 2
+    loop_y = (row1_bottom + P8C_LEDGER_Y) / 2
+    add_path_arrow(slide, [(alley_x, P8C_VERDICT_Y + 0.01), (alley_x, loop_y),
+                           (control_cx - 0.40, loop_y), (control_cx - 0.40, row1_bottom + 0.03)],
+                   OK, 1.5)
+    edge_tag(slide, (alley_x + control_cx - 0.40) / 2, loop_y, loop, OK, 0.64)
 
 
 # --------------------------------------------------------------- 8  理论上限核算
@@ -2073,18 +2257,19 @@ PAGES = (
     (5, page_five),
     (6, page_six),
     (7, page_six_inside),
-    (8, page_ledger),
-    (9, page_seven_bound),
-    (10, page_seven),
-    (11, page_eight),
-    (12, page_nine),
-    (13, page_eleven),
-    (14, page_ten),
-    (15, lambda slide: divider_slide(slide, "从『我们自己做生态』到『合作伙伴共建生态飞轮』")),
-    (16, page_twelve),
-    (17, page_thirteen),
+    (8, page_scope),
+    (9, page_ledger),
+    (10, page_seven_bound),
+    (11, page_seven),
+    (12, page_eight),
+    (13, page_nine),
+    (14, page_eleven),
+    (15, page_ten),
+    (16, lambda slide: divider_slide(slide, "从『我们自己做生态』到『合作伙伴共建生态飞轮』")),
+    (17, page_twelve),
+    (18, page_thirteen),
 )
-DIVIDERS = {2, 15}
+DIVIDERS = {2, 16}
 
 
 def build(path):
