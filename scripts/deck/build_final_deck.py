@@ -534,143 +534,150 @@ def page_five(slide):
 
 
 # ------------------------------------------------------------- 6  模型层Agent运行机制视图
-P6_TITLE = "M100 Agent：模型层Agent运行机制视图"
+P6_TITLE = "M100 Agent：模型层 Agent 运行机制视图"
+P6_SUB = "八步闭环：诊断取证 → 形成方案 → 确定性验收 → 更新基线，再开一轮"
 P6_CONTRACT = ("任务基准 · 锁定评测条件与版本", (
-    ("optimization-task.json", "确定模型、精度、负载、准入门槛"),
-    ("generation-task.json", "设定固定文本对齐测试与评测集达标要求"),
-    ("backup/", "留存初始基线备份 + 加载调优知识库"),
+    ("optimization-task.json", "准入门槛"),
+    ("generation-task.json", "质量达标"),
+    ("backup/", "基线备份 + 调优知识库"),
 ))
-P6_TOP = (
-    ("1", "性能采样（Trace）", ("拉起一次性独立服务，通过profile接口获取性能数据",)),
-    ("2", "耗时归因（对齐到代码）",
-     ("获取目标阶段（Prefill/Decode），将kernel耗时直接映射到模型代码层，加入累加等数值校验",)),
-    ("3", "理论上限核算",
-     ("解析模型配置 → 折算计算量与访存字节 → 推导理论耗时下界与差距倍数",)),
-)
-P6_TOP_EDGES = (("Trace", "文件"), ("各类算子", "耗时、", "调用频次"),
-                ("瓶颈优先", "级列表、", "异常算子", "耗时"))
-P6_PLAN = ("4", "方案与补丁", (
-    ("规划器", ORANGE, (
-        "看证据写代码：结合模型源码与锁定的诊断证据，提出优化假设并判断",
-        "按需skills：默认只读目录索引，每轮最多按需调取 2 份专项调优指南（Skill），防上下文膨胀",
-    )),
-    ("人 · 按需介入", G800, (
-        "复杂场景由人直接修改，或与规划器协同实现",
-        "人工介入不改变准入判定路径，同样须通过下方三道验收门禁",
-    )),
-))
-P6_HAND = ("提交规划方案：", "优化假设 + 代码补丁 + 证据引用")
-P6_CONTROL = ("控制器", (
-    "确定性调度机制（Python）：统一接管硬件设备锁、状态机流转、故障恢复、准入验证与报告生成",
-    "硬性约束：规划器无权自行宣告实验成功；数值精度、多模态生成质量及性能收益，全部由控制器独立核验",
-    "全量实验追溯：每次实验尝试（Trial）均独立落盘记录，涵盖：候选评估、构建准备、基线测试、基线复核与最终复验",
-    "闭环容错机制：方案被拒原因经历史记忆库（Memory）带回下一轮请求；底层基础设施中断不计入方案优化失败",
-))
-P6_BOTTOM = (
-    (MX, 2.70, "8", "端到端A/B对比实验",
-     ("多次压测取中位数，全程关闭性能剖析器（Profiler），增幅须跨越噪声门槛",)),
-    (3.58, 2.70, "7", "端到端质量评估", ("数据集得分不降，格式解析失败与输出截断均严判计入",)),
-    (6.56, 2.70, "6", "单算子性能初筛",
-     ("隔离被改算子，直接测速", "新旧版本同条件预热，确保对比公平",
-      "局部提速达标才进入整模型评测，快速淘汰无效补丁")),
-)
-P6_RETURN = "确认真实收益 → 更新为最新基线 → 触发新一轮采样"
-P6_MERGE = ("5", "补丁合入与增量构建", ("在源码工作区执行原位构建，打入隔离补丁",))
+# (阶段, 英文, 色调)
+P6_PHASES = (("诊断取证", "Diagnose", OK), ("形成方案", "Plan", ORANGE_FILL),
+             ("确定性验收", "Verify", AGENT))
+# 标题是一个字符串，或 (主标题, 括注)
+P6_TOP = (("1", ("性能采样", "（Trace）")), ("2", ("耗时归因", "（对齐到代码）")),
+          ("3", "理论上限核算"))
+# (执行方, 色调, 是否实心, 胶囊宽)
+P6_PLAN = ("4", "方案与补丁", (("规划器", ORANGE_FILL, True, 0.60),
+                             ("人 · 按需介入", G500, False, 1.00)))
+P6_BOTTOM = (("8", "端到端 A/B 对比实验"), ("7", "端到端质量评估"), ("6", "单算子性能初筛"),
+             ("5", "补丁合入与增量构建"))
+# (连线标签, 胶囊宽)
+P6_TOP_EDGES = (("Trace 文件", 0.78), ("算子耗时", 0.62), ("瓶颈列表", 0.62))
+P6_BOT_EDGES = (("质量不降", 0.62), ("提速达标", 0.62), ("新版本就绪", 0.72))
+P6_DOWN = ("补丁 + 证据引用", 1.02)
+P6_REJECT = ("打回 · 原因入记忆", 1.18)
+P6_RETURN = ("更新基线 · 再开一轮", 1.28)
+P6_CONTROL = ("控制器", "Python · 无模型 · 全流程接管",
+              ("确定性调度", "硬性约束", "全量实验追溯", "闭环容错"))
+
+P6_BAND_Y, P6_BAND_H = 1.32, 0.46
+P6_ROW1_Y, P6_ROW2_Y, P6_ROW_H = 2.00, 5.08, 1.40
+P6_LABEL_H, P6_PAD = 0.26, 0.14
+P6_CARD_Y, P6_CARD_H, P6_CARD_W = 0.42, 0.84, 2.30
+P6_CARD_GAP = (CW - 2 * P6_PAD - 4 * P6_CARD_W) / 3
+# 上下两行共用四列：第一步压在第八步上方，方案框压在第五步上方，回环两条竖线因此都是直的
+P6_COLS = tuple(MX + P6_PAD + index * (P6_CARD_W + P6_CARD_GAP) for index in range(4))
+P6_DIAG_W = P6_COLS[2] + P6_CARD_W + P6_PAD - MX
+P6_PLAN_X = P6_COLS[3]
+P6_PLAN_W = SW - MX - P6_PLAN_X
+P6_CTRL_X = P6_COLS[1]
+P6_CTRL_W = P6_COLS[2] + P6_CARD_W - P6_CTRL_X
+P6_CTRL_Y, P6_CTRL_H = 3.78, 0.92
+P6_RETURN_X = P6_COLS[0] + P6_CARD_W / 2
+# 打回是主环里面的小环，所以走在下行箭头的内侧
+P6_REJECT_X, P6_DOWN_X = 10.86, 12.00
 
 
-P6_TOP_X = (MX, 3.58, 6.56)
-P6_TOP_W = 2.42
-P6_TOP_Y, P6_TOP_H = 1.98, 1.30
-P6_PLAN_X, P6_PLAN_W = 9.54, 3.19
-P6_BOT_Y, P6_BOT_H = 5.50, 1.22
-
-
-def p6_node(slide, x, y, w, h, number, title, lines, tone, size=11):
-    card(slide, x, y, w, h, fill=WHITE, line=G200)
-    add_box(slide, x, y, 0.07, h, fill=tone)
-    add_text(slide, x + 0.2, y + 0.05, w - 0.34, h - 0.1, [
-        runs([(f"{number} ", size, tone, True), (title, size, G900, True)], after=2),
-        *[P(line, 10, G700) for line in lines],
+def p6_phase(slide, x, y, w, phase, fill=G050, line=G300, line_w=0.75):
+    """一个阶段：浅底容器 + 左上角的阶段名。"""
+    label, english, tone = phase
+    card(slide, x, y, w, P6_ROW_H, fill=fill, line=line, line_w=line_w)
+    add_box(slide, x + P6_PAD, y + 0.08, 0.06, P6_LABEL_H - 0.02, fill=tone)
+    add_text(slide, x + P6_PAD + 0.16, y + 0.05, w - 0.4, P6_LABEL_H, [
+        runs([(label, 10.5, G900, True), (f"　{english}", 8, tone, True, MONO)]),
     ], anchor=MIDDLE)
+
+
+def p6_badge(slide, x, cy, number, tone):
+    badge = add_box(slide, x, cy - 0.15, 0.30, 0.30, fill=tone, kind=MSO_SHAPE.OVAL)
+    boxed_text(badge, [P(number, 10.5, WHITE, True, align=CENTER)], inset=(0, 0, 0, 0))
+
+
+def p6_step(slide, x, y, number, title, tone):
+    card(slide, x, y, P6_CARD_W, P6_CARD_H, fill=WHITE, line=tone, line_w=1.0)
+    p6_badge(slide, x + 0.16, y + P6_CARD_H / 2, number, tone)
+    main, note = title if isinstance(title, tuple) else (title, None)
+    parts = [(main, 12, G900, True)] + ([(note, 9.5, G700)] if note else [])
+    add_text(slide, x + 0.54, y, P6_CARD_W - 0.60, P6_CARD_H, [runs(parts)], anchor=MIDDLE)
+
+
+def p6_plan(slide, y):
+    number, title, actors = P6_PLAN
+    x, w = P6_PLAN_X + P6_PAD, P6_PLAN_W - 2 * P6_PAD
+    card(slide, x, y, w, P6_CARD_H, fill=WHITE, line=ORANGE_FILL, line_w=1.0)
+    p6_badge(slide, x + 0.16, y + 0.25, number, ORANGE_FILL)
+    add_text(slide, x + 0.54, y + 0.08, w - 0.62, 0.34, [P(title, 12, G900, True)],
+             anchor=MIDDLE)
+    left = x + 0.16
+    for name, tone, solid, width in actors:
+        shape = add_box(slide, left, y + 0.50, width, 0.24, fill=tone if solid else WHITE,
+                        line=None if solid else tone, kind=MSO_SHAPE.ROUNDED_RECTANGLE,
+                        radius=0.5)
+        boxed_text(shape, [P(name, 8.5, WHITE if solid else G700, True, align=CENTER)],
+                   inset=(0.02, 0, 0.02, 0))
+        left += width + 0.06
 
 
 def page_six(slide):
     add_background(slide)
-    page_header(slide, P6_TITLE, None)
+    page_header(slide, P6_TITLE, P6_SUB, sub_size=12)
 
-    con_y, con_h = 0.98, 0.66
-    add_box(slide, MX, con_y, CW, con_h, fill=WHITE, line=G300, dash=DASH)
+    add_box(slide, MX, P6_BAND_Y, CW, P6_BAND_H, fill=WHITE, line=G300, dash=DASH)
     head, items = P6_CONTRACT
-    add_text(slide, MX + 0.26, con_y + 0.05, CW - 0.5, 0.26, [P(head, 10.5, G900, True)],
-             anchor=MIDDLE)
-    parts = []
-    for index, (code, text) in enumerate(items):
-        if index:
-            parts.append(("　｜　", 9, G300))
-        parts += [(code, 9, G700, True, MONO), (f"　{text}", 9, G700)]
-    add_text(slide, MX + 0.26, con_y + 0.32, CW - 0.5, 0.3, [runs(parts)], anchor=MIDDLE)
+    parts = [(head, 10.5, G900, True)]
+    for code, text in items:
+        parts += [("　｜　", 10, G300), (code, 9.5, AGENT, True, MONO), (f"　{text}", 9.5, G700)]
+    add_text(slide, MX + 0.26, P6_BAND_Y, CW - 0.5, P6_BAND_H, [runs(parts)], anchor=MIDDLE)
 
-    top_y, top_h, top_w = P6_TOP_Y, P6_TOP_H, P6_TOP_W
-    plan_x, plan_w = P6_PLAN_X, P6_PLAN_W
-    for index, (number, title, lines) in enumerate(P6_TOP):
-        p6_node(slide, P6_TOP_X[index], top_y, top_w, top_h, number, title, lines, OK)
-    for index, label in enumerate(P6_TOP_EDGES):
-        start = P6_TOP_X[index] + top_w
-        end = P6_TOP_X[index + 1] if index + 1 < len(P6_TOP_X) else plan_x
-        add_arrow(slide, start + 0.04, top_y + top_h / 2, end - 0.04, top_y + top_h / 2,
-                  G500, 1.25)
-        add_text(slide, start + 0.04, top_y + top_h / 2 + 0.05, end - start - 0.08, 0.58,
-                 [P(line, 8, G500) for line in label], anchor=TOP)
+    diagnose, plan, verify = P6_PHASES
+    p6_phase(slide, MX, P6_ROW1_Y, P6_DIAG_W, diagnose)
+    p6_phase(slide, P6_PLAN_X, P6_ROW1_Y, P6_PLAN_W, plan, fill=ORANGE_TINT, line=ORANGE_FILL,
+             line_w=1.0)
+    p6_phase(slide, MX, P6_ROW2_Y, CW, verify)
 
-    plan_blocks = []
-    for name, tone, lines in P6_PLAN[2]:
-        height = text_height(lines, 9.5, plan_w - 0.76, lead=11 * 1.22 + 2) + 0.2
-        plan_blocks.append((name, tone, lines, height))
-    plan_h = 0.40 + sum(height for *_, height in plan_blocks) + 0.1 * len(plan_blocks)
+    top_y, bot_y = P6_ROW1_Y + P6_CARD_Y, P6_ROW2_Y + P6_CARD_Y
+    for column, (number, title) in zip(P6_COLS[:len(P6_TOP)], P6_TOP, strict=True):
+        p6_step(slide, column, top_y, number, title, diagnose[2])
+    p6_plan(slide, top_y)
+    for column, (number, title) in zip(P6_COLS, P6_BOTTOM, strict=True):
+        p6_step(slide, column, bot_y, number, title, verify[2])
 
-    card(slide, plan_x, top_y, plan_w, plan_h, fill=WHITE, line=ORANGE_FILL, line_w=1.5)
-    add_box(slide, plan_x, top_y, 0.07, plan_h, fill=ORANGE_FILL)
-    add_text(slide, plan_x + 0.24, top_y + 0.05, plan_w - 0.42, 0.3, [
-        runs([(f"{P6_PLAN[0]} ", 11.5, ORANGE, True), (P6_PLAN[1], 11.5, G900, True)]),
+    mid_top, mid_bot = top_y + P6_CARD_H / 2, bot_y + P6_CARD_H / 2
+    for index, (label, width) in enumerate(P6_TOP_EDGES):
+        start = P6_COLS[index] + P6_CARD_W
+        last = index == len(P6_TOP_EDGES) - 1
+        end = P6_PLAN_X + P6_PAD if last else P6_COLS[index + 1]
+        add_arrow(slide, start + 0.04, mid_top, end - 0.04, mid_top, G500, 1.5)
+        center = (MX + P6_DIAG_W + P6_PLAN_X) / 2 if last else (start + end) / 2
+        edge_tag(slide, center, mid_top, label, G500, width, size=8)
+    for index, (label, width) in enumerate(P6_BOT_EDGES):
+        start, end = P6_COLS[index + 1], P6_COLS[index] + P6_CARD_W
+        add_arrow(slide, start - 0.04, mid_bot, end + 0.04, mid_bot, AGENT, 1.5)
+        edge_tag(slide, (start + end) / 2, mid_bot, label, AGENT, width, size=8)
+
+    gap_top, gap_bot = P6_ROW1_Y + P6_ROW_H, P6_ROW2_Y
+    add_arrow(slide, P6_DOWN_X, gap_top + 0.04, P6_DOWN_X, gap_bot - 0.04, ORANGE_FILL, 1.5)
+    edge_tag(slide, P6_DOWN_X, gap_top + 0.46, P6_DOWN[0], ORANGE, P6_DOWN[1], size=8)
+    add_line(slide, P6_REJECT_X, gap_bot - 0.04, P6_REJECT_X, gap_top + 0.04, BAD, 1.25,
+             tail=True, dash=DASH)
+    edge_tag(slide, P6_REJECT_X, gap_bot - 0.46, P6_REJECT[0], BAD, P6_REJECT[1], size=8)
+    add_arrow(slide, P6_RETURN_X, gap_bot - 0.04, P6_RETURN_X, gap_top + 0.04, OK, 1.5)
+    edge_tag(slide, P6_RETURN_X, (gap_top + gap_bot) / 2, P6_RETURN[0], OK, P6_RETURN[1],
+             size=8)
+
+    card(slide, P6_CTRL_X, P6_CTRL_Y, P6_CTRL_W, P6_CTRL_H, fill=PALE, line=None)
+    add_box(slide, P6_CTRL_X, P6_CTRL_Y, 0.08, P6_CTRL_H, fill=AGENT)
+    name, gloss, duties = P6_CONTROL
+    inner_x, inner_w = P6_CTRL_X + 0.28, P6_CTRL_W - 0.48
+    add_text(slide, inner_x, P6_CTRL_Y + 0.08, inner_w, 0.30, [
+        runs([(name, 12, AGENT, True), (f"　{gloss}", 9, G700)]),
     ], anchor=MIDDLE)
-    sub_y = top_y + 0.40
-    for name, tone, lines, height in plan_blocks:
-        card(slide, plan_x + 0.2, sub_y, plan_w - 0.4, height, fill=G050, line=None)
-        add_box(slide, plan_x + 0.2, sub_y, 0.055, height, fill=tone)
-        add_text(slide, plan_x + 0.38, sub_y + 0.04, plan_w - 0.76, height - 0.08, [
-            P(name, 11, tone, True, after=2),
-            *[P(line, 9.5, G700) for line in lines],
-        ], anchor=MIDDLE)
-        sub_y += height + 0.1
-
-    ctrl_x, ctrl_y, ctrl_w, ctrl_h = 2.78, 3.48, 6.46, 1.88
-    card(slide, ctrl_x, ctrl_y, ctrl_w, ctrl_h, fill=PALE, line=None)
-    add_box(slide, ctrl_x, ctrl_y, ctrl_w, 0.06, fill=AGENT)
-    name, lines = P6_CONTROL
-    add_text(slide, ctrl_x + 0.24, ctrl_y + 0.1, ctrl_w - 0.46, ctrl_h - 0.18, [
-        P(name, 12, AGENT, True, after=2),
-        *[P(line, 9.5, G700, after=2) for line in lines],
-    ], anchor=TOP)
-
-    bot_y, bot_h = P6_BOT_Y, P6_BOT_H
-    for x, w, number, title, lines in P6_BOTTOM:
-        p6_node(slide, x, bot_y, w, bot_h, number, title, lines, AGENT)
-    p6_node(slide, plan_x, bot_y, plan_w, bot_h, *P6_MERGE, AGENT)
-
-    hand_x = plan_x + plan_w - 0.52
-    add_arrow(slide, hand_x, top_y + plan_h + 0.04, hand_x, bot_y - 0.04, G500, 1.25)
-    add_text(slide, plan_x + 0.1, top_y + plan_h + 0.1, plan_w - 0.78, 0.58, [
-        P(P6_HAND[0], 8, G500), P(P6_HAND[1], 8, G500),
-    ], anchor=TOP)
-
-    for target, source in ((plan_x, 6.56 + 2.70), (6.56, 3.58 + 2.70), (3.58, MX + 2.70)):
-        add_arrow(slide, source + 0.04, bot_y + bot_h / 2, target - 0.04, bot_y + bot_h / 2,
-                  G500, 1.25)
-
-    ret_x = 1.74
-    add_arrow(slide, ret_x, bot_y - 0.04, ret_x, top_y + top_h + 0.04, G500, 1.25)
-    add_text(slide, MX + 0.02, 3.80, 1.02, 1.0, [P(P6_RETURN, 8, G500, align=RIGHT)],
-             anchor=MIDDLE)
+    duty_w = (inner_w - 3 * 0.14) / 4
+    for index, duty in enumerate(duties):
+        shape = add_box(slide, inner_x + index * (duty_w + 0.14), P6_CTRL_Y + 0.48, duty_w, 0.32,
+                        fill=WHITE, line=G300, kind=MSO_SHAPE.ROUNDED_RECTANGLE, radius=0.5)
+        boxed_text(shape, [P(duty, 10, G800, True, align=CENTER)], inset=(0.04, 0, 0.04, 0))
 
 
 # ------------------------------------------------------- 7  模型层 Agent 内外双环
