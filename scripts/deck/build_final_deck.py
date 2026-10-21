@@ -74,7 +74,7 @@ BAD = "B4382F"
 # The lockup's keep-out box, measured off the template.
 LOGO_X, LOGO_Y = 11.29, 1.16
 HEAD_W = LOGO_X - MX - 0.2
-TOTAL = 16
+TOTAL = 17
 
 
 # ----------------------------------------------------------------------- shared furniture
@@ -835,6 +835,158 @@ def page_six_inside(slide):
     add_text(slide, MX + 0.36, 6.46, CW - 0.72, 0.58, [runs([
         (P6B_BAND[0], 12, AGENT, True), ("　｜　", 12, G400), (P6B_BAND[1], 13, G900, True),
     ])], anchor=MIDDLE)
+
+
+# ------------------------------------------------- 8  耗时归因与理论空间核算
+P8L_TITLE = "M100 Agent：耗时归因与理论空间核算"
+P8L_SUB = "不靠名字猜归属，不按占比拍脑袋——算清「实际耗时」与「物理极限」，自动分流优化方向"
+P8L_LEFT_HEAD = "一、耗时归因：时间花在哪段代码？"
+P8L_STEPS = (("1. 源码贴标", "7 类代码位置打标"), ("2. 划定步界", "记实测上下文长度"),
+             ("3. 任务对号", "嵌套取最里层代码"), ("4. 分类汇总", "耗时 + 调用次数"))
+P8L_GUARD = "8 条防呆检查（不重算、不漏算，不达标直接拒出账本）"
+P8L_LEFT_OUT = ("导出结果：", "每类代码的【实际耗时】与【每步调用次数】")
+P8L_RIGHT_HEAD = "二、上限核算：理论上最快能跑多快？"
+P8L_INPUTS = (("直读模型位数", "按 8 位 / 16 位算数据量"),
+              ("实测激活专家数", "用多少搬多少（拒用均值）"),
+              ("硬件速度极限", "算力上限 + 显存带宽上限"))
+P8L_FORMULA = ("算力最快耗时 = 计算量 ÷ 算力极限", "搬运最快耗时 = 最少数据量 ÷ 带宽极限")
+P8L_NOTE = "注：特殊运算的上限没测到时，单独标记为「待测」"
+P8L_RIGHT_OUT = ("导出结果：", "取两者更大值 = 每类代码的【理论最快耗时】")
+P8L_BAND = ("三、自动判断与分流：", "差距倍数 = 实际耗时 ÷ 理论最快耗时")
+# (框色, 字色, 底色, 胶囊色, 条件, 结论前缀, 结论, 说明, 动作)
+P8L_VERDICTS = (
+    (BAD, BAD, "FDF1EF", "F7DDD8", "判断 1：倍数 < 0.9", None, "账本自检报错",
+     "实测不可能快过物理极限（账算错了）", "动作：隔离挂账，不参与排序"),
+    (OK, OK, "ECF7F2", "D3EBE1", "判断 2：倍数 ≤ 1.1", None, "已贴近硬件极限",
+     "实际耗时已经逼近理论最快值", "动作：没有空间，停止投入"),
+    (ORANGE_FILL, ORANGE, "FEF5E8", "FAE3C6", "判断 3：调用 ≥ 16 次 且 单次 < 1MB",
+     "病因：", "任务发得太碎", "调用极频繁、每次极短、搬数极少", "改法：算子合并、融合、批处理"),
+    (AGENT, AGENT, "F0F6FE", "D8E8FB", "判断 4：差距大 + 其余情况", "病因：", "数据搬运不划算",
+     "任务不算碎，但远慢于理论搬运速度", "改法：查访存模式与代码路径"),
+)
+
+P8L_PANEL_Y, P8L_PANEL_H, P8L_PANEL_HEAD = 1.36, 2.48, 0.40
+P8L_LX, P8L_LW = MX, 5.90
+P8L_RX = P8L_LX + P8L_LW + 0.34
+P8L_RW = SW - MX - P8L_RX
+P8L_PAD = 0.16
+P8L_ROW_Y, P8L_ROW_H = 1.94, 0.76
+P8L_BAR_Y, P8L_BAR_H = 2.82, 0.48
+P8L_OUT_Y, P8L_OUT_H = 3.38, 0.38
+P8L_BAND_W, P8L_BAND_Y, P8L_BAND_H = 9.00, 4.06, 0.54
+P8L_BAND_X = (SW - P8L_BAND_W) / 2
+P8L_CARD_Y, P8L_CARD_H, P8L_CARD_GAP = 4.92, 1.78, 0.20
+P8L_CARD_HEAD = 0.34
+
+
+def p8l_frame(slide, x, y, w, h, tone, head, head_h, body_fill=WHITE, size=12.5, align=LEFT):
+    """A panel whose coloured frame doubles as its header bar."""
+    add_box(slide, x, y, w, h, fill=tone, kind=MSO_SHAPE.ROUNDED_RECTANGLE,
+            radius=0.06 / min(w, h))
+    add_box(slide, x + 0.07, y + head_h, w - 0.14, h - head_h - 0.07, fill=body_fill,
+            kind=MSO_SHAPE.ROUNDED_RECTANGLE, radius=0.05 / min(w - 0.14, h - head_h))
+    add_text(slide, x + 0.22, y, w - 0.44, head_h, [P(head, size, WHITE, True, align=align)],
+             anchor=MIDDLE)
+
+
+def p8l_slots(x, w, count, gap):
+    """Evenly split the usable width of a panel into `count` columns."""
+    inner = w - 2 * P8L_PAD
+    each = (inner - gap * (count - 1)) / count
+    return [x + P8L_PAD + index * (each + gap) for index in range(count)], each
+
+
+def p8l_chip(slide, x, y, w, h, name, note, tone, note_tone):
+    shape = add_box(slide, x, y, w, h, fill=G050, line=tone, kind=MSO_SHAPE.ROUNDED_RECTANGLE,
+                    radius=0.07 / min(w, h))
+    boxed_text(shape, [P(name, 10.5, G900, True, align=CENTER, after=2),
+                       P(note, 7.5, note_tone, align=CENTER)], inset=(0.05, 0.02, 0.05, 0.02))
+
+
+def p8l_result(slide, x, y, w, h, lead, text, tone, fill):
+    shape = add_box(slide, x, y, w, h, fill=fill, kind=MSO_SHAPE.ROUNDED_RECTANGLE,
+                    radius=0.06 / min(w, h))
+    boxed_text(shape, [runs([(lead, 10, tone, True), (text, 10, G900, True)], align=CENTER)])
+
+
+def p8l_left(slide):
+    p8l_frame(slide, P8L_LX, P8L_PANEL_Y, P8L_LW, P8L_PANEL_H, AGENT, P8L_LEFT_HEAD,
+              P8L_PANEL_HEAD)
+    lefts, each = p8l_slots(P8L_LX, P8L_LW, 4, 0.26)
+    for index, ((name, note), x) in enumerate(zip(P8L_STEPS, lefts, strict=True)):
+        last = index == len(P8L_STEPS) - 1
+        p8l_chip(slide, x, P8L_ROW_Y, each, P8L_ROW_H, name, note, AGENT if last else G300,
+                 ORANGE if last else G500)
+        if index:
+            add_arrow(slide, x - 0.24, P8L_ROW_Y + P8L_ROW_H / 2, x - 0.03,
+                      P8L_ROW_Y + P8L_ROW_H / 2, AGENT, 1.25)
+    inner = P8L_LW - 2 * P8L_PAD
+    shape = add_box(slide, P8L_LX + P8L_PAD, P8L_BAR_Y, inner, P8L_BAR_H, fill=G050, line=G400,
+                    dash=DASH, kind=MSO_SHAPE.ROUNDED_RECTANGLE, radius=0.06 / P8L_BAR_H)
+    boxed_text(shape, [P(P8L_GUARD, 10, G800, True, align=CENTER)])
+    p8l_result(slide, P8L_LX + P8L_PAD, P8L_OUT_Y, inner, P8L_OUT_H, *P8L_LEFT_OUT, AGENT, PALE)
+
+
+def p8l_right(slide):
+    p8l_frame(slide, P8L_RX, P8L_PANEL_Y, P8L_RW, P8L_PANEL_H, ORANGE_FILL, P8L_RIGHT_HEAD,
+              P8L_PANEL_HEAD)
+    lefts, each = p8l_slots(P8L_RX, P8L_RW, 3, 0.16)
+    for index, ((name, note), x) in enumerate(zip(P8L_INPUTS, lefts, strict=True)):
+        measured = index == 1
+        p8l_chip(slide, x, P8L_ROW_Y, each, P8L_ROW_H, name, note,
+                 ORANGE_FILL if measured else "E8C9A4", ORANGE if measured else G500)
+    inner = P8L_RW - 2 * P8L_PAD
+    shape = add_box(slide, P8L_RX + P8L_PAD, P8L_BAR_Y, inner, P8L_BAR_H, fill="FDF5E9",
+                    kind=MSO_SHAPE.ROUNDED_RECTANGLE, radius=0.06 / P8L_BAR_H)
+    boxed_text(shape, [
+        runs([(P8L_FORMULA[0], 10, ORANGE, True), ("　｜　", 10, G400),
+              (P8L_FORMULA[1], 10, ORANGE, True)], align=CENTER, after=2),
+        P(P8L_NOTE, 7.5, G700, align=CENTER),
+    ])
+    p8l_result(slide, P8L_RX + P8L_PAD, P8L_OUT_Y, inner, P8L_OUT_H, *P8L_RIGHT_OUT,
+               ORANGE, "FBEBD6")
+
+
+def p8l_card(slide, x, w, spec):
+    tone, text_tone, body, pill_fill, cap, lead, verdict, note, act = spec
+    p8l_frame(slide, x, P8L_CARD_Y, w, P8L_CARD_H, tone, cap, P8L_CARD_HEAD, body, 9.5, CENTER)
+    title = [(verdict, 12.5, text_tone, True)]
+    if lead:
+        title.insert(0, (lead, 9.5, G500, True))
+    pill_y = P8L_CARD_Y + P8L_CARD_H - 0.44
+    body_y = P8L_CARD_Y + P8L_CARD_HEAD
+    add_text(slide, x + 0.14, body_y, w - 0.28, pill_y - body_y, [
+        runs(title, align=CENTER, after=4),
+        P(note, 8, G700, align=CENTER),
+    ], anchor=MIDDLE)
+    shape = add_box(slide, x + 0.16, pill_y, w - 0.32, 0.28,
+                    fill=pill_fill, kind=MSO_SHAPE.ROUNDED_RECTANGLE, radius=0.5)
+    boxed_text(shape, [P(act, 8.5, text_tone, True, align=CENTER)], inset=(0.04, 0, 0.04, 0))
+
+
+def page_ledger(slide):
+    add_background(slide)
+    page_header(slide, P8L_TITLE, P8L_SUB, sub_size=11.5)
+    p8l_left(slide)
+    p8l_right(slide)
+
+    panel_bottom = P8L_PANEL_Y + P8L_PANEL_H
+    for centre, bias in ((P8L_LX + P8L_LW / 2, 0.55), (P8L_RX + P8L_RW / 2, -0.55)):
+        add_arrow(slide, centre, panel_bottom + 0.03, centre + bias, P8L_BAND_Y - 0.03,
+                  G500, 1.5)
+
+    shape = add_box(slide, P8L_BAND_X, P8L_BAND_Y, P8L_BAND_W, P8L_BAND_H, fill=G900,
+                    kind=MSO_SHAPE.ROUNDED_RECTANGLE, radius=0.5)
+    boxed_text(shape, [runs([(P8L_BAND[0], 13, WHITE, True), ("　", 13, WHITE),
+                             (P8L_BAND[1], 13, "F6B860", True)], align=CENTER)])
+
+    lefts, each = p8l_slots(MX - P8L_PAD, CW + 2 * P8L_PAD, 4, P8L_CARD_GAP)
+    band_bottom = P8L_BAND_Y + P8L_BAND_H
+    for x, spec in zip(lefts, P8L_VERDICTS, strict=True):
+        centre = x + each / 2
+        start = min(max(centre, P8L_BAND_X + 0.4), P8L_BAND_X + P8L_BAND_W - 0.4)
+        add_arrow(slide, start, band_bottom + 0.02, centre, P8L_CARD_Y - 0.03, G500, 1.5)
+        p8l_card(slide, x, each, spec)
 
 
 # --------------------------------------------------------------- 8  理论上限核算
@@ -1921,17 +2073,18 @@ PAGES = (
     (5, page_five),
     (6, page_six),
     (7, page_six_inside),
-    (8, page_seven_bound),
-    (9, page_seven),
-    (10, page_eight),
-    (11, page_nine),
-    (12, page_eleven),
-    (13, page_ten),
-    (14, lambda slide: divider_slide(slide, "从『我们自己做生态』到『合作伙伴共建生态飞轮』")),
-    (15, page_twelve),
-    (16, page_thirteen),
+    (8, page_ledger),
+    (9, page_seven_bound),
+    (10, page_seven),
+    (11, page_eight),
+    (12, page_nine),
+    (13, page_eleven),
+    (14, page_ten),
+    (15, lambda slide: divider_slide(slide, "从『我们自己做生态』到『合作伙伴共建生态飞轮』")),
+    (16, page_twelve),
+    (17, page_thirteen),
 )
-DIVIDERS = {2, 14}
+DIVIDERS = {2, 15}
 
 
 def build(path):
