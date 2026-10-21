@@ -681,248 +681,160 @@ def page_six(slide):
 
 
 # ------------------------------------------------------- 7  模型层 Agent 设计方案
-P6B_TITLE = "模型层 Agent 设计方案"
-P6B_SUB = "规划器只提方案，取证、建版与判决全部由确定性的控制器完成；编号 1–8 对应上一页八步"
-P6B_HUMAN = ("人", "三处介入", ("定并冻结任务合同", ("协同复杂改动", "同样要过四道门"), "验收最优版本"))
-P6B_CONTRACT = ("任务合同", "冻结 · 哈希校验",
-                ("模型 · 精度 · 负载", "门限 · 预算", "探针 · MMStar60 基准"))
-P6B_PLANNER = ("规划器", "外部 Agent · 经 URL 接入，可长跑 · 全系统唯一用大模型")
-# (步骤号, 名称, 说明)：步骤号与上一页的八步一一对应
-P6B_AGENT = ("4", "规划 Agent", "读源码与证据，提出假设与补丁")
-P6B_SKILLS = ("skills 库", "按需检索，每轮 ≤ 2 份")
-P6B_MAILBOX = ("信箱", "请求与回复逐条校验 ID · SHA · 格式，全部落盘")
-P6B_MEMORY = ("记忆", "摘要 + 被拒原因")
-P6B_CONTROL = ("控制器", "Python · 确定性 · 无大模型",
-               "调度状态机：设备锁 · 断点恢复 · 全部落盘 · 生成报告")
-# 控制器里的前两块：(标题, 色调, 第一行步骤, 第二行模块)；第一行按先后用箭头串起来
-P6B_AREAS = (
-    ("取证分析（证据层）", OK,
-     (("1", "性能采集", "Trace + 专家路由"), ("2", "耗时归因", "kernel 对齐到源码"),
-      ("3", "Roofline 账本", "下界 · 差距倍数")),
-     (("硬件天花板", "带宽与算力上限"), ("账本自检", "< 0.9 即隔离"), ("瓶颈排序", "按可压缩空间"),
-      ("probe 诊断", "证据不足时补测"))),
-    ("落地：建版与服务", AGENT,
-     ((None, "校验提案", "ID · SHA · 证据"), ("5", "建版构建", "原位 · 隔离补丁")),
-     (("核对库 SHA", "不符则精确重测"), ("服务与压测", "起停 · 3 次取中位"))),
+P6B_TITLE = "模型层 Agent：内部组件与人机交互"
+P6B_SUB = "证据感知 — 假设推演 — 确定性核验；人只在下发契约、协同改动、终审验收三处介入"
+# (标题, 英文, 色条)
+P6B_HEADS = (("人 · 契约与证据", "Human in the Loop", G500),
+             ("模型层 Agent 内部", "唯一引入大模型的位置", ORANGE_FILL),
+             ("确定性工具与评测", "无大模型", AGENT))
+# (标题, 英文, 条目, 顶, 高)
+# 协同补丁与判决黑板之间留出一条空档，「观察」折线从黑板顶边沿左栏内缘爬上规划器
+P6B_LEFT = (
+    ("冻结契约", "人 → Agent", ("模型 · 精度 · 负载", "门限 · 预算", "调优知识库"), 1.76, 1.08),
+    ("协同补丁", "人 ⇄ 规划器", ("复杂改动由人主导", "同样要过四道门禁"), 3.24, 0.76),
+    ("判决与证据黑板", "Verdict",
+     ("门禁判决与被拒原因", "数值与质量偏差", "实测与下界的差距"), 4.36, 1.08),
 )
-P6B_JUDGE = "判决：四道门，由快到慢、一票否决"
-P6B_GATES = (("6", "单算子初筛", "≥ 2%"), ("7", "数值误差", "≤ 0.03"), ("7", "图文质量", "正确率不降"),
-             ("8", "整模 A/B", "超出噪声"))
-P6B_OUTCOMES = (("打回", "任一不过，原因进记忆", BAD), ("叠加入包", "小收益先攒，整包验", AGENT),
-                ("晋升新基线", "全部通过，回到 1", OK))
-P6B_SUT = ("被测系统", ("SGLang 原仓库", "xInfer / xtorch_ops", "登记的独立算子", "M100 真机"))
-P6B_BADGE_TONES = {"1": OK, "2": OK, "3": OK, "4": ORANGE_FILL}
-# 组件之间流转的内容：(文字, 胶囊宽)
-P6B_FREEZE = ("冻结配置", 0.68)
-P6B_ASK = ("账本 + 瓶颈 + 证据", 1.20)
-P6B_PROBE = ("申请 probe", 0.84)
-P6B_PROPOSAL = ("假设 + 补丁 + 证据引用", 1.42)
-P6B_REJECT = ("被拒原因", 0.68)
-P6B_REPORT = ("报告 + 最优版本", 1.06)
-P6B_TRACE = ("Trace + 路由", 0.98)
-P6B_DEPLOY = ("补丁 · 构建 · 起停服务", 1.64)
-P6B_SHA = ("库 SHA", 0.66)
-P6B_MEASURE = ("数值 · 质量 · 吞吐", 1.36)
+P6B_RIGHT = (
+    ("源码与冻结证据", "Source & Evidence",
+     ("原仓库只读", "探针按需补测", "全程留痕落盘", "冻结快照 + SHA"), 1.76, 1.16),
+    ("构建与真机评测", "Build & Bench",
+     ("原位建版 · 精确重测", "四道门禁，一票否决", "单算子 ≥ 2% · 数值 ≤ 0.03",
+      "整模 A/B 超出噪声", "M100 真机实测"), 3.94, 1.50),
+)
+# (标题, 英文, 说明行, 顶, 高)
+P6B_STAGES = (
+    ("状态机与编排", "Orchestration", ("设备锁 · 状态流转 · 断点恢复",), 1.76, 0.52),
+    ("通信与记忆", "Mailbox / Memory", ("逐条校验 ID 与 SHA，只回传摘要与被拒原因",), 2.50, 0.52),
+    ("规划器推演", "Thought　外部 Agent 长跑",
+     ("读源码与证据，提出假设与补丁", "动作限定：", "不能自行宣告成功"), 3.24, 1.32),
+    ("动作执行", "Action", ("打包补丁，触发构建与门禁",), 4.78, 0.52),
+)
+P6B_VERBS = "read · search · probe · patch · stop"
+P6B_LLM = "大模型唯一介入点"
+P6B_OUT = ("判决报告 → 人", "最优版本 + 全程证据", 5.52, 0.44)
+P6B_EDGES = ("下发契约", "结对补丁", "观察", "调取证据", "构建 · 门禁", "终审验收")
+P6B_RETURN = "回写：判决 · 偏差 · 耗时"
+P6B_BAND = ("核心设计", "规划器只提假设与补丁；数值、质量与收益全部由控制器独立核验")
 
-P6B_HUMAN_Y, P6B_HUMAN_H, P6B_HUMAN_LABEL_W = 1.42, 0.46, 0.50
-P6B_HUMAN_W = (1.40, 2.06, 1.20)
-P6B_TIER_Y, P6B_TIER_H = 2.18, 1.10
-P6B_CTRL_Y, P6B_CTRL_H = 3.70, 2.16
-P6B_SUT_Y, P6B_SUT_H, P6B_SUT_LABEL_W = 6.28, 0.52, 0.95
-P6B_CONTRACT_W = 1.87
-P6B_PLAN_X, P6B_PLAN_W = 2.75, 6.55
-P6B_AGENT_W, P6B_MAILBOX_W = 3.33, 4.73
-P6B_AREA_Y, P6B_AREA_H, P6B_AREA_HEAD = 4.08, 1.70, 0.28
-P6B_ROW1_Y, P6B_ROW1_H, P6B_ROW2_Y, P6B_ROW2_H = 4.46, 0.56, 5.14, 0.52
-# 控制器三块的横向范围：取证、落地、判决
-P6B_SPANS = ((MX + 0.12, 4.48), (5.40, 2.80), (8.40, SW - MX - 0.12 - 8.40))
-P6B_LINKS = (0.20, 0.20, 0.14)
-# 竖向交接线的横坐标；每条线都要同时落在上下两只框的横向范围里
-P6B_TASK_X, P6B_REPORT_X = 1.90, 11.60
-P6B_ASK_X, P6B_REJECT_X = 3.20, 8.85
-P6B_TRACE_X, P6B_DEPLOY_X, P6B_SHA_X, P6B_MEASURE_X = 2.25, 6.40, 7.75, 10.50
-
-
-def p6b_slots(x, w, count, gap, left=0.10, right=0.10):
-    """Left edges and the shared width of `count` chips spread across a panel."""
-    width = (w - left - right - (count - 1) * gap) / count
-    return tuple(x + left + index * (width + gap) for index in range(count)), width
+P6B_LX, P6B_LW = MX, 2.84
+P6B_CX, P6B_CW_ = 4.42, 4.20
+P6B_RX = 9.52
+P6B_RW = SW - MX - P6B_RX
+# 中栏圆角框占容器 88% 宽并左右居中
+P6B_IW = P6B_CW_ * 0.88
+P6B_IX = P6B_CX + (P6B_CW_ - P6B_IW) / 2
+P6B_SPINE = P6B_IX + P6B_IW / 2
+P6B_RADIUS = 0.08
+P6B_HEAD_Y, P6B_HEAD_H = 1.32, 0.32
+P6B_PANEL_TOP, P6B_PANEL_BOT = 1.66, 6.04
+# 「观察」与「调取证据」两条折线关于规划器的中心点对称，竖直段都走在各自栏位的内缘
+P6B_WATCH_X = P6B_LX + P6B_LW - 0.36
+P6B_CALL_X = 2 * P6B_SPINE - P6B_WATCH_X
+P6B_RETURN_X, P6B_RETURN_Y = P6B_LX + P6B_LW / 2, 6.24
 
 
-def p6b_band(slide, y, h, label, tone, label_w, gloss=None):
-    add_box(slide, MX + label_w, y, CW - label_w, h, fill=G050, line=G300)
-    cell = add_box(slide, MX, y, label_w, h, fill=tone, line=WHITE, line_w=1.5)
-    paragraphs = [P(label, 12, WHITE, True, align=CENTER)]
-    if gloss:
-        paragraphs.append(P(gloss, 7.5, WHITE, align=CENTER))
-    boxed_text(cell, paragraphs, inset=(0.02, 0, 0.02, 0))
+def p6b_stage(slide, y, h, fill, tone):
+    return add_box(slide, P6B_IX, y, P6B_IW, h, fill=fill, line=tone,
+                   kind=MSO_SHAPE.ROUNDED_RECTANGLE, radius=P6B_RADIUS / min(P6B_IW, h))
 
 
-def p6b_badge(slide, cx, cy, number):
-    badge = add_box(slide, cx - 0.12, cy - 0.12, 0.24, 0.24,
-                    fill=P6B_BADGE_TONES.get(number, AGENT), kind=MSO_SHAPE.OVAL)
-    boxed_text(badge, [P(number, 9, WHITE, True, align=CENTER)], inset=(0, 0, 0, 0))
-
-
-def p6b_line_chip(slide, x, y, w, h, name, note, tone, badge=None):
-    """A one-line chip: bold name, then a short note in the same line."""
-    shape = add_box(slide, x, y, w, h, fill=WHITE, line=tone, line_w=0.75,
-                    kind=MSO_SHAPE.ROUNDED_RECTANGLE, radius=0.06 / min(w, h))
-    parts = [(name, 10, G900, True)] + ([(f"　{note}", 8.5, G700)] if note else [])
-    boxed_text(shape, [runs(parts, align=CENTER)],
-               inset=(0.36 if badge else 0.06, 0, 0.06, 0))
-    if badge:
-        p6b_badge(slide, x + 0.2, y + h / 2, badge)
-
-
-def p6b_chip(slide, x, y, w, h, badge, name, note, tone, name_tone=G900, note_tone=G700,
-             rule=False):
-    """A module chip: bold name over a short note; a step badge sits on its top-left corner."""
-    shape = add_box(slide, x, y, w, h, fill=WHITE, line=tone, line_w=0.75,
-                    kind=MSO_SHAPE.ROUNDED_RECTANGLE, radius=0.06 / min(w, h))
-    boxed_text(shape, [P(name, 9.5, name_tone, True, align=CENTER),
-                       P(note, 8.5 if rule else 8, note_tone, rule, align=CENTER)],
-               inset=(0.14 if badge else 0.05, 0.02, 0.04 if badge else 0.05, 0.02))
-    if badge:
-        p6b_badge(slide, x + 0.03, y + 0.03, badge)
-
-
-def p6b_area(slide, x, w, title, tone):
-    card(slide, x, P6B_AREA_Y, w, P6B_AREA_H, fill=WHITE, line=G300)
-    add_box(slide, x + 0.12, P6B_AREA_Y + 0.07, 0.05, P6B_AREA_HEAD - 0.12, fill=tone)
-    add_text(slide, x + 0.24, P6B_AREA_Y, w - 0.32, P6B_AREA_HEAD, [P(title, 10, G900, True)],
-             anchor=MIDDLE)
-
-
-def p6b_steps(slide, x, w, link, steps, tone, rule=False):
-    """First row of a controller block: numbered steps chained left to right."""
-    lefts, width = p6b_slots(x, w, len(steps), link, left=0.14)
-    mid = P6B_ROW1_Y + P6B_ROW1_H / 2
-    for index, (left, (badge, name, note)) in enumerate(zip(lefts, steps, strict=True)):
-        line = P6B_BADGE_TONES.get(badge, AGENT) if badge else G400
-        p6b_chip(slide, left, P6B_ROW1_Y, width, P6B_ROW1_H, badge, name, note, line,
-                 note_tone=AGENT if rule else G700, rule=rule)
+def p6b_centre(slide):
+    card(slide, P6B_CX, P6B_PANEL_TOP, P6B_CW_, P6B_PANEL_BOT - P6B_PANEL_TOP,
+         fill=WHITE, line=G300)
+    for index, (title, english, lines, y, h) in enumerate(P6B_STAGES):
+        model = index == 2
+        tone = ORANGE_FILL if model else AGENT
+        shape = p6b_stage(slide, y, h, ORANGE_TINT if model else PALE, tone)
+        head = runs([(title, 11.5 if model else 11, G900, True),
+                     (f"　{english}", 8.5, ORANGE if model else AGENT, True, MONO)],
+                    align=CENTER, after=2)
+        body = [P(line, 8.5, G700, align=CENTER) for line in lines]
+        if model:
+            # 徽章压在框的中线上，三条折线分别指向框的上中下三段
+            mid = y + h / 2
+            add_text(slide, P6B_IX, mid - 0.64, P6B_IW, 0.26, [head], anchor=MIDDLE)
+            pill(slide, P6B_SPINE - 0.72, mid - 0.34, 1.44, 0.24, P6B_LLM, ORANGE_FILL, size=8)
+            add_text(slide, P6B_IX + 0.06, mid - 0.06, P6B_IW - 0.12, 0.70, [
+                P(lines[0], 8.5, G700, align=CENTER),
+                runs([(lines[1], 8.5, G700), (P6B_VERBS, 7.5, ORANGE, False, MONO)],
+                     align=CENTER),
+                P(lines[2], 8.5, ORANGE, True, align=CENTER),
+            ], anchor=MIDDLE)
+        else:
+            boxed_text(shape, [head, *body])
         if index:
-            add_arrow(slide, left - link + 0.03, mid, left - 0.03, mid, tone, 1.25)
-    return lefts, width
+            previous = P6B_STAGES[index - 1]
+            # 规划器那一跳是一来一回：控制器封装请求下发，规划器回提案，所以画双箭头
+            add_arrow(slide, P6B_SPINE, previous[3] + previous[4] + 0.01, P6B_SPINE, y - 0.01,
+                      ORANGE_FILL if model else AGENT, 1.5, both=model)
 
-
-def p6b_tag(slide, cx, cy, tag, tone):
-    edge_tag(slide, cx, cy, tag[0], tone, tag[1], size=8)
+    title, detail, y, h = P6B_OUT
+    shape = p6b_stage(slide, y, h, PALE, AGENT)
+    boxed_text(shape, [runs([
+        (title, 10.5, AGENT, True), (f"　{detail}", 8.5, G700),
+    ], align=CENTER)])
+    action = P6B_STAGES[3]
+    add_arrow(slide, P6B_SPINE, action[3] + action[4] + 0.01, P6B_SPINE, y - 0.01, AGENT, 1.5)
+    add_text(slide, P6B_SPINE + 0.1, action[3] + action[4], 1.1, y - action[3] - action[4],
+             [P(P6B_EDGES[5], 7.5, AGENT, True)], anchor=MIDDLE)
 
 
 def page_six_inside(slide):
     add_background(slide)
-    page_header(slide, P6B_TITLE, P6B_SUB, sub_size=12)
-    human_bot = P6B_HUMAN_Y + P6B_HUMAN_H
-    tier_bot, ctrl_bot = P6B_TIER_Y + P6B_TIER_H, P6B_CTRL_Y + P6B_CTRL_H
+    page_header(slide, P6B_TITLE, P6B_SUB, sub_size=11.5)
+    column_heads(slide, [(x, w, *head) for x, w, head in
+                         ((P6B_LX, P6B_LW, P6B_HEADS[0]), (P6B_CX, P6B_CW_, P6B_HEADS[1]),
+                          (P6B_RX, P6B_RW, P6B_HEADS[2]))], P6B_HEAD_Y, P6B_HEAD_H)
+    for index, (title, english, items, y, h) in enumerate(P6B_LEFT):
+        side_card(slide, P6B_LX, y, P6B_LW, h, title, english, items,
+                  ORANGE_FILL if index == 1 else G500)
+    for title, english, items, y, h in P6B_RIGHT:
+        side_card(slide, P6B_RX, y, P6B_RW, h, title, english, items, AGENT)
+    p6b_centre(slide)
 
-    agent_x = P6B_PLAN_X + 0.12
-    pair_x = agent_x + P6B_AGENT_W / 2
-    label, gloss, touches = P6B_HUMAN
-    p6b_band(slide, P6B_HUMAN_Y, P6B_HUMAN_H, label, G700, P6B_HUMAN_LABEL_W, gloss)
-    for cx, w, touch in zip((P6B_TASK_X, pair_x, P6B_REPORT_X), P6B_HUMAN_W, touches,
-                            strict=True):
-        name, note = touch if isinstance(touch, tuple) else (touch, None)
-        p6b_line_chip(slide, cx - w / 2, P6B_HUMAN_Y + 0.06, w, P6B_HUMAN_H - 0.12, name, note,
-                      G700)
+    contract, pair, observe, call, fire, _ = P6B_EDGES
+    card_edge = P6B_LX + P6B_LW
+    centre_left, centre_right = P6B_IX - 0.04, P6B_IX + P6B_IW + 0.04
+    left_lane = (card_edge + P6B_CX) / 2
+    right_lane = (P6B_CX + P6B_CW_ + P6B_RX) / 2
+    think_mid = P6B_STAGES[2][3] + P6B_STAGES[2][4] / 2
 
-    name, gloss, items = P6B_CONTRACT
-    add_box(slide, MX, P6B_TIER_Y, P6B_CONTRACT_W, P6B_TIER_H, fill=WHITE, line=G400,
-            line_w=1.0, dash=DASH)
-    add_text(slide, MX + 0.12, P6B_TIER_Y + 0.04, P6B_CONTRACT_W - 0.16, 0.26,
-             [runs([(name, 11, G900, True), (f"　{gloss}", 8, G500)])], anchor=MIDDLE)
-    for index, item in enumerate(items):
-        shape = add_box(slide, MX + 0.12, P6B_TIER_Y + 0.34 + index * 0.25,
-                        P6B_CONTRACT_W - 0.24, 0.21, fill=G050, line=G200,
-                        kind=MSO_SHAPE.ROUNDED_RECTANGLE, radius=0.5)
-        boxed_text(shape, [P(item, 8.5, G700, align=CENTER)], inset=(0.04, 0, 0.04, 0))
+    hub_mid = P6B_STAGES[0][3] + P6B_STAGES[0][4] / 2
+    add_arrow(slide, card_edge, hub_mid, centre_left, hub_mid, G500, 1.5)
+    edge_tag(slide, left_lane, hub_mid, contract, G500, 0.70)
 
-    name, gloss = P6B_PLANNER
-    add_box(slide, P6B_PLAN_X, P6B_TIER_Y, P6B_PLAN_W, P6B_TIER_H, fill=ORANGE_TINT,
-            line=ORANGE_FILL, line_w=1.25, kind=MSO_SHAPE.ROUNDED_RECTANGLE,
-            radius=0.08 / P6B_TIER_H)
-    add_text(slide, P6B_PLAN_X + 0.14, P6B_TIER_Y + 0.03, P6B_PLAN_W - 0.28, 0.26,
-             [runs([(name, 12, ORANGE, True), (f"　{gloss}", 8.5, G700)])], anchor=MIDDLE)
-    inner_right = P6B_PLAN_X + P6B_PLAN_W - 0.12
-    row_a, row_b = P6B_TIER_Y + 0.33, P6B_TIER_Y + 0.73
-    badge, *agent = P6B_AGENT
-    p6b_line_chip(slide, agent_x, row_a, P6B_AGENT_W, 0.34, *agent, ORANGE_FILL, badge=badge)
-    skills_x = agent_x + P6B_AGENT_W + 0.10
-    p6b_line_chip(slide, skills_x, row_a, inner_right - skills_x, 0.34, *P6B_SKILLS, ORANGE_FILL)
-    p6b_line_chip(slide, agent_x, row_b, P6B_MAILBOX_W, 0.30, *P6B_MAILBOX, ORANGE_FILL)
-    memory_x = agent_x + P6B_MAILBOX_W + 0.10
-    p6b_line_chip(slide, memory_x, row_b, inner_right - memory_x, 0.30, *P6B_MEMORY, ORANGE_FILL)
+    pair_mid = P6B_LEFT[1][3] + P6B_LEFT[1][4] / 2
+    add_arrow(slide, card_edge, pair_mid, centre_left, pair_mid, ORANGE_FILL, 1.5, both=True)
+    edge_tag(slide, left_lane, pair_mid, pair, ORANGE, 0.70)
 
-    add_box(slide, MX, P6B_CTRL_Y, CW, P6B_CTRL_H, fill=PALE, line=AGENT, line_w=1.25,
-            kind=MSO_SHAPE.ROUNDED_RECTANGLE, radius=0.10 / P6B_CTRL_H)
-    name, gloss, spine = P6B_CONTROL
-    add_text(slide, MX + 0.16, P6B_CTRL_Y + 0.04, CW - 0.32, 0.28, [runs([
-        (name, 12.5, AGENT, True), (f"　{gloss}", 8.5, G700), ("　｜　", 9, G400),
-        (spine, 8.5, G700),
+    board_top, watch_in = P6B_LEFT[2][3], think_mid + 0.30
+    add_path_arrow(slide, [(P6B_WATCH_X, board_top - 0.03), (P6B_WATCH_X, watch_in),
+                           (centre_left, watch_in)], G500, 1.5)
+    edge_tag(slide, left_lane, watch_in, observe, G500, 0.46)
+
+    evidence_bottom = P6B_RIGHT[0][3] + P6B_RIGHT[0][4]
+    add_path_arrow(slide, [(centre_right, think_mid), (P6B_CALL_X, think_mid),
+                           (P6B_CALL_X, evidence_bottom + 0.04)], ORANGE_FILL, 1.5)
+    edge_tag(slide, right_lane, think_mid, call, ORANGE, 0.70)
+
+    action_mid = P6B_STAGES[3][3] + P6B_STAGES[3][4] / 2
+    add_arrow(slide, centre_right, action_mid, P6B_RX - 0.04, action_mid, ORANGE_FILL, 1.5)
+    edge_tag(slide, right_lane, action_mid, fire, ORANGE, 0.82)
+
+    bench_x = P6B_RX + P6B_RW / 2
+    bench_bottom = P6B_RIGHT[1][3] + P6B_RIGHT[1][4]
+    board_bottom = P6B_LEFT[2][3] + P6B_LEFT[2][4]
+    add_path_arrow(slide, [(bench_x, bench_bottom + 0.04), (bench_x, P6B_RETURN_Y),
+                           (P6B_RETURN_X, P6B_RETURN_Y), (P6B_RETURN_X, board_bottom + 0.04)],
+                   G500, 1.25)
+    edge_tag(slide, P6B_SPINE, P6B_RETURN_Y, P6B_RETURN, G500, 1.66, size=8)
+
+    add_box(slide, MX, 6.46, CW, 0.58, fill=TINT)
+    add_box(slide, MX, 6.46, 0.08, 0.58, fill=AGENT)
+    add_text(slide, MX + 0.36, 6.46, CW - 0.72, 0.58, [runs([
+        (P6B_BAND[0], 12, AGENT, True), ("　｜　", 12, G400), (P6B_BAND[1], 13, G900, True),
     ])], anchor=MIDDLE)
-
-    blocks = []
-    for (x, w), link, (title, tone, steps, extras) in zip(P6B_SPANS[:2], P6B_LINKS[:2],
-                                                          P6B_AREAS, strict=True):
-        p6b_area(slide, x, w, title, tone)
-        first = p6b_steps(slide, x, w, link, steps, G500)
-        lefts, width = p6b_slots(x, w, len(extras), 0.08)
-        for left, (extra, note) in zip(lefts, extras, strict=True):
-            p6b_chip(slide, left, P6B_ROW2_Y, width, P6B_ROW2_H, None, extra, note, G300)
-        blocks.append((first, (lefts, width)))
-    (_, (probe_lefts, probe_w)), ((land_lefts, land_w), _) = blocks
-
-    (x, w), link = P6B_SPANS[2], P6B_LINKS[2]
-    p6b_area(slide, x, w, P6B_JUDGE, AGENT)
-    gates, _ = p6b_steps(slide, x, w, link, P6B_GATES, AGENT, rule=True)
-    lefts, width = p6b_slots(x, w, len(P6B_OUTCOMES), 0.08)
-    for left, (outcome, note, tone) in zip(lefts, P6B_OUTCOMES, strict=True):
-        p6b_chip(slide, left, P6B_ROW2_Y, width, P6B_ROW2_H, None, outcome, note, tone,
-                 name_tone=tone)
-    mid = P6B_ROW1_Y + P6B_ROW1_H / 2
-    add_arrow(slide, land_lefts[-1] + land_w + 0.03, mid, gates[0] - 0.03, mid, AGENT, 1.25)
-
-    label, parts = P6B_SUT
-    p6b_band(slide, P6B_SUT_Y, P6B_SUT_H, label, G500, P6B_SUT_LABEL_W)
-    lefts, width = p6b_slots(MX + P6B_SUT_LABEL_W, CW - P6B_SUT_LABEL_W, len(parts), 0.30,
-                             left=0.15, right=0.15)
-    for left, part in zip(lefts, parts, strict=True):
-        shape = add_box(slide, left, P6B_SUT_Y + 0.08, width, P6B_SUT_H - 0.16, fill=WHITE,
-                        line=G400, kind=MSO_SHAPE.ROUNDED_RECTANGLE, radius=0.5)
-        boxed_text(shape, [P(part, 9.5, G800, True, align=CENTER)], inset=(0.04, 0, 0.04, 0))
-
-    # 人 ↔ 合同 / 规划器 / 控制器
-    add_arrow(slide, P6B_TASK_X, human_bot + 0.03, P6B_TASK_X, P6B_TIER_Y - 0.03, G700, 1.5)
-    add_arrow(slide, pair_x, human_bot + 0.03, pair_x, P6B_TIER_Y - 0.03, G700, 1.5, both=True)
-    add_arrow(slide, P6B_REPORT_X, P6B_CTRL_Y - 0.03, P6B_REPORT_X, human_bot + 0.03, AGENT, 1.5)
-    p6b_tag(slide, P6B_REPORT_X, P6B_TIER_Y + P6B_TIER_H / 2, P6B_REPORT, AGENT)
-
-    # 合同 → 控制器；控制器 ⇄ 规划器：探针只能由规划器申请、控制器执行，提案只能落到校验
-    gap = (tier_bot + P6B_CTRL_Y) / 2
-    freeze_x = MX + P6B_CONTRACT_W / 2
-    probe_x = probe_lefts[-1] + probe_w / 2
-    proposal_x = land_lefts[0] + land_w / 2
-    add_arrow(slide, freeze_x, tier_bot + 0.03, freeze_x, P6B_CTRL_Y - 0.03, G500, 1.5)
-    add_arrow(slide, P6B_ASK_X, P6B_CTRL_Y - 0.03, P6B_ASK_X, tier_bot + 0.03, AGENT, 1.5)
-    add_line(slide, probe_x, tier_bot + 0.03, probe_x, P6B_CTRL_Y - 0.03, ORANGE_FILL, 1.25,
-             tail=True, dash=DASH)
-    add_arrow(slide, proposal_x, tier_bot + 0.03, proposal_x, P6B_CTRL_Y - 0.03, ORANGE_FILL, 1.5)
-    add_line(slide, P6B_REJECT_X, P6B_CTRL_Y - 0.03, P6B_REJECT_X, tier_bot + 0.03, BAD, 1.25,
-             tail=True, dash=DASH)
-    p6b_tag(slide, freeze_x, gap, P6B_FREEZE, G500)
-    p6b_tag(slide, P6B_ASK_X, gap, P6B_ASK, AGENT)
-    p6b_tag(slide, probe_x, gap, P6B_PROBE, ORANGE)
-    p6b_tag(slide, proposal_x, gap, P6B_PROPOSAL, ORANGE)
-    p6b_tag(slide, P6B_REJECT_X, gap, P6B_REJECT, BAD)
-
-    # 控制器 ⇄ 被测系统
-    gap = (ctrl_bot + P6B_SUT_Y) / 2
-    for x, tag in ((P6B_TRACE_X, P6B_TRACE), (P6B_SHA_X, P6B_SHA), (P6B_MEASURE_X, P6B_MEASURE)):
-        add_arrow(slide, x, P6B_SUT_Y - 0.03, x, ctrl_bot + 0.03, G500, 1.5)
-        p6b_tag(slide, x, gap, tag, G500)
-    add_arrow(slide, P6B_DEPLOY_X, ctrl_bot + 0.03, P6B_DEPLOY_X, P6B_SUT_Y - 0.03, AGENT, 1.5)
-    p6b_tag(slide, P6B_DEPLOY_X, gap, P6B_DEPLOY, AGENT)
 
 
 # --------------------------------------------------------------- 8  理论上限核算
