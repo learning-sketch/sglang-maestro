@@ -153,12 +153,17 @@ def pill(slide, x, y, w, h, text, fill, size=11, color=WHITE):
 
 
 def side_card(slide, x, y, w, h, title, english, items, tone):
-    """A white card with a coloured spine: title + english gloss over a dotted list."""
+    """A white card with a coloured spine: title + english gloss over a dotted list.
+
+    An item is either a label or a (label, file) pair, whose file half is set in the mono face.
+    """
     card(slide, x, y, w, h, fill=WHITE, line=G200)
     add_box(slide, x, y, 0.07, h, fill=tone)
+    rows = [runs([(f"·　{item[0]}", 9, G700), (f"　{item[1]}", 7.5, AGENT, False, MONO)])
+            if isinstance(item, tuple) else P(f"·　{item}", 9, G700) for item in items]
     add_text(slide, x + 0.2, y + 0.05, w - 0.36, h - 0.1, [
         runs([(title, 10.5, G900, True), (f"　{english}", 8, tone, True, MONO)], after=3),
-        *[P(f"·　{item}", 9, G700) for item in items],
+        *rows,
     ], anchor=MIDDLE)
 
 
@@ -670,326 +675,173 @@ def page_six(slide):
 
 # ------------------------------------------------------- 7  模型层 Agent 内部组件
 P6B_TITLE = "M100 Agent：模型层内部组件与人机交互机制"
-P6B_SUB = "控制器确定性调度，规划器唯一引入大模型；人仅在契约下发、协同介入、终审验收三处交互"
-P6B_ACTOR = ("人", "任务负责人", "«actor»")
-# (标题, 方向, ((标签, 内容, 是否文件), ...), 顶, 高)
-P6B_ARTIFACTS = (
-    ("冻结契约", "人 → Agent", (("优化任务", "optimization-task.json", True),
-                              ("质量契约", "generation-task.json", True),
-                              ("调优知识", "planner-skills/ × 10", True),
-                              ("授权边界", "测试范围 · 可跳过项", False)), 2.06, 1.24),
-    ("判决报告", "Agent → 人", (("优化报告", "optimization-report.md", True),
-                              ("最优版本", "best.json", True),
-                              ("证据链", "attempts/ · planner/", True),
-                              ("边界声明", "自检异常 · 适用范围", False)), 3.40, 1.24),
-    ("协同补丁", "人 ⇄ 规划器", (("结对补丁", "changes.patch", True),
-                               ("人工操刀", "复杂改动由人主导", False),
-                               ("同等准入", "同样走四道门禁", False)), 5.00, 1.06),
+P6B_SUB = "基于「证据感知 — 假设推演 — 确定性核验」闭环；人只在契约下发、协同介入、终审验收三处交互"
+# (标题, 英文, 色条)
+P6B_HEADS = (("人 · 契约与证据", "Human in the Loop", G500),
+             ("模型层 Agent 内部", "唯一引入大模型的位置", ORANGE_FILL),
+             ("确定性工具与评测后端", "确定性执行 · 无模型", AGENT))
+# (标题, 英文, 条目, 顶, 高)：条目里的二元组表示「说明 + 文件名」
+# 冻结契约的右边界跨过状态机的中线，所以契约那条线是直的；协同补丁与判决黑板之间留出
+# 一条空档，「观察」折线从黑板顶边沿左栏内缘爬上规划器
+P6B_LEFT = (
+    ("冻结契约", "人 → Agent", (("优化任务", "optimization-task.json"),
+                              ("质量契约", "generation-task.json"),
+                              ("调优知识", "planner-skills/ × 10"),
+                              "授权边界：测试范围 · 可跳过项"), 1.72, 1.34),
+    ("协同补丁", "人 ⇄ 规划器", (("结对补丁", "changes.patch"),
+                               "复杂改动由人主导，同样走四道门禁"), 3.20, 0.72),
+    ("判决与证据黑板", "Verdict Blackboard",
+     ("门禁判决与被拒原因", "数值与质量偏差详情", "实测耗时与下界差距"), 4.46, 1.16),
 )
-P6B_PACKAGE = ("模型层 Agent", "«subsystem»")
-P6B_CTRL = ("Python 控制器", "«component»", "src/m100_model_agent/", "确定性 · 无模型")
-P6B_HUB = ("状态机与编排", "optimization.py · selfiterate.py",
-           "设备锁 · 状态流转 · 中断恢复 · 版本晋升 · 报告生成")
-# (标题, 模块, 两行职责)：上排挂在状态机下，下排是面向规划器的接口
-P6B_SERVICES = (
-    ("采样与账本", "roofline.py", ("一次性服务采 Trace", "下界账本 · ratio 自检")),
-    ("四道门禁流水", "selfiterate_gates.py", ("C 微测 ≥ 2%　数值门", "质量门　D 三方 A/B")),
-    ("工作区与构建", "git_workspace.py", ("原位建版本 · 登记构建", "起停服务 · 精确重测")),
+P6B_RIGHT = (
+    ("源码与冻结证据", "Source & Evidence",
+     ("SGLang 原仓库只读", ("有界探针", "planner_diagnostics.py"),
+      ("逐次留痕", "attempts/ · planner/"), ("诊断产物 ≤ 64 KiB", "probes/"),
+      ("冻结快照 + SHA", "backup/")), 1.72, 1.44),
+    ("构建与真机评测", "Build & Bench",
+     (("原位建版本 · 精确重测", "git_workspace.py"), ("四道门禁", "selfiterate_gates.py"),
+      "C 设备微测 ≥ 2%　数值门 · 质量门", "D 整模三方 A/B 过噪声门",
+      ("下界账本 · ratio 自检", "roofline.py"), "M100 物理卡真机实测"), 4.26, 1.50),
 )
-P6B_INTERFACE = (
-    ("有界取证", "planner_diagnostics.py", ("独立进程 probe", "产物 ≤ 64 KiB · 落盘")),
-    ("通信 mailbox", "planner_mailbox.py", ("UUID + SHA + schema", "消息 ≤ 28 KB · 落盘")),
-    ("记忆 memory", "planner_memory.py", ("摘要 + 指纹 + 拒绝原因", "滚动压缩至 ≤ 18 KB")),
+# (标题, 英文, 说明行, 顶, 高)
+P6B_STAGES = (
+    ("状态机与编排", "Orchestration",
+     ("optimization.py　设备锁 · 状态流转 · 中断恢复",), 1.72, 0.54),
+    ("通信与记忆", "Mailbox / Memory",
+     ("planner_mailbox.py　UUID + SHA + schema", "planner_memory.py　摘要 + 被拒原因 ≤ 18 KB"),
+     2.40, 0.66),
+    ("规划器推演", "Thought　Codex 外部托管会话",
+     ("读源码与冻结证据，形成假设并提出结构化动作", "动作限定：", "硬约束：不能自行宣告成功"),
+     3.20, 1.40),
+    ("动作执行", "Action",
+     ("optimization_staging.py　打包补丁，触发构建与门禁",), 4.74, 0.54),
 )
-P6B_PLANNER = ("规划器", "«component»　Codex 外部托管会话",
-               "读源码与冻结证据，形成假设，提出结构化动作；Skill 按需检索，每轮 ≤ 2 份",
-               "动作限定：", "read · search · list · probe · patch · stop")
-P6B_PLANNER_BADGE = "硬约束：不能自行宣告成功"
-P6B_SUT = ("被测系统", "«external»",
-           ("SGLang 原仓库", "xInfer · xtorch_ops", "登记的算子组件", "M100 物理卡"))
-P6B_STORE = ("证据产物库", "«datastore»", (("attempts/", "35 次 trial"), ("planner/", "往来全量报文"),
-                                         ("probes/", "≤ 64 KiB 诊断"), ("backup/", "冻结快照 + SHA"),
-                                         ("events.jsonl", "追加写事件流")))
-# (标签, 胶囊宽度)
-P6B_EDGES = (("契约 · 授权", 0.78), ("报告 · 证据", 0.78), ("结对写补丁", 0.72),
-             ("补丁 · 构建", 0.78), ("实测数据", 0.64), ("按需调取", 0.64))
-P6B_FLOWS = ("调度 · 回报", "下发：账本 + 被拒记忆", "提交：假设 + 补丁", "请求 ≤ 28 KB", "提案 + 证据引用",
-             "探针", "压缩", "结果落盘")
+P6B_VERBS = "read · search · list · probe · patch · stop"
+P6B_LLM = "大模型唯一介入点"
+P6B_OUT = ("判决报告 → 人", "optimization-report.md · best.json", 5.44, 0.48)
+P6B_EDGES = ("契约 · 授权", "结对写补丁", "观察", "按需调取", "构建 · 门禁", "发布：终审验收")
+P6B_RETURN = "回写：门禁判决 · 数值与质量偏差 · 实测耗时"
 P6B_BAND = ("核心设计", "规划器只提假设与补丁；数值、质量与性能收益全部由控制器独立核验")
 
-P6B_LX, P6B_LW = MX, 2.30
-P6B_SX, P6B_SW_ = 3.74, 6.22
-P6B_RX = 10.80
+P6B_LX, P6B_LW = MX, 2.84
+P6B_CX, P6B_CW_ = 4.42, 4.20
+P6B_RX = 9.52
 P6B_RW = SW - MX - P6B_RX
-P6B_TAB_Y, P6B_TAB_W, P6B_TAB_H = 1.38, 2.10, 0.26
-P6B_BODY_TOP, P6B_BODY_BOT = 1.64, 6.12
-# 控制器与规划器同宽，套在子系统包里；控制器内三列对齐，列缝留给接口行的横向箭头
-P6B_KX, P6B_KW = P6B_SX + 0.16, P6B_SW_ - 0.32
-P6B_KTOP, P6B_KBOT = 1.78, 4.72
-P6B_IX, P6B_IW = P6B_KX + 0.14, P6B_KW - 0.28
-P6B_GAP = 0.30
-P6B_COL_W = (P6B_IW - 2 * P6B_GAP) / 3
-P6B_COLS = tuple(P6B_IX + index * (P6B_COL_W + P6B_GAP) for index in range(3))
-P6B_SVC_Y, P6B_SVC_H = 2.12, 0.74
-P6B_HUB_Y, P6B_HUB_H = 3.10, 0.42
-P6B_IF_Y, P6B_IF_H = 3.86, 0.74
-P6B_PLAN_Y, P6B_PLAN_H = 5.12, 0.86
-# 契约进、报告出都落在状态机左端，两条折线在左侧通道里分叉到各自的卡片
-P6B_FORK_X = (P6B_LX + P6B_LW + P6B_SX) / 2
-P6B_HUB_IN, P6B_HUB_OUT = 3.20, 3.42
-P6B_MAIL_DOWN, P6B_MAIL_UP = -0.30, 0.30
-P6B_SUT_Y, P6B_SUT_H, P6B_SUT_DEPTH = 1.78, 1.84, 0.12
-P6B_STORE_Y, P6B_STORE_H, P6B_STORE_CAP = 3.96, 2.02, 0.20
+# 中栏圆角框占容器 88% 宽并左右居中
+P6B_IW = P6B_CW_ * 0.88
+P6B_IX = P6B_CX + (P6B_CW_ - P6B_IW) / 2
+P6B_SPINE = P6B_IX + P6B_IW / 2
+P6B_RADIUS = 0.08
+P6B_HEAD_Y, P6B_HEAD_H = 1.32, 0.32
+P6B_PANEL_TOP, P6B_PANEL_BOT = 1.66, 6.02
+# 「观察」与「按需调取」两条折线关于规划器的中心点对称，竖直段都走在各自栏位的内缘
+P6B_WATCH_X = P6B_LX + P6B_LW - 0.36
+P6B_CALL_X = 2 * P6B_SPINE - P6B_WATCH_X
+P6B_RETURN_X, P6B_RETURN_Y = P6B_LX + P6B_LW / 2, 6.24
 
 
-def p6b_glyph(slide, x, y, tone):
-    """UML component glyph, top-left at (x, y): a small box with two tabs on its left edge."""
-    add_box(slide, x, y, 0.15, 0.12, fill=WHITE, line=tone)
-    for dy in (0.02, 0.065):
-        add_box(slide, x - 0.035, y + dy, 0.07, 0.035, fill=WHITE, line=tone)
+def p6b_stage(slide, y, h, fill, tone):
+    return add_box(slide, P6B_IX, y, P6B_IW, h, fill=fill, line=tone,
+                   kind=MSO_SHAPE.ROUNDED_RECTANGLE, radius=P6B_RADIUS / min(P6B_IW, h))
 
 
-def p6b_page(slide, x, y, tone, w=0.13, h=0.16, fold=0.045):
-    """UML artifact glyph, top-left at (x, y): a page with its top-right corner folded."""
-    builder = slide.shapes.build_freeform(Inches(x), Inches(y))
-    builder.add_line_segments([(Inches(x + w - fold), Inches(y)), (Inches(x + w), Inches(y + fold)),
-                               (Inches(x + w), Inches(y + h)), (Inches(x), Inches(y + h))])
-    shape = builder.convert_to_shape()
-    drop_theme_style(shape)
-    shape.fill.solid()
-    shape.fill.fore_color.rgb = rgb(WHITE)
-    shape.line.color.rgb = rgb(tone)
-    shape.line.width = Pt(0.75)
-    polyline(slide, [(x + w - fold, y), (x + w - fold, y + fold), (x + w, y + fold)], tone, 0.75)
-
-
-def p6b_actor(slide, cx, y, tone):
-    """UML actor, head top at y, about 0.52 in tall."""
-    add_box(slide, cx - 0.08, y, 0.16, 0.16, fill=WHITE, line=tone, line_w=1.25,
-            kind=MSO_SHAPE.OVAL)
-    add_line(slide, cx, y + 0.16, cx, y + 0.36, tone, 1.25)
-    add_line(slide, cx - 0.15, y + 0.23, cx + 0.15, y + 0.23, tone, 1.25)
-    for dx in (-0.12, 0.12):
-        add_line(slide, cx, y + 0.36, cx + dx, y + 0.52, tone, 1.25)
-
-
-def p6b_port(slide, x, y, tone):
-    add_box(slide, x - 0.05, y - 0.05, 0.10, 0.10, fill=WHITE, line=tone, line_w=1.0)
-
-
-def p6b_part(slide, x, y, w, h, title, module, lines):
-    add_box(slide, x, y, w, h, fill=WHITE, line=AGENT, line_w=1.0)
-    p6b_glyph(slide, x + w - 0.22, y + 0.08, AGENT)
-    add_text(slide, x + 0.12, y + 0.04, w - 0.22, h - 0.08, [
-        P(title, 9.5, G900, True, after=1),
-        P(module, 7, AGENT, False, MONO, after=2),
-        *[P(line, 8, G700) for line in lines],
-    ], anchor=MIDDLE)
-
-
-def p6b_artifact(slide, x, y, w, h, title, direction, items, tone):
-    card(slide, x, y, w, h, fill=WHITE, line=G300)
-    add_box(slide, x, y, 0.06, h, fill=tone)
-    p6b_page(slide, x + w - 0.24, y + 0.09, tone)
-    add_text(slide, x + 0.2, y + 0.06, w - 0.5, 0.28, [
-        runs([(title, 10.5, G900, True), (f"　{direction}", 8, tone, True)]),
-    ], anchor=MIDDLE)
-    pitch = 0.205
-    top = y + 0.38 + (h - 0.44 - len(items) * pitch) / 2
-    for index, (label, value, is_file) in enumerate(items):
-        row = top + index * pitch
-        add_text(slide, x + 0.2, row, 0.62, pitch, [P(label, 8, G800, True)], anchor=MIDDLE)
-        add_text(slide, x + 0.84, row, w - 0.94, pitch,
-                 [P(value, 7, AGENT, False, MONO) if is_file else P(value, 8, G700)],
-                 anchor=MIDDLE)
-
-
-def p6b_controller(slide):
-    add_box(slide, P6B_KX, P6B_KTOP, P6B_KW, P6B_KBOT - P6B_KTOP, fill=PALE, line=AGENT,
-            line_w=1.25)
-    p6b_glyph(slide, P6B_KX + P6B_KW - 0.26, P6B_KTOP + 0.09, AGENT)
-    title, keyword, package, nature = P6B_CTRL
-    add_text(slide, P6B_IX, P6B_KTOP + 0.04, P6B_IW - 0.4, 0.28, [runs([
-        (title, 11, AGENT, True), (f"　{keyword}　", 7.5, G500), (package, 7.5, G500, False, MONO),
-        (f"　·　{nature}", 7.5, G500),
-    ])], anchor=MIDDLE)
-
-    for x, (name, module, lines) in zip(P6B_COLS, P6B_SERVICES, strict=True):
-        p6b_part(slide, x, P6B_SVC_Y, P6B_COL_W, P6B_SVC_H, name, module, lines)
-        cx = x + P6B_COL_W / 2
-        add_arrow(slide, cx, P6B_SVC_Y + P6B_SVC_H + 0.01, cx, P6B_HUB_Y - 0.01, AGENT, 1.0,
-                  both=True)
-    first = P6B_COLS[0] + P6B_COL_W / 2
-    add_text(slide, first + 0.08, P6B_SVC_Y + P6B_SVC_H, 1.2, P6B_HUB_Y - P6B_SVC_Y - P6B_SVC_H,
-             [P(P6B_FLOWS[0], 7, AGENT, True)], anchor=MIDDLE)
-
-    add_box(slide, P6B_IX, P6B_HUB_Y, P6B_IW, P6B_HUB_H, fill=TINT, line=AGENT, line_w=1.25)
-    p6b_glyph(slide, P6B_IX + P6B_IW - 0.24, P6B_HUB_Y + 0.06, AGENT)
-    name, modules, duties = P6B_HUB
-    add_text(slide, P6B_IX + 0.3, P6B_HUB_Y, P6B_IW - 0.6, P6B_HUB_H, [
-        runs([(name, 10.5, AGENT, True), (f"　{modules}", 7, G500, False, MONO)], align=CENTER),
-        P(duties, 8, G800, align=CENTER),
-    ], anchor=MIDDLE)
-
-    for x, (name, module, lines) in zip(P6B_COLS, P6B_INTERFACE, strict=True):
-        p6b_part(slide, x, P6B_IF_Y, P6B_COL_W, P6B_IF_H, name, module, lines)
-    mid = P6B_IF_Y + P6B_IF_H / 2
-    for index, (label, both) in enumerate(((P6B_FLOWS[5], True), (P6B_FLOWS[6], False))):
-        left = P6B_COLS[index] + P6B_COL_W
-        right = P6B_COLS[index + 1]
-        if both:
-            add_arrow(slide, left + 0.02, mid, right - 0.02, mid, AGENT, 1.25, both=True)
+def p6b_centre(slide):
+    card(slide, P6B_CX, P6B_PANEL_TOP, P6B_CW_, P6B_PANEL_BOT - P6B_PANEL_TOP,
+         fill=WHITE, line=G300)
+    for index, (title, english, lines, y, h) in enumerate(P6B_STAGES):
+        model = index == 2
+        tone = ORANGE_FILL if model else AGENT
+        shape = p6b_stage(slide, y, h, ORANGE_TINT if model else PALE, tone)
+        head = runs([(title, 11.5 if model else 11, G900, True),
+                     (f"　{english}", 8.5, ORANGE if model else AGENT, True, MONO)],
+                    align=CENTER, after=2)
+        body = [P(line, 8.5, G700, align=CENTER) for line in lines]
+        if model:
+            # 徽章压在框的中线上，三条折线分别指向框的上中下三段
+            mid = y + h / 2
+            add_text(slide, P6B_IX, mid - 0.64, P6B_IW, 0.26, [head], anchor=MIDDLE)
+            pill(slide, P6B_SPINE - 0.72, mid - 0.34, 1.44, 0.24, P6B_LLM, ORANGE_FILL, size=8)
+            add_text(slide, P6B_IX + 0.06, mid - 0.06, P6B_IW - 0.12, 0.70, [
+                P(lines[0], 8.5, G700, align=CENTER),
+                runs([(lines[1], 8.5, G700), (P6B_VERBS, 7.5, ORANGE, False, MONO)],
+                     align=CENTER),
+                P(lines[2], 8.5, ORANGE, True, align=CENTER),
+            ], anchor=MIDDLE)
         else:
-            add_arrow(slide, right - 0.02, mid, left + 0.02, mid, AGENT, 1.25)
-        add_text(slide, left - 0.06, mid - 0.2, P6B_GAP + 0.12, 0.16,
-                 [P(label, 7, AGENT, True, align=CENTER)], anchor=MIDDLE)
+            boxed_text(shape, [head, *body])
+        if index:
+            previous = P6B_STAGES[index - 1]
+            # 规划器那一跳是一来一回：控制器封装请求下发，规划器回提案，所以画双箭头
+            add_arrow(slide, P6B_SPINE, previous[3] + previous[4] + 0.01, P6B_SPINE, y - 0.01,
+                      ORANGE_FILL if model else AGENT, 1.5, both=model)
 
-    # 规划器回路：状态机 → 记忆 → mailbox → 规划器 → mailbox → 状态机
-    mail = P6B_COLS[1] + P6B_COL_W / 2
-    memory = P6B_COLS[2] + P6B_COL_W / 2
-    hub_bottom = P6B_HUB_Y + P6B_HUB_H
-    add_arrow(slide, memory, hub_bottom + 0.01, memory, P6B_IF_Y - 0.01, ORANGE_FILL, 1.5)
-    add_arrow(slide, mail + P6B_MAIL_UP, P6B_IF_Y - 0.01, mail + P6B_MAIL_UP, hub_bottom + 0.01,
-              ORANGE_FILL, 1.5)
-    label_w = 1.6
-    add_text(slide, mail + P6B_MAIL_UP - 0.07 - label_w, hub_bottom, label_w,
-             P6B_IF_Y - hub_bottom, [P(P6B_FLOWS[2], 7.5, ORANGE, True, align=RIGHT)],
-             anchor=MIDDLE)
-    add_text(slide, memory - 0.07 - label_w, hub_bottom, label_w, P6B_IF_Y - hub_bottom,
-             [P(P6B_FLOWS[1], 7.5, ORANGE, True, align=RIGHT)], anchor=MIDDLE)
-
-
-def p6b_planner(slide):
-    x, y, w, h = P6B_KX, P6B_PLAN_Y, P6B_KW, P6B_PLAN_H
-    add_box(slide, x, y, w, h, fill=ORANGE_TINT, line=ORANGE_FILL, line_w=1.25, dash=DASH)
-    p6b_glyph(slide, x + w - 0.26, y + 0.09, ORANGE_FILL)
-    title, gloss, line, verbs_lead, verbs = P6B_PLANNER
-    badge_w = 1.64
-    add_text(slide, x + 0.16, y + 0.06, w - badge_w - 0.8, 0.28, [runs([
-        (title, 11.5, G900, True), (f"　{gloss}", 8, ORANGE, True),
-    ])], anchor=MIDDLE)
-    pill(slide, x + w - badge_w - 0.44, y + 0.09, badge_w, 0.22, P6B_PLANNER_BADGE, ORANGE_FILL,
-         size=7.5)
-    add_text(slide, x + 0.16, y + 0.36, w - 0.32, h - 0.42, [
-        P(line, 8.5, G700, after=2),
-        runs([(verbs_lead, 8.5, G700), (verbs, 8, ORANGE, False, MONO)]),
-    ], anchor=MIDDLE)
-
-
-def p6b_sut(slide):
-    x, y, w, h, depth = P6B_RX, P6B_SUT_Y, P6B_RW, P6B_SUT_H, P6B_SUT_DEPTH
-    shape = add_box(slide, x, y, w, h, fill=G050, line=AGENT, line_w=1.0, kind=MSO_SHAPE.CUBE)
-    shape.adjustments[0] = depth / min(w, h)
-    face_y, face_w = y + depth, w - depth
-    title, keyword, parts = P6B_SUT
-    add_text(slide, x + 0.12, face_y + 0.04, face_w - 0.24, 0.28, [
-        runs([(title, 10.5, G900, True), (f"　{keyword}", 7, G500)]),
-    ], anchor=MIDDLE)
-    for index, part in enumerate(parts):
-        top = face_y + 0.38 + index * 0.31
-        box = add_box(slide, x + 0.12, top, face_w - 0.24, 0.25, fill=WHITE, line=G300)
-        boxed_text(box, [P(part, 8, G800, align=CENTER)], inset=(0.04, 0, 0.04, 0))
-
-
-def p6b_store(slide):
-    x, y, w, h, cap = P6B_RX, P6B_STORE_Y, P6B_RW, P6B_STORE_H, P6B_STORE_CAP
-    shape = add_box(slide, x, y, w, h, fill=WHITE, line=G500, line_w=1.0, kind=MSO_SHAPE.CAN)
-    shape.adjustments[0] = cap / min(w, h)
-    title, keyword, rows = P6B_STORE
-    add_text(slide, x + 0.14, y + cap + 0.04, w - 0.28, 0.26, [
-        runs([(title, 10.5, G900, True), (f"　{keyword}", 7, G500)]),
-    ], anchor=MIDDLE)
-    for index, (folder, gloss) in enumerate(rows):
-        add_text(slide, x + 0.14, y + cap + 0.4 + index * 0.25, w - 0.28, 0.25, [runs([
-            (folder, 7.5, AGENT, True, MONO), (f"　{gloss}", 8, G700),
-        ])], anchor=MIDDLE)
+    title, detail, y, h = P6B_OUT
+    shape = p6b_stage(slide, y, h, PALE, AGENT)
+    boxed_text(shape, [runs([
+        (title, 10.5, AGENT, True), (f"　{detail}", 7.5, G700, False, MONO),
+    ], align=CENTER)])
+    action = P6B_STAGES[3]
+    add_arrow(slide, P6B_SPINE, action[3] + action[4] + 0.01, P6B_SPINE, y - 0.01, AGENT, 1.5)
+    add_text(slide, P6B_SPINE + 0.1, action[3] + action[4], 1.1, y - action[3] - action[4],
+             [P(P6B_EDGES[5], 7.5, AGENT, True)], anchor=MIDDLE)
 
 
 def page_six_inside(slide):
     add_background(slide)
     page_header(slide, P6B_TITLE, P6B_SUB, sub_size=11.5)
+    column_heads(slide, [(x, w, *head) for x, w, head in
+                         ((P6B_LX, P6B_LW, P6B_HEADS[0]), (P6B_CX, P6B_CW_, P6B_HEADS[1]),
+                          (P6B_RX, P6B_RW, P6B_HEADS[2]))], P6B_HEAD_Y, P6B_HEAD_H)
+    for index, (title, english, items, y, h) in enumerate(P6B_LEFT):
+        side_card(slide, P6B_LX, y, P6B_LW, h, title, english, items,
+                  ORANGE_FILL if index == 1 else G500)
+    for title, english, items, y, h in P6B_RIGHT:
+        side_card(slide, P6B_RX, y, P6B_RW, h, title, english, items, AGENT)
+    p6b_centre(slide)
 
-    name, role, keyword = P6B_ACTOR
-    p6b_actor(slide, P6B_LX + 0.26, 1.40, G700)
-    add_text(slide, P6B_LX + 0.56, 1.38, P6B_LW - 0.56, 0.56, [
-        runs([(name, 12, G900, True), (f"　{role}", 9.5, G700)], after=1),
-        P(keyword, 7.5, G500),
-    ], anchor=MIDDLE)
-    for index, (title, direction, items, y, h) in enumerate(P6B_ARTIFACTS):
-        p6b_artifact(slide, P6B_LX, y, P6B_LW, h, title, direction, items,
-                     ORANGE_FILL if index == 2 else G500)
-
-    add_box(slide, P6B_SX, P6B_BODY_TOP, P6B_SW_, P6B_BODY_BOT - P6B_BODY_TOP, fill=G050,
-            line=G400, line_w=1.0)
-    tab = add_box(slide, P6B_SX, P6B_TAB_Y, P6B_TAB_W, P6B_TAB_H, fill=G100, line=G400,
-                  line_w=1.0)
-    boxed_text(tab, [runs([(P6B_PACKAGE[0], 10, G900, True), (f"　{P6B_PACKAGE[1]}", 7, G500)])],
-               inset=(0.12, 0, 0.08, 0))
-    p6b_controller(slide)
-    p6b_planner(slide)
-    p6b_sut(slide)
-    p6b_store(slide)
-
-    hub_left, hub_right = P6B_IX, P6B_IX + P6B_IW
-    left_cards = [y + h / 2 for _, _, _, y, h in P6B_ARTIFACTS]
+    contract, pair, observe, call, fire, _ = P6B_EDGES
     card_edge = P6B_LX + P6B_LW
-    fork = P6B_FORK_X
-    add_path_arrow(slide, [(card_edge, left_cards[0]), (fork, left_cards[0]), (fork, P6B_HUB_IN),
-                           (hub_left, P6B_HUB_IN)], G500, 1.5)
-    add_path_arrow(slide, [(hub_left, P6B_HUB_OUT), (fork, P6B_HUB_OUT), (fork, left_cards[1]),
-                           (card_edge + 0.01, left_cards[1])], G500, 1.5)
-    add_arrow(slide, card_edge + 0.01, left_cards[2], P6B_KX - 0.06, left_cards[2], ORANGE_FILL,
-              1.5, both=True)
+    centre_left, centre_right = P6B_IX - 0.04, P6B_IX + P6B_IW + 0.04
+    left_lane = (card_edge + P6B_CX) / 2
+    right_lane = (P6B_CX + P6B_CW_ + P6B_RX) / 2
+    think_mid = P6B_STAGES[2][3] + P6B_STAGES[2][4] / 2
 
-    mail = P6B_COLS[1] + P6B_COL_W / 2
-    if_mid = P6B_IF_Y + P6B_IF_H / 2
-    add_arrow(slide, mail + P6B_MAIL_DOWN, P6B_IF_Y + P6B_IF_H + 0.01, mail + P6B_MAIL_DOWN,
-              P6B_PLAN_Y - 0.06, ORANGE_FILL, 1.5)
-    add_arrow(slide, mail + P6B_MAIL_UP, P6B_PLAN_Y - 0.01, mail + P6B_MAIL_UP,
-              P6B_IF_Y + P6B_IF_H + 0.01, ORANGE_FILL, 1.5)
-    gap_top, gap_h = P6B_KBOT, P6B_PLAN_Y - P6B_KBOT
-    add_text(slide, mail + P6B_MAIL_DOWN - 1.47, gap_top, 1.4, gap_h,
-             [P(P6B_FLOWS[3], 7.5, ORANGE, True, align=RIGHT)], anchor=MIDDLE)
-    add_text(slide, mail + P6B_MAIL_UP + 0.07, gap_top, 1.4, gap_h,
-             [P(P6B_FLOWS[4], 7.5, ORANGE, True)], anchor=MIDDLE)
+    hub_mid = P6B_STAGES[0][3] + P6B_STAGES[0][4] / 2
+    add_arrow(slide, card_edge, hub_mid, centre_left, hub_mid, G500, 1.5)
+    edge_tag(slide, left_lane, hub_mid, contract, G500, 0.78)
 
-    build_y = P6B_SVC_Y + P6B_SVC_H / 2
-    hub_y = P6B_HUB_Y + P6B_HUB_H / 2
-    add_arrow(slide, hub_right, build_y, P6B_RX - 0.01, build_y, AGENT, 1.5)
-    add_arrow(slide, P6B_RX - 0.01, hub_y, hub_right, hub_y, AGENT, 1.5)
-    add_arrow(slide, P6B_RX - 0.01, if_mid, hub_right, if_mid, G500, 1.25)
-    face_cx = P6B_RX + (P6B_RW - P6B_SUT_DEPTH) / 2
-    sut_bottom = P6B_SUT_Y + P6B_SUT_H
-    add_arrow(slide, face_cx, sut_bottom + 0.01, face_cx, P6B_STORE_Y - 0.01, AGENT, 1.5)
-    add_text(slide, face_cx + 0.1, sut_bottom, 0.9, P6B_STORE_Y - sut_bottom,
-             [P(P6B_FLOWS[7], 7.5, AGENT, True)], anchor=MIDDLE)
+    pair_mid = P6B_LEFT[1][3] + P6B_LEFT[1][4] / 2
+    add_arrow(slide, card_edge, pair_mid, centre_left, pair_mid, ORANGE_FILL, 1.5, both=True)
+    edge_tag(slide, left_lane, pair_mid, pair, ORANGE, 0.74)
 
-    for x, y, tone in ((P6B_KX, P6B_HUB_IN, G500), (P6B_KX, P6B_HUB_OUT, G500),
-                       (P6B_KX, left_cards[2], ORANGE_FILL),
-                       (P6B_KX + P6B_KW, build_y, AGENT), (P6B_KX + P6B_KW, hub_y, AGENT),
-                       (P6B_KX + P6B_KW, if_mid, G500),
-                       (mail + P6B_MAIL_DOWN, P6B_KBOT, ORANGE_FILL),
-                       (mail + P6B_MAIL_UP, P6B_KBOT, ORANGE_FILL),
-                       (mail + P6B_MAIL_DOWN, P6B_PLAN_Y, ORANGE_FILL),
-                       (mail + P6B_MAIL_UP, P6B_PLAN_Y, ORANGE_FILL)):
-        p6b_port(slide, x, y, tone)
+    board_top, watch_in = P6B_LEFT[2][3], think_mid + 0.30
+    add_path_arrow(slide, [(P6B_WATCH_X, board_top - 0.03), (P6B_WATCH_X, watch_in),
+                           (centre_left, watch_in)], G500, 1.5)
+    edge_tag(slide, left_lane, watch_in, observe, G500, 0.46)
 
-    lane = (P6B_SX + P6B_SW_ + P6B_RX) / 2
-    for (label, width), cx, cy, tone in (
-        (P6B_EDGES[0], fork, (left_cards[0] + P6B_HUB_IN) / 2, G500),
-        (P6B_EDGES[1], fork, (P6B_HUB_OUT + left_cards[1]) / 2, G500),
-        (P6B_EDGES[2], fork, left_cards[2], ORANGE),
-        (P6B_EDGES[3], lane, build_y, AGENT),
-        (P6B_EDGES[4], lane, hub_y, AGENT),
-        (P6B_EDGES[5], lane, if_mid, G500),
-    ):
-        edge_tag(slide, cx, cy, label, tone, width)
+    evidence_bottom = P6B_RIGHT[0][3] + P6B_RIGHT[0][4]
+    add_path_arrow(slide, [(centre_right, think_mid), (P6B_CALL_X, think_mid),
+                           (P6B_CALL_X, evidence_bottom + 0.04)], ORANGE_FILL, 1.5)
+    edge_tag(slide, right_lane, think_mid, call, ORANGE, 0.66)
+
+    action_mid = P6B_STAGES[3][3] + P6B_STAGES[3][4] / 2
+    add_arrow(slide, centre_right, action_mid, P6B_RX - 0.04, action_mid, ORANGE_FILL, 1.5)
+    edge_tag(slide, right_lane, action_mid, fire, ORANGE, 0.76)
+
+    bench_x = P6B_RX + P6B_RW / 2
+    bench_bottom = P6B_RIGHT[1][3] + P6B_RIGHT[1][4]
+    board_bottom = P6B_LEFT[2][3] + P6B_LEFT[2][4]
+    add_path_arrow(slide, [(bench_x, bench_bottom + 0.04), (bench_x, P6B_RETURN_Y),
+                           (P6B_RETURN_X, P6B_RETURN_Y), (P6B_RETURN_X, board_bottom + 0.04)],
+                   G500, 1.25)
+    edge_tag(slide, P6B_SPINE, P6B_RETURN_Y, P6B_RETURN, G500, 2.80, size=8)
 
     add_box(slide, MX, 6.46, CW, 0.58, fill=TINT)
     add_box(slide, MX, 6.46, 0.08, 0.58, fill=AGENT)
     add_text(slide, MX + 0.36, 6.46, CW - 0.72, 0.58, [runs([
         (P6B_BAND[0], 12, AGENT, True), ("　｜　", 12, G400), (P6B_BAND[1], 13, G900, True),
     ])], anchor=MIDDLE)
+
 
 # --------------------------------------------------------------- 8  理论上限核算
 P7B_TITLE = "M100 Agent： 单算子理论下界与逐层核算"
